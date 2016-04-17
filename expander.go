@@ -22,8 +22,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-swagger/go-swagger/jsonpointer"
-	"github.com/go-swagger/go-swagger/swag"
+	"github.com/go-openapi/jsonpointer"
+	"github.com/go-openapi/swag"
 )
 
 // ResolutionCache a cache for resolving urls
@@ -131,8 +131,14 @@ func defaultSchemaLoader(root interface{}, ref *Ref, cache ResolutionCache) (*sc
 		loadingRef:  ref,
 		startingRef: ref,
 		cache:       cache,
-		loadDoc:     swag.JSONDoc,
-		currentRef:  currentRef,
+		loadDoc: func(path string) (json.RawMessage, error) {
+			data, err := swag.LoadFromFileOrHTTP(path)
+			if err != nil {
+				return nil, err
+			}
+			return json.RawMessage(data), nil
+		},
+		currentRef: currentRef,
 	}, nil
 }
 

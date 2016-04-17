@@ -20,8 +20,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/go-swagger/go-swagger/jsonpointer"
-	"github.com/go-swagger/go-swagger/swag"
+	"github.com/go-openapi/jsonpointer"
+	"github.com/go-openapi/swag"
 )
 
 // BooleanProperty creates a boolean property

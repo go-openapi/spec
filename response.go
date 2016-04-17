@@ -17,9 +17,10 @@ package spec
 import (
 	"encoding/json"
 
-	"github.com/go-swagger/go-swagger/swag"
+	"github.com/go-openapi/swag"
 )
 
+// ResponseProps properties specific to a response
 type ResponseProps struct {
 	Description string                 `json:"description,omitempty"`
 	Schema      *Schema                `json:"schema,omitempty"`

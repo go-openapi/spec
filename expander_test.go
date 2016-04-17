@@ -21,9 +21,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	testingutil "github.com/go-swagger/go-swagger/internal/testing"
-	"github.com/go-swagger/go-swagger/jsonpointer"
-	"github.com/go-swagger/go-swagger/swag"
+	"github.com/go-openapi/jsonpointer"
+	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,7 +42,7 @@ func TestSpecExpansion(t *testing.T) {
 	err := ExpandSpec(spec)
 	assert.NoError(t, err)
 
-	specDoc, err := jsonDoc("../fixtures/expansion/all-the-things.json")
+	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	assert.NoError(t, err)
 
 	spec = new(Swagger)
@@ -82,7 +81,7 @@ func TestSpecExpansion(t *testing.T) {
 }
 
 func TestResponseExpansion(t *testing.T) {
-	specDoc, err := jsonDoc("../fixtures/expansion/all-the-things.json")
+	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -115,7 +114,7 @@ func TestResponseExpansion(t *testing.T) {
 }
 
 func TestParameterExpansion(t *testing.T) {
-	paramDoc, err := jsonDoc("../fixtures/expansion/params.json")
+	paramDoc, err := jsonDoc("fixtures/expansion/params.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -141,7 +140,7 @@ func TestParameterExpansion(t *testing.T) {
 }
 
 func TestCircularRefsExpansion(t *testing.T) {
-	carsDoc, err := jsonDoc("../fixtures/expansion/circularRefs.json")
+	carsDoc, err := jsonDoc("fixtures/expansion/circularRefs.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -159,7 +158,7 @@ func TestCircularRefsExpansion(t *testing.T) {
 }
 
 func TestIssue415(t *testing.T) {
-	doc, err := jsonDoc("../fixtures/expansion/clickmeter.json")
+	doc, err := jsonDoc("fixtures/expansion/clickmeter.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -173,7 +172,7 @@ func TestIssue415(t *testing.T) {
 }
 
 func TestCircularSpecExpansion(t *testing.T) {
-	doc, err := jsonDoc("../fixtures/expansion/circularSpec.json")
+	doc, err := jsonDoc("fixtures/expansion/circularSpec.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -187,7 +186,7 @@ func TestCircularSpecExpansion(t *testing.T) {
 }
 
 func TestItemsExpansion(t *testing.T) {
-	carsDoc, err := jsonDoc("../fixtures/expansion/schemas2.json")
+	carsDoc, err := jsonDoc("fixtures/expansion/schemas2.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -300,7 +299,7 @@ func TestItemsExpansion(t *testing.T) {
 }
 
 func TestSchemaExpansion(t *testing.T) {
-	carsDoc, err := jsonDoc("../fixtures/expansion/schemas1.json")
+	carsDoc, err := jsonDoc("fixtures/expansion/schemas1.json")
 	assert.NoError(t, err)
 
 	spec := new(Swagger)
@@ -441,7 +440,7 @@ func resolutionContextServer() *httptest.Server {
 		// fmt.Println("got a request for", req.URL.String())
 		if req.URL.Path == "/resolution.json" {
 
-			b, _ := ioutil.ReadFile("../fixtures/specs/resolution.json")
+			b, _ := ioutil.ReadFile("fixtures/specs/resolution.json")
 			var ctnt map[string]interface{}
 			json.Unmarshal(b, &ctnt)
 			ctnt["id"] = servedAt
@@ -453,7 +452,7 @@ func resolutionContextServer() *httptest.Server {
 			return
 		}
 		if req.URL.Path == "/resolution2.json" {
-			b, _ := ioutil.ReadFile("../fixtures/specs/resolution2.json")
+			b, _ := ioutil.ReadFile("fixtures/specs/resolution2.json")
 			var ctnt map[string]interface{}
 			json.Unmarshal(b, &ctnt)
 			ctnt["id"] = servedAt
@@ -505,13 +504,13 @@ func resolutionContextServer() *httptest.Server {
 }
 
 func TestResolveRemoteRef_RootSame(t *testing.T) {
-	specs := "../fixtures/specs"
+	specs := "fixtures/specs"
 	fileserver := http.FileServer(http.Dir(specs))
 	server := httptest.NewServer(fileserver)
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var result Swagger
 		ref, _ := NewRef(server.URL + "/refed.json#")
@@ -523,13 +522,13 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 }
 
 func TestResolveRemoteRef_FromFragment(t *testing.T) {
-	specs := "../fixtures/specs"
+	specs := "fixtures/specs"
 	fileserver := http.FileServer(http.Dir(specs))
 	server := httptest.NewServer(fileserver)
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/refed.json#/definitions/pet")
@@ -543,13 +542,13 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 }
 
 func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
-	specs := "../fixtures/specs"
+	specs := "fixtures/specs"
 	fileserver := http.FileServer(http.Dir(specs))
 	server := httptest.NewServer(fileserver)
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/refed.json#/definitions/NotThere")
@@ -565,7 +564,7 @@ func TestResolveRemoteRef_WithResolutionContext(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/resolution.json#/definitions/bool")
@@ -583,7 +582,7 @@ func TestResolveRemoteRef_WithNestedResolutionContext(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/resolution.json#/items/items")
@@ -601,7 +600,7 @@ func TestResolveRemoteRef_WithNestedResolutionContextWithFragment(t *testing.T) 
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/resolution2.json#/items/items")
@@ -615,13 +614,13 @@ func TestResolveRemoteRef_WithNestedResolutionContextWithFragment(t *testing.T) 
 }
 
 func TestResolveRemoteRef_ToParameter(t *testing.T) {
-	specs := "../fixtures/specs"
+	specs := "fixtures/specs"
 	fileserver := http.FileServer(http.Dir(specs))
 	server := httptest.NewServer(fileserver)
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Parameter
 		ref, err := NewRef(server.URL + "/refed.json#/parameters/idParam")
@@ -641,13 +640,13 @@ func TestResolveRemoteRef_ToParameter(t *testing.T) {
 }
 
 func TestResolveRemoteRef_ToPathItem(t *testing.T) {
-	specs := "../fixtures/specs"
+	specs := "fixtures/specs"
 	fileserver := http.FileServer(http.Dir(specs))
 	server := httptest.NewServer(fileserver)
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt PathItem
 		ref, err := NewRef(server.URL + "/refed.json#/paths/" + jsonpointer.Escape("/pets/{id}"))
@@ -662,13 +661,13 @@ func TestResolveRemoteRef_ToPathItem(t *testing.T) {
 }
 
 func TestResolveRemoteRef_ToResponse(t *testing.T) {
-	specs := "../fixtures/specs"
+	specs := "fixtures/specs"
 	fileserver := http.FileServer(http.Dir(specs))
 	server := httptest.NewServer(fileserver)
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Response
 		ref, err := NewRef(server.URL + "/refed.json#/responses/petResponse")
@@ -684,7 +683,7 @@ func TestResolveRemoteRef_ToResponse(t *testing.T) {
 
 func TestResolveLocalRef_SameRoot(t *testing.T) {
 	rootDoc := new(Swagger)
-	json.Unmarshal(testingutil.PetStoreJSONMessage, rootDoc)
+	json.Unmarshal(PetStoreJSONMessage, rootDoc)
 
 	result := new(Swagger)
 	ref, _ := NewRef("#")
@@ -697,7 +696,7 @@ func TestResolveLocalRef_SameRoot(t *testing.T) {
 
 func TestResolveLocalRef_FromFragment(t *testing.T) {
 	rootDoc := new(Swagger)
-	json.Unmarshal(testingutil.PetStoreJSONMessage, rootDoc)
+	json.Unmarshal(PetStoreJSONMessage, rootDoc)
 
 	var tgt Schema
 	ref, err := NewRef("#/definitions/Category")
@@ -712,7 +711,7 @@ func TestResolveLocalRef_FromFragment(t *testing.T) {
 
 func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 	rootDoc := new(Swagger)
-	json.Unmarshal(testingutil.PetStoreJSONMessage, rootDoc)
+	json.Unmarshal(PetStoreJSONMessage, rootDoc)
 
 	var tgt Schema
 	ref, err := NewRef("#/definitions/NotThere")
@@ -725,7 +724,7 @@ func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 
 func TestResolveLocalRef_Parameter(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Parameter
 		ref, err := NewRef("#/parameters/idParam")
@@ -745,7 +744,7 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 
 func TestResolveLocalRef_PathItem(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt PathItem
 		ref, err := NewRef("#/paths/" + jsonpointer.Escape("/pets/{id}"))
@@ -760,7 +759,7 @@ func TestResolveLocalRef_PathItem(t *testing.T) {
 
 func TestResolveLocalRef_Response(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile("../fixtures/specs/refed.json")
+	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
 		var tgt Response
 		ref, err := NewRef("#/responses/petResponse")
@@ -772,3 +771,289 @@ func TestResolveLocalRef_Response(t *testing.T) {
 		}
 	}
 }
+
+// PetStoreJSONMessage json raw message for Petstore20
+var PetStoreJSONMessage = json.RawMessage([]byte(PetStore20))
+
+// PetStore20 json doc for swagger 2.0 pet store
+const PetStore20 = `{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Swagger Petstore",
+    "contact": {
+      "name": "Wordnik API Team",
+      "url": "http://developer.wordnik.com"
+    },
+    "license": {
+      "name": "Creative Commons 4.0 International",
+      "url": "http://creativecommons.org/licenses/by/4.0/"
+    }
+  },
+  "host": "petstore.swagger.wordnik.com",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "security": [
+          {
+            "basic": []
+          }
+        ],
+        "tags": [ "Pet Operations" ],
+        "operationId": "getAllPets",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "The status to filter by",
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The maximum number of results to return",
+            "type": "integer",
+						"format": "int64"
+          }
+        ],
+        "summary": "Finds all pets in the system",
+        "responses": {
+          "200": {
+            "description": "Pet response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Pet"
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "basic": []
+          }
+        ],
+        "tags": [ "Pet Operations" ],
+        "operationId": "createPet",
+        "summary": "Creates a new pet",
+        "consumes": ["application/x-yaml"],
+        "produces": ["application/x-yaml"],
+        "parameters": [
+          {
+            "name": "pet",
+            "in": "body",
+            "description": "The Pet to create",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/newPet"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Created Pet response",
+            "schema": {
+              "$ref": "#/definitions/Pet"
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/pets/{id}": {
+      "delete": {
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "description": "Deletes the Pet by id",
+        "operationId": "deletePet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to delete",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "pet deleted"
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [ "Pet Operations" ],
+        "operationId": "getPetById",
+        "summary": "Finds the pet by id",
+        "responses": {
+          "200": {
+            "description": "Pet response",
+            "schema": {
+              "$ref": "#/definitions/Pet"
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID of pet",
+          "required": true,
+          "type": "integer",
+          "format": "int64"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "Category": {
+      "id": "Category",
+      "properties": {
+        "id": {
+          "format": "int64",
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Pet": {
+      "id": "Pet",
+      "properties": {
+        "category": {
+          "$ref": "#/definitions/Category"
+        },
+        "id": {
+          "description": "unique identifier for the pet",
+          "format": "int64",
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "photoUrls": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "status": {
+          "description": "pet status in the store",
+          "enum": [
+            "available",
+            "pending",
+            "sold"
+          ],
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "newPet": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Pet"
+        },
+        {
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "Tag": {
+      "id": "Tag",
+      "properties": {
+        "id": {
+          "format": "int64",
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Error": {
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "consumes": [
+    "application/json",
+    "application/xml"
+  ],
+  "produces": [
+    "application/json",
+    "application/xml",
+    "text/plain",
+    "text/html"
+  ],
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic"
+    },
+    "apiKey": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-API-KEY"
+    }
+  }
+}
+`
