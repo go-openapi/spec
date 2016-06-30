@@ -113,6 +113,20 @@ func TestResponseExpansion(t *testing.T) {
 	// assert.Equal(t, expected, resp)
 }
 
+func TestIssue3(t *testing.T) {
+	spec := new(Swagger)
+	specDoc, err := jsonDoc("fixtures/expansion/overflow.json")
+	assert.NoError(t, err)
+
+	err = json.Unmarshal(specDoc, spec)
+	assert.NoError(t, err)
+
+	assert.NotPanics(t, func() {
+		err = ExpandSpec(spec)
+		assert.NoError(t, err)
+	}, "Calling expand spec with circular refs, should not panic!")
+}
+
 func TestParameterExpansion(t *testing.T) {
 	paramDoc, err := jsonDoc("fixtures/expansion/params.json")
 	assert.NoError(t, err)
@@ -152,7 +166,7 @@ func TestCircularRefsExpansion(t *testing.T) {
 	schema := spec.Definitions["car"]
 
 	assert.NotPanics(t, func() {
-		err = expandSchema(&schema, []string{"#/definitions/car"}, resolver)
+		_, err = expandSchema(schema, []string{"#/definitions/car"}, resolver)
 		assert.NoError(t, err)
 	}, "Calling expand schema with circular refs, should not panic!")
 }
@@ -201,7 +215,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.NotEmpty(t, oldBrand.Items.Schema.Ref.String())
 	assert.NotEqual(t, spec.Definitions["brand"], oldBrand)
 
-	err = expandSchema(&schema, []string{"#/definitions/car"}, resolver)
+	_, err = expandSchema(schema, []string{"#/definitions/car"}, resolver)
 	assert.NoError(t, err)
 
 	newBrand := schema.Properties["brand"]
@@ -211,23 +225,26 @@ func TestItemsExpansion(t *testing.T) {
 	schema = spec.Definitions["truck"]
 	assert.NotEmpty(t, schema.Items.Schema.Ref.String())
 
-	err = expandSchema(&schema, []string{"#/definitions/truck"}, resolver)
+	s, err := expandSchema(schema, []string{"#/definitions/truck"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Items.Schema.Ref.String())
 	assert.Equal(t, spec.Definitions["car"], *schema.Items.Schema)
 
 	sch := new(Schema)
-	err = expandSchema(sch, []string{""}, resolver)
+	_, err = expandSchema(*sch, []string{""}, resolver)
 	assert.NoError(t, err)
 
 	schema = spec.Definitions["batch"]
-	err = expandSchema(&schema, []string{"#/definitions/batch"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/batch"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Items.Schema.Items.Schema.Ref.String())
 	assert.Equal(t, *schema.Items.Schema.Items.Schema, spec.Definitions["brand"])
 
 	schema = spec.Definitions["batch2"]
-	err = expandSchema(&schema, []string{"#/definitions/batch2"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/batch2"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Items.Schemas[0].Items.Schema.Ref.String())
 	assert.Empty(t, schema.Items.Schemas[1].Items.Schema.Ref.String())
@@ -235,7 +252,8 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.Items.Schemas[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["allofBoth"]
-	err = expandSchema(&schema, []string{"#/definitions/allofBoth"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/allofBoth"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AllOf[0].Items.Schema.Ref.String())
 	assert.Empty(t, schema.AllOf[1].Items.Schema.Ref.String())
@@ -243,7 +261,8 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AllOf[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["anyofBoth"]
-	err = expandSchema(&schema, []string{"#/definitions/anyofBoth"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/anyofBoth"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AnyOf[0].Items.Schema.Ref.String())
 	assert.Empty(t, schema.AnyOf[1].Items.Schema.Ref.String())
@@ -251,7 +270,8 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AnyOf[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["oneofBoth"]
-	err = expandSchema(&schema, []string{"#/definitions/oneofBoth"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/oneofBoth"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.OneOf[0].Items.Schema.Ref.String())
 	assert.Empty(t, schema.OneOf[1].Items.Schema.Ref.String())
@@ -259,39 +279,45 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.OneOf[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["notSomething"]
-	err = expandSchema(&schema, []string{"#/definitions/notSomething"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/notSomething"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Not.Items.Schema.Ref.String())
 	assert.Equal(t, *schema.Not.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditional"]
-	err = expandSchema(&schema, []string{"#/definitions/withAdditional"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditional"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AdditionalProperties.Schema.Items.Schema.Ref.String())
 	assert.Equal(t, *schema.AdditionalProperties.Schema.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditionalItems"]
-	err = expandSchema(&schema, []string{"#/definitions/withAdditionalItems"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditionalItems"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AdditionalItems.Schema.Items.Schema.Ref.String())
 	assert.Equal(t, *schema.AdditionalItems.Schema.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withPattern"]
-	err = expandSchema(&schema, []string{"#/definitions/withPattern"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/withPattern"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	prop := schema.PatternProperties["^x-ab"]
 	assert.Empty(t, prop.Items.Schema.Ref.String())
 	assert.Equal(t, *prop.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["deps"]
-	err = expandSchema(&schema, []string{"#/definitions/deps"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	prop2 := schema.Dependencies["something"]
 	assert.Empty(t, prop2.Schema.Items.Schema.Ref.String())
 	assert.Equal(t, *prop2.Schema.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["defined"]
-	err = expandSchema(&schema, []string{"#/definitions/defined"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/defined"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	prop = schema.Definitions["something"]
 	assert.Empty(t, prop.Items.Schema.Ref.String())
@@ -314,7 +340,8 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.NotEmpty(t, oldBrand.Ref.String())
 	assert.NotEqual(t, spec.Definitions["brand"], oldBrand)
 
-	err = expandSchema(&schema, []string{"#/definitions/car"}, resolver)
+	s, err := expandSchema(schema, []string{"#/definitions/car"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 
 	newBrand := schema.Properties["brand"]
@@ -324,23 +351,26 @@ func TestSchemaExpansion(t *testing.T) {
 	schema = spec.Definitions["truck"]
 	assert.NotEmpty(t, schema.Ref.String())
 
-	err = expandSchema(&schema, []string{"#/definitions/truck"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/truck"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Ref.String())
 	assert.Equal(t, spec.Definitions["car"], schema)
 
 	sch := new(Schema)
-	err = expandSchema(sch, []string{""}, resolver)
+	_, err = expandSchema(*sch, []string{""}, resolver)
 	assert.NoError(t, err)
 
 	schema = spec.Definitions["batch"]
-	err = expandSchema(&schema, []string{"#/definitions/batch"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/batch"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Items.Schema.Ref.String())
 	assert.Equal(t, *schema.Items.Schema, spec.Definitions["brand"])
 
 	schema = spec.Definitions["batch2"]
-	err = expandSchema(&schema, []string{"#/definitions/batch2"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/batch2"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Items.Schemas[0].Ref.String())
 	assert.Empty(t, schema.Items.Schemas[1].Ref.String())
@@ -348,7 +378,8 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.Items.Schemas[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["allofBoth"]
-	err = expandSchema(&schema, []string{"#/definitions/allofBoth"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/allofBoth"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AllOf[0].Ref.String())
 	assert.Empty(t, schema.AllOf[1].Ref.String())
@@ -356,7 +387,8 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.AllOf[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["anyofBoth"]
-	err = expandSchema(&schema, []string{"#/definitions/anyofBoth"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/anyofBoth"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AnyOf[0].Ref.String())
 	assert.Empty(t, schema.AnyOf[1].Ref.String())
@@ -364,7 +396,8 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.AnyOf[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["oneofBoth"]
-	err = expandSchema(&schema, []string{"#/definitions/oneofBoth"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/oneofBoth"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.OneOf[0].Ref.String())
 	assert.Empty(t, schema.OneOf[1].Ref.String())
@@ -372,39 +405,45 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.OneOf[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["notSomething"]
-	err = expandSchema(&schema, []string{"#/definitions/notSomething"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/notSomething"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.Not.Ref.String())
 	assert.Equal(t, *schema.Not, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditional"]
-	err = expandSchema(&schema, []string{"#/definitions/withAdditional"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditional"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AdditionalProperties.Schema.Ref.String())
 	assert.Equal(t, *schema.AdditionalProperties.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditionalItems"]
-	err = expandSchema(&schema, []string{"#/definitions/withAdditionalItems"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditionalItems"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	assert.Empty(t, schema.AdditionalItems.Schema.Ref.String())
 	assert.Equal(t, *schema.AdditionalItems.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withPattern"]
-	err = expandSchema(&schema, []string{"#/definitions/withPattern"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/withPattern"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	prop := schema.PatternProperties["^x-ab"]
 	assert.Empty(t, prop.Ref.String())
 	assert.Equal(t, prop, spec.Definitions["tag"])
 
 	schema = spec.Definitions["deps"]
-	err = expandSchema(&schema, []string{"#/definitions/deps"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	prop2 := schema.Dependencies["something"]
 	assert.Empty(t, prop2.Schema.Ref.String())
 	assert.Equal(t, *prop2.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["defined"]
-	err = expandSchema(&schema, []string{"#/definitions/defined"}, resolver)
+	s, err = expandSchema(schema, []string{"#/definitions/defined"}, resolver)
+	schema = *s
 	assert.NoError(t, err)
 	prop = schema.Definitions["something"]
 	assert.Empty(t, prop.Ref.String())
