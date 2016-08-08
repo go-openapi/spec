@@ -28,27 +28,27 @@ var pathItem = PathItem{
 			"x-framework": "go-swagger",
 		},
 	},
-	pathItemProps: pathItemProps{
+	PathItemProps: PathItemProps{
 		Get: &Operation{
-			operationProps: operationProps{Description: "get operation description"},
+			OperationProps: OperationProps{Description: "get operation description"},
 		},
 		Put: &Operation{
-			operationProps: operationProps{Description: "put operation description"},
+			OperationProps: OperationProps{Description: "put operation description"},
 		},
 		Post: &Operation{
-			operationProps: operationProps{Description: "post operation description"},
+			OperationProps: OperationProps{Description: "post operation description"},
 		},
 		Delete: &Operation{
-			operationProps: operationProps{Description: "delete operation description"},
+			OperationProps: OperationProps{Description: "delete operation description"},
 		},
 		Options: &Operation{
-			operationProps: operationProps{Description: "options operation description"},
+			OperationProps: OperationProps{Description: "options operation description"},
 		},
 		Head: &Operation{
-			operationProps: operationProps{Description: "head operation description"},
+			OperationProps: OperationProps{Description: "head operation description"},
 		},
 		Patch: &Operation{
-			operationProps: operationProps{Description: "patch operation description"},
+			OperationProps: OperationProps{Description: "patch operation description"},
 		},
 		Parameters: []Parameter{
 			Parameter{
