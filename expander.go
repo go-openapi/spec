@@ -300,6 +300,9 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		}
 
 	}
+
+	r.currentRef = currentRef
+
 	return nil
 }
 
@@ -411,7 +414,7 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 	}
 	var s *Schema
 	if s, err = expandSchema(*schema, refs, resolver); err != nil {
-		return nil
+		return err
 	}
 	*schema = *s
 	return nil
