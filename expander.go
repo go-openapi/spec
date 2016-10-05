@@ -287,6 +287,7 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 
 		var res interface{}
 		if currentRef.String() != "" {
+			fmt.Println(data)
 			res, _, err = currentRef.GetPointer().Get(data)
 			if err != nil {
 				return err
