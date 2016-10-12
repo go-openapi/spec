@@ -287,7 +287,6 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 
 		var res interface{}
 		if currentRef.String() != "" {
-			fmt.Println(data)
 			res, _, err = currentRef.GetPointer().Get(data)
 			if err != nil {
 				return err
@@ -372,6 +371,7 @@ func ExpandSpec(spec *Swagger) error {
 	if spec.Paths != nil {
 		for key, path := range spec.Paths.Paths {
 			if err := expandPathItem(&path, resolver); err != nil {
+				fmt.Println("the isssue?")
 				return err
 			}
 			spec.Paths.Paths[key] = path
