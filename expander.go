@@ -289,7 +289,27 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		if currentRef.String() != "" {
 			res, _, err = currentRef.GetPointer().Get(data)
 			if err != nil {
-				return err
+
+				if strings.HasPrefix(ref.String(), "#") {
+					// go back to original spec
+					newUrl := r.loadingRef.GetURL().String()
+					refURL, err = url.Parse(newUrl + ref.String())
+					if err != nil {
+						return err
+					}
+				}
+
+				data, _, _, err = r.load(refURL)
+
+				if err != nil {
+					return err
+				}
+
+				res, _, err = ref.GetPointer().Get(data)
+
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			res = data
@@ -371,7 +391,6 @@ func ExpandSpec(spec *Swagger) error {
 	if spec.Paths != nil {
 		for key, path := range spec.Paths.Paths {
 			if err := expandPathItem(&path, resolver); err != nil {
-				fmt.Println("the isssue?")
 				return err
 			}
 			spec.Paths.Paths[key] = path
