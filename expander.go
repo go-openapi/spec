@@ -181,6 +181,7 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 	if startingRef == nil {
 		return nil
 	}
+
 	if ptr == nil {
 		return startingRef
 	}
@@ -215,6 +216,7 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 		}
 
 	}
+
 	return ret
 }
 
@@ -226,6 +228,7 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 	}
 
 	oldRef := currentRef
+
 	if currentRef != nil {
 		var err error
 		currentRef, err = currentRef.Inherits(*nextRef(node, ref, currentRef.GetPointer()))
@@ -233,6 +236,7 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 			return err
 		}
 	}
+
 	if currentRef == nil {
 		currentRef = ref
 	}
@@ -289,7 +293,27 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		if currentRef.String() != "" {
 			res, _, err = currentRef.GetPointer().Get(data)
 			if err != nil {
-				return err
+
+				if strings.HasPrefix(ref.String(), "#") {
+					// go back to original spec
+					newUrl := r.loadingRef.GetURL().String()
+					refURL, err = url.Parse(newUrl + ref.String())
+					if err != nil {
+						return err
+					}
+				}
+
+				data, _, _, err = r.load(refURL)
+
+				if err != nil {
+					return err
+				}
+
+				res, _, err = ref.GetPointer().Get(data)
+
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			res = data
@@ -400,7 +424,6 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 			rid, _ := NewRef(root.(*Swagger).ID)
 			rrr, _ = rid.Inherits(nrr)
 		}
-
 	}
 
 	resolver, err := defaultSchemaLoader(root, rrr, cache)
@@ -425,7 +448,15 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader) (*S
 		if target.Items.Schema != nil {
 			t, err := expandSchema(*target.Items.Schema, parentRefs, resolver)
 			if err != nil {
-				return nil, err
+				if target.Items.Schema.ID == "" {
+					target.Items.Schema.ID = target.ID
+					if err != nil {
+						t, err = expandSchema(*target.Items.Schema, parentRefs, resolver)
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
 			}
 			*target.Items.Schema = *t
 		}
@@ -451,6 +482,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 
 	// t is the new expanded schema
 	var t *Schema
+
 	for target.Ref.String() != "" {
 		if swag.ContainsStringsCI(parentRefs, target.Ref.String()) {
 			return &target, nil
@@ -459,6 +491,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 		if err := resolver.Resolve(&target.Ref, &t); err != nil {
 			return &target, err
 		}
+
 		parentRefs = append(parentRefs, target.Ref.String())
 		target = *t
 	}
