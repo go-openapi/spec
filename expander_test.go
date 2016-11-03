@@ -46,7 +46,7 @@ func TestSpecExpansion(t *testing.T) {
 	// resolver, err := defaultSchemaLoader(spec, nil, nil)
 	// assert.NoError(t, err)
 
-	err := ExpandSpec(spec)
+	err := ExpandSpec(spec, nil)
 	assert.NoError(t, err)
 
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
@@ -64,7 +64,7 @@ func TestSpecExpansion(t *testing.T) {
 	tagParam := spec.Parameters["tag"]
 	idParam := spec.Parameters["idParam"]
 
-	err = ExpandSpec(spec)
+	err = ExpandSpec(spec, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, tagParam, spec.Parameters["query"])
@@ -95,7 +95,7 @@ func TestResponseExpansion(t *testing.T) {
 	err = json.Unmarshal(specDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
 	assert.NoError(t, err)
 
 	resp := spec.Responses["anotherPet"]
@@ -129,7 +129,7 @@ func TestIssue3(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotPanics(t, func() {
-		err = ExpandSpec(spec)
+		err = ExpandSpec(spec, nil)
 		assert.NoError(t, err)
 	}, "Calling expand spec with circular refs, should not panic!")
 }
@@ -142,7 +142,7 @@ func TestParameterExpansion(t *testing.T) {
 	err = json.Unmarshal(paramDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
 	assert.NoError(t, err)
 
 	param := spec.Parameters["query"]
@@ -168,7 +168,7 @@ func TestCircularRefsExpansion(t *testing.T) {
 	err = json.Unmarshal(carsDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
 	assert.NoError(t, err)
 	schema := spec.Definitions["car"]
 
@@ -187,7 +187,7 @@ func TestIssue415(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotPanics(t, func() {
-		err = ExpandSpec(spec)
+		err = ExpandSpec(spec, nil)
 		assert.NoError(t, err)
 	}, "Calling expand spec with response schemas that have circular refs, should not panic!")
 }
@@ -201,7 +201,7 @@ func TestCircularSpecExpansion(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotPanics(t, func() {
-		err = ExpandSpec(spec)
+		err = ExpandSpec(spec, nil)
 		assert.NoError(t, err)
 	}, "Calling expand spec with circular refs, should not panic!")
 }
@@ -214,7 +214,7 @@ func TestItemsExpansion(t *testing.T) {
 	err = json.Unmarshal(carsDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
 	assert.NoError(t, err)
 
 	schema := spec.Definitions["car"]
@@ -339,7 +339,7 @@ func TestSchemaExpansion(t *testing.T) {
 	err = json.Unmarshal(carsDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
 	assert.NoError(t, err)
 
 	schema := spec.Definitions["car"]
@@ -558,11 +558,20 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 	rootDoc := new(Swagger)
 	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
-		var result Swagger
-		ref, _ := NewRef(server.URL + "/refed.json#")
-		resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
-		if assert.NoError(t, resolver.Resolve(&ref, &result)) {
-			assertSpecs(t, result, *rootDoc)
+		var result_0 Swagger
+		ref_0, _ := NewRef(server.URL + "/refed.json#")
+		resolver_0, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+		if assert.NoError(t, resolver_0.Resolve(&ref_0, &result_0)) {
+			assertSpecs(t, result_0, *rootDoc)
+		}
+
+		var result_1 Swagger
+		ref_1, _ := NewRef("./refed.json")
+		resolver_1, _ := defaultSchemaLoader(rootDoc, nil, &ExpandOptions{
+			RelativeBase: ("./fixtures/specs"),
+		}, nil)
+		if assert.NoError(t, resolver_1.Resolve(&ref_1, &result_1)) {
+			assertSpecs(t, result_1, *rootDoc)
 		}
 	}
 }
@@ -599,7 +608,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/refed.json#/definitions/NotThere")
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			assert.Error(t, resolver.Resolve(&ref, &tgt))
 		}
 	}
@@ -615,7 +624,7 @@ func TestResolveRemoteRef_WithResolutionContext(t *testing.T) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/resolution.json#/definitions/bool")
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, StringOrArray([]string{"boolean"}), tgt.Type)
 			}
@@ -633,7 +642,7 @@ func TestResolveRemoteRef_WithNestedResolutionContext(t *testing.T) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/resolution.json#/items/items")
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, StringOrArray([]string{"string"}), tgt.Type)
 			}
@@ -651,7 +660,7 @@ func TestResolveRemoteRef_WithNestedResolutionContextWithFragment(t *testing.T) 
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/resolution2.json#/items/items")
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, StringOrArray([]string{"file"}), tgt.Type)
 			}
@@ -672,7 +681,7 @@ func TestResolveRemoteRef_ToParameter(t *testing.T) {
 		ref, err := NewRef(server.URL + "/refed.json#/parameters/idParam")
 		if assert.NoError(t, err) {
 
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, "id", tgt.Name)
 				assert.Equal(t, "path", tgt.In)
@@ -698,7 +707,7 @@ func TestResolveRemoteRef_ToPathItem(t *testing.T) {
 		ref, err := NewRef(server.URL + "/refed.json#/paths/" + jsonpointer.Escape("/pets/{id}"))
 		if assert.NoError(t, err) {
 
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
 			}
@@ -719,7 +728,7 @@ func TestResolveRemoteRef_ToResponse(t *testing.T) {
 		ref, err := NewRef(server.URL + "/refed.json#/responses/petResponse")
 		if assert.NoError(t, err) {
 
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
 			}
@@ -733,7 +742,7 @@ func TestResolveLocalRef_SameRoot(t *testing.T) {
 
 	result := new(Swagger)
 	ref, _ := NewRef("#")
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	err := resolver.Resolve(&ref, result)
 	if assert.NoError(t, err) {
 		assert.Equal(t, rootDoc, result)
@@ -747,7 +756,7 @@ func TestResolveLocalRef_FromFragment(t *testing.T) {
 	var tgt Schema
 	ref, err := NewRef("#/definitions/Category")
 	if assert.NoError(t, err) {
-		resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+		resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 		err := resolver.Resolve(&ref, &tgt)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "Category", tgt.ID)
@@ -762,7 +771,7 @@ func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 	var tgt Schema
 	ref, err := NewRef("#/definitions/NotThere")
 	if assert.NoError(t, err) {
-		resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+		resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 		err := resolver.Resolve(&ref, &tgt)
 		assert.Error(t, err)
 	}
@@ -775,7 +784,7 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 		var tgt Parameter
 		ref, err := NewRef("#/parameters/idParam")
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, "id", tgt.Name)
 				assert.Equal(t, "path", tgt.In)
@@ -795,7 +804,7 @@ func TestResolveLocalRef_PathItem(t *testing.T) {
 		var tgt PathItem
 		ref, err := NewRef("#/paths/" + jsonpointer.Escape("/pets/{id}"))
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
 			}
@@ -810,7 +819,7 @@ func TestResolveLocalRef_Response(t *testing.T) {
 		var tgt Response
 		ref, err := NewRef("#/responses/petResponse")
 		if assert.NoError(t, err) {
-			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil)
+			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
 			}

@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -32,6 +33,11 @@ var (
 	// Debug enables logging when SWAGGER_DEBUG env var is not empty
 	Debug = os.Getenv("SWAGGER_DEBUG") != ""
 )
+
+//  ExpandOptions provides options for expand.
+type ExpandOptions struct {
+	RelativeBase string
+}
 
 // ResolutionCache a cache for resolving urls
 type ResolutionCache interface {
@@ -79,7 +85,7 @@ func (s *simpleCache) Set(uri string, data interface{}) {
 
 // ResolveRef resolves a reference against a context root
 func ResolveRef(root interface{}, ref *Ref) (*Schema, error) {
-	resolver, err := defaultSchemaLoader(root, nil, nil)
+	resolver, err := defaultSchemaLoader(root, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +99,7 @@ func ResolveRef(root interface{}, ref *Ref) (*Schema, error) {
 
 // ResolveParameter resolves a paramter reference against a context root
 func ResolveParameter(root interface{}, ref Ref) (*Parameter, error) {
-	resolver, err := defaultSchemaLoader(root, nil, nil)
+	resolver, err := defaultSchemaLoader(root, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +113,7 @@ func ResolveParameter(root interface{}, ref Ref) (*Parameter, error) {
 
 // ResolveResponse resolves response a reference against a context root
 func ResolveResponse(root interface{}, ref Ref) (*Response, error) {
-	resolver, err := defaultSchemaLoader(root, nil, nil)
+	resolver, err := defaultSchemaLoader(root, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +130,7 @@ type schemaLoader struct {
 	startingRef *Ref
 	currentRef  *Ref
 	root        interface{}
+	options     *ExpandOptions
 	cache       ResolutionCache
 	loadDoc     func(string) (json.RawMessage, error)
 }
@@ -132,7 +139,10 @@ var idPtr, _ = jsonpointer.New("/id")
 var schemaPtr, _ = jsonpointer.New("/$schema")
 var refPtr, _ = jsonpointer.New("/$ref")
 
-func defaultSchemaLoader(root interface{}, ref *Ref, cache ResolutionCache) (*schemaLoader, error) {
+func defaultSchemaLoader(
+	root interface{}, ref *Ref,
+	expandOptions *ExpandOptions, cache ResolutionCache) (*schemaLoader, error) {
+
 	if cache == nil {
 		cache = resCache
 	}
@@ -145,9 +155,11 @@ func defaultSchemaLoader(root interface{}, ref *Ref, cache ResolutionCache) (*sc
 	currentRef := nextRef(root, ref, ptr)
 
 	return &schemaLoader{
-		root:        root,
 		loadingRef:  ref,
 		startingRef: ref,
+		currentRef:  currentRef,
+		root:        root,
+		options:     expandOptions,
 		cache:       cache,
 		loadDoc: func(path string) (json.RawMessage, error) {
 			if Debug {
@@ -160,7 +172,6 @@ func defaultSchemaLoader(root interface{}, ref *Ref, cache ResolutionCache) (*sc
 			}
 			return json.RawMessage(data), nil
 		},
-		currentRef: currentRef,
 	}, nil
 }
 
@@ -230,8 +241,12 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 	oldRef := currentRef
 
 	if currentRef != nil {
+		nextRef := nextRef(node, ref, currentRef.GetPointer())
+		if nextRef == nil || nextRef.GetURL() == nil {
+			return nil
+		}
 		var err error
-		currentRef, err = currentRef.Inherits(*nextRef(node, ref, currentRef.GetPointer()))
+		currentRef, err = currentRef.Inherits(*nextRef)
 		if err != nil {
 			return err
 		}
@@ -270,9 +285,26 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		}
 
 		return nil
-	}
+	} else {
+		if refURL.Scheme == "" || refURL.Host == "" {
+			if refURL.Scheme == "file" {
+				refURL.Scheme = ""
+			}
 
-	if refURL.Scheme != "" && refURL.Host != "" {
+			if !strings.HasPrefix(refURL.Path, "/") {
+				if r.options != nil && r.options.RelativeBase != "" {
+					refURL.Path = r.options.RelativeBase + "/" + refURL.Path
+				}
+			}
+			if !strings.HasPrefix(refURL.Path, "/") {
+				pwd, err := os.Getwd()
+				if err != nil {
+					return err
+				}
+				refURL.Path = pwd + "/" + refURL.Path
+			}
+			refURL.Path = filepath.Clean(refURL.Path)
+		}
 		// most definitely take the red pill
 		data, _, _, err := r.load(refURL)
 		if err != nil {
@@ -293,24 +325,9 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		if currentRef.String() != "" {
 			res, _, err = currentRef.GetPointer().Get(data)
 			if err != nil {
-
-				if strings.HasPrefix(ref.String(), "#") {
-					// go back to original spec
-					newUrl := r.loadingRef.GetURL().String()
-					refURL, err = url.Parse(newUrl + ref.String())
-					if err != nil {
-						return err
-					}
-				}
-
-				data, _, _, err = r.load(refURL)
-
-				if err != nil {
-					return err
-				}
+				data = r.root
 
 				res, _, err = ref.GetPointer().Get(data)
-
 				if err != nil {
 					return err
 				}
@@ -322,7 +339,6 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		if err := swag.DynamicJSONToStruct(res, target); err != nil {
 			return err
 		}
-
 	}
 
 	r.currentRef = currentRef
@@ -349,6 +365,7 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 
 	return data, toFetch, fromCache, nil
 }
+
 func (r *schemaLoader) Resolve(ref *Ref, target interface{}) error {
 	if err := r.resolveRef(r.currentRef, ref, r.root, target); err != nil {
 		return err
@@ -363,16 +380,16 @@ type specExpander struct {
 }
 
 // ExpandSpec expands the references in a swagger spec
-func ExpandSpec(spec *Swagger) error {
-	resolver, err := defaultSchemaLoader(spec, nil, nil)
+func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
+	resolver, err := defaultSchemaLoader(spec, nil, options, nil)
 	if err != nil {
 		return err
 	}
 
-	for key, defintition := range spec.Definitions {
+	for key, definition := range spec.Definitions {
 		var def *Schema
 		var err error
-		if def, err = expandSchema(defintition, []string{"#/definitions/" + key}, resolver); err != nil {
+		if def, err = expandSchema(definition, []string{"#/definitions/" + key}, resolver); err != nil {
 			return err
 		}
 		spec.Definitions[key] = *def
@@ -426,7 +443,7 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 		}
 	}
 
-	resolver, err := defaultSchemaLoader(root, rrr, cache)
+	resolver, err := defaultSchemaLoader(root, rrr, nil, cache)
 	if err != nil {
 		return err
 	}
