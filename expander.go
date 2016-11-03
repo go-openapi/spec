@@ -285,60 +285,76 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		}
 
 		return nil
-	} else {
-		if refURL.Scheme == "" || refURL.Host == "" {
-			if refURL.Scheme == "file" {
-				refURL.Scheme = ""
-			}
+	}
 
-			if !strings.HasPrefix(refURL.Path, "/") {
-				if r.options != nil && r.options.RelativeBase != "" {
-					refURL.Path = r.options.RelativeBase + "/" + refURL.Path
-				}
-			}
-			if !strings.HasPrefix(refURL.Path, "/") {
-				pwd, err := os.Getwd()
-				if err != nil {
-					return err
-				}
-				refURL.Path = pwd + "/" + refURL.Path
-			}
-			refURL.Path = filepath.Clean(refURL.Path)
-		}
-		// most definitely take the red pill
-		data, _, _, err := r.load(refURL)
-		if err != nil {
-			return err
+	if refURL.Scheme == "" || refURL.Host == "" {
+		if refURL.Scheme == "file" {
+			refURL.Scheme = ""
 		}
 
-		if ((oldRef == nil && currentRef != nil) ||
-			(oldRef != nil && currentRef == nil) ||
-			oldRef.String() != currentRef.String()) &&
-			((oldRef == nil && ref != nil) ||
-				(oldRef != nil && ref == nil) ||
-				(oldRef.String() != ref.String())) {
-
-			return r.resolveRef(currentRef, ref, data, target)
+		if !strings.HasPrefix(refURL.Path, "/") {
+			if r.options != nil && r.options.RelativeBase != "" {
+				refURL.Path = r.options.RelativeBase + "/" + refURL.Path
+			}
 		}
-
-		var res interface{}
-		if currentRef.String() != "" {
-			res, _, err = currentRef.GetPointer().Get(data)
+		if !strings.HasPrefix(refURL.Path, "/") {
+			pwd, err := os.Getwd()
 			if err != nil {
-				data = r.root
+				return err
+			}
+			refURL.Path = pwd + "/" + refURL.Path
+		}
 
-				res, _, err = ref.GetPointer().Get(data)
-				if err != nil {
-					return err
+		refURL.Path = filepath.Clean(refURL.Path)
+	}
+	// most definitely take the red pill
+	data, _, _, err := r.load(refURL)
+	if err != nil {
+		return err
+	}
+
+	if ((oldRef == nil && currentRef != nil) ||
+		(oldRef != nil && currentRef == nil) ||
+		oldRef.String() != currentRef.String()) &&
+		((oldRef == nil && ref != nil) ||
+			(oldRef != nil && ref == nil) ||
+			(oldRef.String() != ref.String())) {
+
+		return r.resolveRef(currentRef, ref, data, target)
+	}
+
+	var res interface{}
+	if currentRef.String() != "" {
+		res, _, err = currentRef.GetPointer().Get(data)
+		if err != nil {
+			if strings.HasPrefix(ref.String(), "#") {
+				if r.loadingRef != nil {
+					newUrl := r.loadingRef.GetURL().String()
+					refURL, err = url.Parse(newUrl + ref.String())
+					if err != nil {
+						return err
+					}
+
+					data, _, _, err = r.load(refURL)
+					if err != nil {
+						return err
+					}
+				} else {
+					data = r.root
 				}
 			}
-		} else {
-			res = data
-		}
 
-		if err := swag.DynamicJSONToStruct(res, target); err != nil {
-			return err
+			res, _, err = ref.GetPointer().Get(data)
+			if err != nil {
+				return err
+			}
 		}
+	} else {
+		res = data
+	}
+
+	if err := swag.DynamicJSONToStruct(res, target); err != nil {
+		return err
 	}
 
 	r.currentRef = currentRef
