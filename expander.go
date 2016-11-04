@@ -228,7 +228,7 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 				break
 			}
 			nwURL := nw.GetURL()
-			if (nwURL.Scheme == "file" || nwURL.Scheme == "") && nwURL.Host == "" {
+			if nwURL.Scheme == "file" || (nwURL.Scheme == "" && nwURL.Host == "") {
 				if strings.HasPrefix(nwURL.Path, "/") {
 					_, err := os.Stat(nwURL.Path)
 					if err != nil {
