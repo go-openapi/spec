@@ -218,7 +218,11 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 
 		refRef, _, _ := refPtr.Get(node)
 		if refRef != nil {
-			rf, _ := NewRef(refRef.(string))
+			var rf Ref
+			switch value := refRef.(type) {
+			case string:
+				rf, _ = NewRef(value)
+			}
 			nw, err := ret.Inherits(rf)
 			if err != nil {
 				break
