@@ -223,12 +223,53 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 			if err != nil {
 				break
 			}
+			nwURL := nw.GetURL()
+			if (nwURL.Scheme == "file" || nwURL.Scheme == "") && nwURL.Host == "" {
+				if strings.HasPrefix(nwURL.Path, "/") {
+					_, err := os.Stat(nwURL.Path)
+					if err != nil {
+						nwURL.Path = "." + nwURL.Path
+					}
+				}
+			}
+
 			ret = nw
 		}
 
 	}
 
 	return ret
+}
+
+func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
+	refURL := ref.GetURL()
+
+	if !strings.HasPrefix(refURL.String(), "#") {
+		if refURL.Scheme == "file" || (refURL.Scheme == "" && refURL.Host == "") {
+			filePath := refURL.Path
+
+			if !strings.HasPrefix(filePath, "/") {
+				if relativeBase != "" {
+					filePath = relativeBase + "/" + filePath
+				}
+			}
+			if !strings.HasPrefix(filePath, "/") {
+				pwd, err := os.Getwd()
+				if err == nil {
+					filePath = pwd + "/" + filePath
+				}
+			}
+
+			filePath = filepath.Clean(filePath)
+			_, err := os.Stat(filePath)
+			if err == nil {
+				refURL.Scheme = ""
+				refURL.Path = filePath
+			}
+		}
+	}
+
+	return ref
 }
 
 func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}) error {
@@ -287,27 +328,13 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 		return nil
 	}
 
-	if refURL.Scheme == "" || refURL.Host == "" {
-		if refURL.Scheme == "file" {
-			refURL.Scheme = ""
-		}
-
-		if !strings.HasPrefix(refURL.Path, "/") {
-			if r.options != nil && r.options.RelativeBase != "" {
-				refURL.Path = r.options.RelativeBase + "/" + refURL.Path
-			}
-		}
-		if !strings.HasPrefix(refURL.Path, "/") {
-			pwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-			refURL.Path = pwd + "/" + refURL.Path
-		}
-
-		refURL.Path = filepath.Clean(refURL.Path)
+	relativeBase := ""
+	if r.options != nil && r.options.RelativeBase != "" {
+		relativeBase = r.options.RelativeBase
 	}
-	// most definitely take the red pill
+	normalizeFileRef(currentRef, relativeBase)
+	normalizeFileRef(ref, relativeBase)
+
 	data, _, _, err := r.load(refURL)
 	if err != nil {
 		return err
