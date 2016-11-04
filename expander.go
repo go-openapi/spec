@@ -248,28 +248,30 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 	refURL := ref.GetURL()
 
-	if !strings.HasPrefix(refURL.String(), "#") {
-		if refURL.Scheme == "file" || (refURL.Scheme == "" && refURL.Host == "") {
-			filePath := refURL.Path
+	if strings.HasPrefix(refURL.String(), "#") {
+		return ref
+	}
 
-			if !strings.HasPrefix(filePath, "/") {
-				if relativeBase != "" {
-					filePath = relativeBase + "/" + filePath
-				}
-			}
-			if !strings.HasPrefix(filePath, "/") {
-				pwd, err := os.Getwd()
-				if err == nil {
-					filePath = pwd + "/" + filePath
-				}
-			}
+	if refURL.Scheme == "file" || (refURL.Scheme == "" && refURL.Host == "") {
+		filePath := refURL.Path
 
-			filePath = filepath.Clean(filePath)
-			_, err := os.Stat(filePath)
+		if !strings.HasPrefix(filePath, "/") {
+			if relativeBase != "" {
+				filePath = relativeBase + "/" + filePath
+			}
+		}
+		if !strings.HasPrefix(filePath, "/") {
+			pwd, err := os.Getwd()
 			if err == nil {
-				refURL.Scheme = ""
-				refURL.Path = filePath
+				filePath = pwd + "/" + filePath
 			}
+		}
+
+		filePath = filepath.Clean(filePath)
+		_, err := os.Stat(filePath)
+		if err == nil {
+			refURL.Scheme = ""
+			refURL.Path = filePath
 		}
 	}
 
