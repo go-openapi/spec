@@ -152,6 +152,7 @@ func init() {
 	PathLoader = func(path string) (json.RawMessage, error) {
 		data, err := swag.LoadFromFileOrHTTP(path)
 		if err != nil {
+			panic(err)
 			return nil, err
 		}
 		return json.RawMessage(data), nil
@@ -268,23 +269,23 @@ func debugLog(msg string, args ...interface{}) {
 
 func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 	refURL := ref.GetURL()
-	debugLog("normalizing %s against %s", refURL, relativeBase)
+	debugLog("normalizing %s against %s", ref.String(), relativeBase)
 	if strings.HasPrefix(refURL.String(), "#") {
 		return ref
 	}
 
 	if refURL.Scheme == "file" || (refURL.Scheme == "" && refURL.Host == "") {
-		filePath := filepath.ToSlash(refURL.Path)
+		filePath := refURL.Path
 		debugLog("normalizing file path: %s", filePath)
 
 		if !path.IsAbs(filePath) && len(relativeBase) != 0 {
 			debugLog("joining %s with %s", relativeBase, filePath)
-			if fi, err := os.Stat(filepath.ToSlash(relativeBase)); err == nil {
+			if fi, err := os.Stat(filepath.FromSlash(relativeBase)); err == nil {
 				if !fi.IsDir() {
-					relativeBase = path.Dir(filepath.ToSlash(relativeBase))
+					relativeBase = path.Dir(relativeBase)
 				}
 			}
-			filePath = path.Join(relativeBase, filePath)
+			filePath = filepath.Join(relativeBase, filepath.FromSlash(filePath))
 		}
 		if !path.IsAbs(filePath) {
 			pwd, err := os.Getwd()
@@ -295,12 +296,13 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 		}
 
 		debugLog("cleaning %s", filePath)
-		filePath = filepath.Clean(filePath)
-		_, err := os.Stat(filePath)
+		filePath = path.Clean(filePath)
+		_, err := os.Stat(filepath.FromSlash(filePath))
 		if err == nil {
 			debugLog("rewriting url to scheme \"\" path %s", filePath)
 			refURL.Scheme = ""
-			refURL.Path = filepath.FromSlash(filePath)
+			refURL.Path = filepath.ToSlash(filePath)
+			debugLog("new url with joined filepath: %s", refURL.String())
 			*ref = MustCreateRef(refURL.String())
 		}
 	}
@@ -318,12 +320,14 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 	oldRef := currentRef
 
 	if currentRef != nil {
+		debugLog("resolve ref current %s new %s", currentRef.String(), ref.String())
 		nextRef := nextRef(node, ref, currentRef.GetPointer())
 		if nextRef == nil || nextRef.GetURL() == nil {
 			return nil
 		}
 		var err error
 		currentRef, err = currentRef.Inherits(*nextRef)
+		debugLog("resolved ref current %s", currentRef.String())
 		if err != nil {
 			return err
 		}
@@ -754,6 +758,7 @@ func expandResponse(response *Response, resolver *schemaLoader) error {
 
 	if response.Schema != nil {
 		parentRefs = append(parentRefs, response.Schema.Ref.String())
+		debugLog("response ref: %s", response.Schema.Ref)
 		if err := resolver.Resolve(&response.Schema.Ref, &response.Schema); err != nil {
 			return err
 		}
