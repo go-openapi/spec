@@ -243,10 +243,11 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 			}
 			nwURL := nw.GetURL()
 			if nwURL.Scheme == "file" || (nwURL.Scheme == "" && nwURL.Host == "") {
-				if strings.HasPrefix(nwURL.Path, "/") {
-					_, err := os.Stat(nwURL.Path)
+				nwpt := filepath.ToSlash(nwURL.Path)
+				if filepath.IsAbs(nwpt) {
+					_, err := os.Stat(nwpt)
 					if err != nil {
-						nwURL.Path = "." + nwURL.Path
+						nwURL.Path = filepath.Join(".", nwpt)
 					}
 				}
 			}
@@ -273,14 +274,14 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 	}
 
 	if refURL.Scheme == "file" || (refURL.Scheme == "" && refURL.Host == "") {
-		filePath := refURL.Path
+		filePath := filepath.ToSlash(refURL.Path)
 		debugLog("normalizing file path: %s", filePath)
 
 		if !path.IsAbs(filePath) && len(relativeBase) != 0 {
 			debugLog("joining %s with %s", relativeBase, filePath)
-			if fi, err := os.Stat(relativeBase); err == nil {
+			if fi, err := os.Stat(filepath.ToSlash(relativeBase)); err == nil {
 				if !fi.IsDir() {
-					relativeBase = path.Dir(relativeBase)
+					relativeBase = path.Dir(filepath.ToSlash(relativeBase))
 				}
 			}
 			filePath = path.Join(relativeBase, filePath)
@@ -289,7 +290,7 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 			pwd, err := os.Getwd()
 			if err == nil {
 				debugLog("joining cwd %s with %s", pwd, filePath)
-				filePath = path.Join(pwd, filePath)
+				filePath = filepath.Join(pwd, filePath)
 			}
 		}
 
@@ -299,7 +300,7 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 		if err == nil {
 			debugLog("rewriting url to scheme \"\" path %s", filePath)
 			refURL.Scheme = ""
-			refURL.Path = filePath
+			refURL.Path = filepath.FromSlash(filePath)
 			*ref = MustCreateRef(refURL.String())
 		}
 	}
