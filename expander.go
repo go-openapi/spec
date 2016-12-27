@@ -105,7 +105,12 @@ func ResolveRef(root interface{}, ref *Ref) (*Schema, error) {
 
 // ResolveParameter resolves a paramter reference against a context root
 func ResolveParameter(root interface{}, ref Ref) (*Parameter, error) {
-	resolver, err := defaultSchemaLoader(root, nil, nil, nil)
+	return ResolveParameterWithBase(root, ref, nil)
+}
+
+// ResolveParameterWithBase resolves a paramter reference against a context root and base path
+func ResolveParameterWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*Parameter, error) {
+	resolver, err := defaultSchemaLoader(root, nil, opts, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,12 +124,45 @@ func ResolveParameter(root interface{}, ref Ref) (*Parameter, error) {
 
 // ResolveResponse resolves response a reference against a context root
 func ResolveResponse(root interface{}, ref Ref) (*Response, error) {
-	resolver, err := defaultSchemaLoader(root, nil, nil, nil)
+	return ResolveResponseWithBase(root, ref, nil)
+}
+
+// ResolveResponseWithBase resolves response a reference against a context root and base path
+func ResolveResponseWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*Response, error) {
+	resolver, err := defaultSchemaLoader(root, nil, opts, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	result := new(Response)
+	if err := resolver.Resolve(&ref, result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ResolveItems resolves header and parameter items reference against a context root and base path
+func ResolveItems(root interface{}, ref Ref, opts *ExpandOptions) (*Items, error) {
+	resolver, err := defaultSchemaLoader(root, nil, opts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := new(Items)
+	if err := resolver.Resolve(&ref, result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// ResolvePathItem resolves response a path item against a context root and base path
+func ResolvePathItem(root interface{}, ref Ref, opts *ExpandOptions) (*PathItem, error) {
+	resolver, err := defaultSchemaLoader(root, nil, opts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := new(PathItem)
 	if err := resolver.Resolve(&ref, result); err != nil {
 		return nil, err
 	}
@@ -507,6 +545,11 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 
 // ExpandSchema expands the refs in the schema object
 func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error {
+	return ExpandSchemaWithBasePath(schema, root, cache, nil)
+}
+
+// ExpandSchemaWithBasePath expands the refs in the schema object, base path configured through expand options
+func ExpandSchemaWithBasePath(schema *Schema, root interface{}, cache ResolutionCache, opts *ExpandOptions) error {
 	if schema == nil {
 		return nil
 	}
@@ -527,7 +570,7 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 		}
 	}
 
-	resolver, err := defaultSchemaLoader(root, rrr, nil, cache)
+	resolver, err := defaultSchemaLoader(root, rrr, opts, cache)
 	if err != nil {
 		return err
 	}
