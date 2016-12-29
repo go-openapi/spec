@@ -66,14 +66,10 @@ func initResolutionCache() ResolutionCache {
 }
 
 func (s *simpleCache) Get(uri string) (interface{}, bool) {
-	if Debug {
-		log.Printf("getting %q from resolution cache", uri)
-	}
+	debugLog("getting %q from resolution cache", uri)
 	s.lock.Lock()
 	v, ok := s.store[uri]
-	if Debug {
-		log.Printf("got %q from resolution cache: %t", uri, ok)
-	}
+	debugLog("got %q from resolution cache: %t", uri, ok)
 
 	s.lock.Unlock()
 	return v, ok
@@ -222,9 +218,7 @@ func defaultSchemaLoader(
 		options:     expandOptions,
 		cache:       cache,
 		loadDoc: func(path string) (json.RawMessage, error) {
-			if Debug {
-				log.Printf("fetching document at %q", path)
-			}
+			debugLog("fetching document at %q", path)
 			return PathLoader(path)
 		},
 	}, nil
@@ -612,9 +606,7 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader) (*S
 
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*Schema, error) {
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
-		if Debug {
-			log.Printf("skipping expand schema for no ref and root: %v", resolver.root)
-		}
+		debugLog("skipping expand schema for no ref and root: %v", resolver.root)
 
 		return resolver.root.(*Schema), nil
 	}
