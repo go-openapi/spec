@@ -47,7 +47,7 @@ func TestExpandResponseSchema(t *testing.T) {
 	if assert.NoError(t, err) {
 		var spec Swagger
 		if err := json.Unmarshal(b, &spec); assert.NoError(t, err) {
-			err := ExpandSpec(&spec, &ExpandOptions{RelativeBase: "./fixtures/local_expansion"})
+			err := ExpandSpec(&spec, &ExpandOptions{RelativeBase: fp})
 			if assert.NoError(t, err) {
 				sch := spec.Paths.Paths["/item"].Get.Responses.StatusCodeResponses[200].Schema
 				if assert.NotNil(t, sch) {
