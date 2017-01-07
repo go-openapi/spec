@@ -642,6 +642,10 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 			return &target, err
 		}
 
+		if swag.ContainsStringsCI(parentRefs, target.Ref.String()) {
+			debugLog("ref already exists in parent")
+			return &target, nil
+		}
 		parentRefs = append(parentRefs, target.Ref.String())
 		target = *t
 	}
