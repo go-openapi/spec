@@ -416,7 +416,6 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 
 	data, _, _, err := r.load(currentRef.GetURL())
 	if err != nil {
-		panic(err)
 		return err
 	}
 
@@ -444,7 +443,6 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 
 					data, _, _, err = r.load(refURL)
 					if err != nil {
-						panic(err)
 						return err
 					}
 				} else {
