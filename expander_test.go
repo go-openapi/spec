@@ -197,6 +197,25 @@ func TestCircularRefsExpansion(t *testing.T) {
 	}, "Calling expand schema with circular refs, should not panic!")
 }
 
+func TestContinueOnErrorExpansion(t *testing.T) {
+	missingRefDoc, err := jsonDoc("fixtures/expansion/missingRef.json")
+	assert.NoError(t, err)
+
+	testCase := struct {
+		Input    *Swagger `json:"input"`
+		Expected *Swagger `json:"expected"`
+	}{}
+	err = json.Unmarshal(missingRefDoc, &testCase)
+	assert.NoError(t, err)
+
+	opts := &ExpandOptions{
+		ContinueOnError: true,
+	}
+	err = ExpandSpec(testCase.Input, opts)
+	assert.NoError(t, err)
+	assert.Equal(t, testCase.Input, testCase.Expected, "Should continue expanding spec when a definition can't be found.")
+}
+
 func TestIssue415(t *testing.T) {
 	doc, err := jsonDoc("fixtures/expansion/clickmeter.json")
 	assert.NoError(t, err)
