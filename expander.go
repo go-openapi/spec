@@ -81,6 +81,11 @@ func (s *simpleCache) Set(uri string, data interface{}) {
 	s.lock.Unlock()
 }
 
+// SetResolutionCache sets the default resolution cache to be used
+func SetResolutionCache(cache ResolutionCache) {
+	resCache = cache
+}
+
 // ResolveRefWithBase resolves a reference against a context root with preservation of base path
 func ResolveRefWithBase(root interface{}, ref *Ref, opts *ExpandOptions) (*Schema, error) {
 	resolver, err := defaultSchemaLoader(root, nil, opts, nil)
