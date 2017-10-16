@@ -2,7 +2,6 @@ package spec
 
 import (
 	"fmt"
-	"log"
 )
 
 func modifyItemsRefs(target *Schema, basePath string) {
@@ -19,8 +18,6 @@ func modifyItemsRefs(target *Schema, basePath string) {
 }
 
 func modifyRefs(target *Schema, basePath string) {
-	log.Printf("BASEPATH is %s", basePath)
-	/* This is the base case */
 	if target.Ref.String() != "" {
 		newURL := fmt.Sprintf("%s%s", basePath, target.Ref.String())
 		target.Ref, _ = NewRef(newURL)
