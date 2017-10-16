@@ -352,7 +352,6 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 }
 
 func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}) error {
-
 	tgt := reflect.ValueOf(target)
 	if tgt.Kind() != reflect.Ptr {
 		return fmt.Errorf("resolve ref: target needs to be a pointer")
@@ -466,8 +465,6 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 	if err := swag.DynamicJSONToStruct(res, target); err != nil {
 		return err
 	}
-
-	r.currentRef = currentRef
 
 	return nil
 }
@@ -645,9 +642,8 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 		return resolver.root.(*Schema), nil
 	}
 
-	// t is the new expanded schema
 	var t *Schema
-
+	basePath := target.Ref.RemoteURI()
 	for target.Ref.String() != "" {
 		if swag.ContainsStringsCI(parentRefs, target.Ref.String()) {
 			return &target, nil
@@ -666,6 +662,9 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 			target = *t
 		}
 	}
+	if target.Ref.String() == "" {
+		modifyRefs(&target, basePath)
+	}
 
 	t, err := expandItems(target, parentRefs, resolver)
 	if shouldStopOnError(err, resolver.options) {
@@ -674,6 +673,8 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 	if t != nil {
 		target = *t
 	}
+
+	resolver.reset()
 
 	for i := range target.AllOf {
 		t, err := expandSchema(target.AllOf[i], parentRefs, resolver)
