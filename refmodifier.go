@@ -33,6 +33,9 @@ func modifyItemsRefs(target *Schema, basePath string) {
 
 func modifyRefs(target *Schema, basePath string) {
 	if target.Ref.String() != "" {
+		if target.Ref.RemoteURI() == basePath {
+			return
+		}
 		newURL := fmt.Sprintf("%s%s", basePath, target.Ref.String())
 		target.Ref, _ = NewRef(newURL)
 	}
