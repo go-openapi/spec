@@ -634,6 +634,7 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader) (*S
 	return &target, nil
 }
 
+
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*Schema, error) {
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
 		debugLog("skipping expand schema for no ref and root: %v", resolver.root)
@@ -818,6 +819,21 @@ func expandPathItem(pathItem *PathItem, resolver *schemaLoader) error {
 	return nil
 }
 
+// ExpandPathItem expands the references in a swagger spec path item
+func ExpandPathItem(pathItem *PathItem, spec *Swagger, options *ExpandOptions) error {
+	resolver, err := defaultSchemaLoader(spec, nil, options, nil)
+	// Just in case this ever returns an error.
+	if shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
+	if err := expandPathItem(pathItem, resolver); shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
+	return nil
+}
+
 func expandOperation(op *Operation, resolver *schemaLoader) error {
 	if op == nil {
 		return nil
@@ -842,6 +858,21 @@ func expandOperation(op *Operation, resolver *schemaLoader) error {
 			responses.StatusCodeResponses[code] = response
 		}
 	}
+	return nil
+}
+
+// ExpandOperation expands the references in a swagger spec operation
+func ExpandOperation(op *Operation, spec *Swagger, options *ExpandOptions) error {
+	resolver, err := defaultSchemaLoader(spec, nil, options, nil)
+	// Just in case this ever returns an error.
+	if shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
+	if err := expandOperation(op, resolver); shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
 	return nil
 }
 
@@ -877,6 +908,21 @@ func expandResponse(response *Response, resolver *schemaLoader) error {
 	return nil
 }
 
+// ExpandResponse expands the references in a swagger spec response
+func ExpandResponse(response *Response, spec *Swagger, options *ExpandOptions) error {
+	resolver, err := defaultSchemaLoader(spec, nil, options, nil)
+	// Just in case this ever returns an error.
+	if shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
+	if err := expandResponse(response, resolver); shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
+	return nil
+}
+
 func expandParameter(parameter *Parameter, resolver *schemaLoader) error {
 	if parameter == nil {
 		return nil
@@ -904,5 +950,20 @@ func expandParameter(parameter *Parameter, resolver *schemaLoader) error {
 		resolver.reset()
 		*parameter.Schema = *s
 	}
+	return nil
+}
+
+// ExpandParameter expands the references in a swagger spec parameter
+func ExpandParameter(parameter *Parameter, spec *Swagger, options *ExpandOptions) error {
+	resolver, err := defaultSchemaLoader(spec, nil, options, nil)
+	// Just in case this ever returns an error.
+	if shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
+	if err := expandParameter(parameter, resolver); shouldStopOnError(err, resolver.options) {
+		return err
+	}
+
 	return nil
 }
