@@ -54,8 +54,18 @@ type simpleCache struct {
 
 var resCache ResolutionCache
 
+// PathLoader function to use when loading remote refs
+var PathLoader func(string) (json.RawMessage, error)
+
 func init() {
 	resCache = initResolutionCache()
+	PathLoader = func(path string) (json.RawMessage, error) {
+		data, err := swag.LoadFromFileOrHTTP(path)
+		if err != nil {
+			return nil, err
+		}
+		return json.RawMessage(data), nil
+	}
 }
 
 func initResolutionCache() ResolutionCache {
@@ -179,19 +189,6 @@ type schemaLoader struct {
 var idPtr, _ = jsonpointer.New("/id")
 var refPtr, _ = jsonpointer.New("/$ref")
 
-// PathLoader function to use when loading remote refs
-var PathLoader func(string) (json.RawMessage, error)
-
-func init() {
-	PathLoader = func(path string) (json.RawMessage, error) {
-		data, err := swag.LoadFromFileOrHTTP(path)
-		if err != nil {
-			return nil, err
-		}
-		return json.RawMessage(data), nil
-	}
-}
-
 func defaultSchemaLoader(
 	root interface{},
 	ref *Ref,
@@ -295,6 +292,16 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 	}
 
 	return ret
+}
+
+func debugMarshal(js interface{}) ([]byte, error) {
+	var err error
+	var bytes []byte
+	if Debug {
+		bytes, err = json.MarshalIndent(js, "", "  ")
+	}
+
+	return bytes, err
 }
 
 func debugLog(msg string, args ...interface{}) {
@@ -490,6 +497,16 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 }
 
 func (r *schemaLoader) Resolve(ref *Ref, target interface{}) error {
+	if res, ok := r.cache.Get(ref.String()); ok {
+		tgt := reflect.ValueOf(target)
+		tgtType := reflect.Indirect(tgt).Type()
+		rv := reflect.Indirect(reflect.ValueOf(res))
+		if rv.Type().AssignableTo(tgtType) {
+			reflect.Indirect(tgt).Set(reflect.Indirect(reflect.ValueOf(res)))
+			return nil
+		}
+	}
+
 	return r.resolveRef(r.currentRef, ref, r.root, target)
 }
 
@@ -514,10 +531,11 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 
 	if options == nil || !options.SkipSchemas {
 		for key, definition := range spec.Definitions {
-			var def *Schema
 			var err error
-			if def, err = expandSchema(definition, []string{"#/definitions/" + key}, resolver); shouldStopOnError(err, resolver.options) {
-				return err
+			var def *Schema
+			keyPath := "#/definitions/" + key
+			if def, err = expandSchema(definition, []string{keyPath}, resolver); err != nil {
+				continue
 			}
 			resolver.reset()
 			spec.Definitions[key] = *def
@@ -634,7 +652,6 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader) (*S
 	return &target, nil
 }
 
-
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*Schema, error) {
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
 		debugLog("skipping expand schema for no ref and root: %v", resolver.root)
@@ -644,34 +661,41 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 
 	var t *Schema
 	var basePath string
-	b, _ := json.Marshal(target)
+	b, _ := debugMarshal(target)
 	debugLog("Target is: %s", string(b))
-	for target.Ref.String() != "" {
+
+	ref := target.Ref.String()
+	for targetRef := target.Ref.String(); targetRef != ""; {
 		if swag.ContainsStringsCI(parentRefs, target.Ref.String()) {
 			return &target, nil
 		}
 		basePath = target.Ref.RemoteURI()
 		debugLog("\n\n\n\n\nbasePath: %s", basePath)
-		b, _ := json.Marshal(target)
+		b, _ := debugMarshal(target)
 		debugLog("calling Resolve with target: %s", string(b))
+
 		if err := resolver.Resolve(&target.Ref, &t); shouldStopOnError(err, resolver.options) {
 			return &target, err
 		}
 
-		if swag.ContainsStringsCI(parentRefs, target.Ref.String()) {
+		if swag.ContainsStringsCI(parentRefs, targetRef) {
 			debugLog("ref already exists in parent")
+			// resolver.cache.Set(targetRef, &target)
 			return &target, nil
 		}
-		parentRefs = append(parentRefs, target.Ref.String())
+		parentRefs = append(parentRefs, targetRef)
+
 		if t != nil {
 			target = *t
 		}
 	}
-	if target.Ref.String() == "" {
-		b, _ := json.Marshal(target)
+
+	if ref != "" {
+		b, _ := debugMarshal(target)
 		debugLog("before: %s", string(b))
+		resolver.cache.Set(ref, t)
 		modifyRefs(&target, basePath)
-		b, _ = json.Marshal(target)
+		b, _ = debugMarshal(target)
 		debugLog("after: %s", string(b))
 	}
 	t, err := expandItems(target, parentRefs, resolver)
@@ -774,6 +798,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 			target.Definitions[k] = *t
 		}
 	}
+
 	return &target, nil
 }
 
@@ -782,11 +807,11 @@ func expandPathItem(pathItem *PathItem, resolver *schemaLoader) error {
 		return nil
 	}
 
-	if pathItem.Ref.String() != "" {
-		if err := resolver.Resolve(&pathItem.Ref, &pathItem); err != nil {
+	ref := pathItem.Ref.String()
+	if ref != "" {
+		if err := resolver.Resolve(&pathItem.Ref, &pathItem); shouldStopOnError(err, resolver.options) {
 			return err
 		}
-		resolver.reset()
 		pathItem.Ref = Ref{}
 	}
 
@@ -816,6 +841,11 @@ func expandPathItem(pathItem *PathItem, resolver *schemaLoader) error {
 	if err := expandOperation(pathItem.Delete, resolver); shouldStopOnError(err, resolver.options) {
 		return err
 	}
+
+	if ref != "" {
+		resolver.cache.Set(ref, pathItem)
+	}
+	resolver.reset()
 	return nil
 }
 
@@ -882,29 +912,27 @@ func expandResponse(response *Response, resolver *schemaLoader) error {
 	}
 
 	var parentRefs []string
-
-	if response.Ref.String() != "" {
-		parentRefs = append(parentRefs, response.Ref.String())
-		if err := resolver.Resolve(&response.Ref, response); shouldStopOnError(err, resolver.options) {
+	ref := response.Ref.String()
+	if ref != "" {
+		if err := resolver.Resolve(&response.Ref, &response); shouldStopOnError(err, resolver.options) {
 			return err
 		}
-		resolver.reset()
 		response.Ref = Ref{}
 	}
 
 	if !resolver.options.SkipSchemas && response.Schema != nil {
-		parentRefs = append(parentRefs, response.Schema.Ref.String())
-		debugLog("response ref: %s", response.Schema.Ref)
-		if err := resolver.Resolve(&response.Schema.Ref, &response.Schema); shouldStopOnError(err, resolver.options) {
+		if s, err := expandSchema(*response.Schema, parentRefs, resolver); shouldStopOnError(err, resolver.options) {
 			return err
+		} else {
+			*response.Schema = *s
 		}
-		s, err := expandSchema(*response.Schema, parentRefs, resolver)
-		if shouldStopOnError(err, resolver.options) {
-			return err
-		}
-		resolver.reset()
-		*response.Schema = *s
 	}
+
+	if ref != "" {
+		resolver.cache.Set(ref, response)
+	}
+	resolver.reset()
+
 	return nil
 }
 
@@ -930,26 +958,26 @@ func expandParameter(parameter *Parameter, resolver *schemaLoader) error {
 
 	var parentRefs []string
 
-	if parameter.Ref.String() != "" {
-		parentRefs = append(parentRefs, parameter.Ref.String())
-		if err := resolver.Resolve(&parameter.Ref, parameter); shouldStopOnError(err, resolver.options) {
+	ref := parameter.Ref.String()
+	if ref != "" {
+		if err := resolver.Resolve(&parameter.Ref, &parameter); shouldStopOnError(err, resolver.options) {
 			return err
 		}
-		resolver.reset()
 		parameter.Ref = Ref{}
 	}
 	if !resolver.options.SkipSchemas && parameter.Schema != nil {
-		parentRefs = append(parentRefs, parameter.Schema.Ref.String())
-		if err := resolver.Resolve(&parameter.Schema.Ref, &parameter.Schema); shouldStopOnError(err, resolver.options) {
+		if s, err := expandSchema(*parameter.Schema, parentRefs, resolver); shouldStopOnError(err, resolver.options) {
 			return err
+		} else {
+			*parameter.Schema = *s
 		}
-		s, err := expandSchema(*parameter.Schema, parentRefs, resolver)
-		if shouldStopOnError(err, resolver.options) {
-			return err
-		}
-		resolver.reset()
-		*parameter.Schema = *s
 	}
+
+	if ref != "" {
+		resolver.cache.Set(ref, parameter)
+	}
+	resolver.reset()
+
 	return nil
 }
 
