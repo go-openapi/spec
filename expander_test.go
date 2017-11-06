@@ -26,6 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func resetDefaultCache() {
+	resCache = initResolutionCache()
+}
+
 func jsonDoc(path string) (json.RawMessage, error) {
 	data, err := swag.LoadFromFileOrHTTP(path)
 	if err != nil {
@@ -35,6 +39,7 @@ func jsonDoc(path string) (json.RawMessage, error) {
 }
 
 func TestExpandsKnownRef(t *testing.T) {
+	resetDefaultCache()
 	schema := RefProperty("http://json-schema.org/draft-04/schema#")
 	if assert.NoError(t, ExpandSchema(schema, nil, nil)) {
 		assert.Equal(t, "Core schema meta-schema", schema.Description)
@@ -42,6 +47,7 @@ func TestExpandsKnownRef(t *testing.T) {
 }
 
 func TestExpandResponseSchema(t *testing.T) {
+	resetDefaultCache()
 	fp := "./fixtures/local_expansion/spec.json"
 	b, err := jsonDoc(fp)
 	if assert.NoError(t, err) {
@@ -62,12 +68,10 @@ func TestExpandResponseSchema(t *testing.T) {
 
 func TestSpecExpansion(t *testing.T) {
 	spec := new(Swagger)
-	// resolver, err := defaultSchemaLoader(spec, nil, nil)
-	// assert.NoError(t, err)
-
 	err := ExpandSpec(spec, nil)
 	assert.NoError(t, err)
 
+	resetDefaultCache()
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	assert.NoError(t, err)
 
@@ -78,11 +82,13 @@ func TestSpecExpansion(t *testing.T) {
 	pet := spec.Definitions["pet"]
 	errorModel := spec.Definitions["errorModel"]
 	petResponse := spec.Responses["petResponse"]
+	petResponse.Ref = Ref{}
 	petResponse.Schema = &pet
 	stringResponse := spec.Responses["stringResponse"]
 	tagParam := spec.Parameters["tag"]
 	idParam := spec.Parameters["idParam"]
 
+	resetDefaultCache()
 	err = ExpandSpec(spec, nil)
 	assert.NoError(t, err)
 
@@ -107,6 +113,7 @@ func TestSpecExpansion(t *testing.T) {
 }
 
 func TestResponseExpansion(t *testing.T) {
+	resetDefaultCache()
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	assert.NoError(t, err)
 
@@ -114,13 +121,15 @@ func TestResponseExpansion(t *testing.T) {
 	err = json.Unmarshal(specDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, nil, nil, initResolutionCache())
 	assert.NoError(t, err)
 
 	resp := spec.Responses["anotherPet"]
 	expected := spec.Responses["petResponse"]
 
 	err = expandResponse(&resp, resolver)
+	assert.NoError(t, err)
+	err = expandResponse(&expected, resolver)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, resp)
 
@@ -867,6 +876,7 @@ func TestResolveLocalRef_Response(t *testing.T) {
 		var tgt Response
 		ref, err := NewRef("#/responses/petResponse")
 		if assert.NoError(t, err) {
+			resetDefaultCache()
 			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt)) {
 				assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
