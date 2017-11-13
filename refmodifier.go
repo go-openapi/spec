@@ -17,6 +17,7 @@ package spec
 import (
 	"fmt"
 	"path"
+	"strings"
 )
 
 func modifyItemsRefs(target *Schema, remoteURI string) {
@@ -44,8 +45,8 @@ func modifyRefs(target *Schema, remoteURI string) {
 		}
 		// relative file path
 		if !target.Ref.HasFullFilePath {
-			// Clean is important to remove any trailing slash
-			newURL := path.Join(path.Dir(path.Clean(remoteURI)), target.Ref.String())
+			// it is important to remove any trailing slashes
+			newURL := path.Join(path.Dir(strings.TrimRight(remoteURI, "/")), target.Ref.String())
 			target.Ref, _ = NewRef(newURL)
 			return
 		}
