@@ -42,9 +42,10 @@ func modifyRefs(target *Schema, remoteURI string) {
 			target.Ref, _ = NewRef(newURL)
 			return
 		}
-		// relative path
+		// relative file path
 		if !target.Ref.HasFullFilePath {
-			newURL := path.Join(path.Dir(remoteURI), target.Ref.String())
+			// Clean is important to remove any trailing slash
+			newURL := path.Join(path.Dir(path.Clean(remoteURI)), target.Ref.String())
 			target.Ref, _ = NewRef(newURL)
 			return
 		}
