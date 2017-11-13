@@ -643,14 +643,12 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 
 	var t *Schema
 	var basePath string
-	b, _ := json.Marshal(target)
-	debugLog("Target is: %s", string(b))
 	for target.Ref.String() != "" {
 		if swag.ContainsStringsCI(parentRefs, target.Ref.String()) {
 			return &target, nil
 		}
 		basePath = target.Ref.RemoteURI()
-		debugLog("\n\n\n\n\nbasePath: %s", basePath)
+		debugLog("\nbasePath: %s", basePath)
 		b, _ := json.Marshal(target)
 		debugLog("calling Resolve with target: %s", string(b))
 		if err := resolver.Resolve(&target.Ref, &t); shouldStopOnError(err, resolver.options) {
@@ -667,11 +665,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader) (*
 		}
 	}
 	if target.Ref.String() == "" {
-		b, _ := json.Marshal(target)
-		debugLog("before: %s", string(b))
 		modifyRefs(&target, basePath)
-		b, _ = json.Marshal(target)
-		debugLog("after: %s", string(b))
 	}
 	t, err := expandItems(target, parentRefs, resolver)
 	if shouldStopOnError(err, resolver.options) {

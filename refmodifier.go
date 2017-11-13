@@ -16,67 +16,77 @@ package spec
 
 import (
 	"fmt"
+	"path"
 )
 
-func modifyItemsRefs(target *Schema, basePath string) {
+func modifyItemsRefs(target *Schema, remoteURI string) {
 	if target.Items != nil {
 		if target.Items.Schema != nil {
-			modifyRefs(target.Items.Schema, basePath)
+			modifyRefs(target.Items.Schema, remoteURI)
 		}
 		for i := range target.Items.Schemas {
 			s := target.Items.Schemas[i]
-			modifyRefs(&s, basePath)
+			modifyRefs(&s, remoteURI)
 			target.Items.Schemas[i] = s
 		}
 	}
 }
 
-func modifyRefs(target *Schema, basePath string) {
+func modifyRefs(target *Schema, remoteURI string) {
 	if target.Ref.String() != "" {
-		if target.Ref.RemoteURI() == basePath {
+		if target.Ref.HasFullURL {
 			return
 		}
-		newURL := fmt.Sprintf("%s%s", basePath, target.Ref.String())
-		target.Ref, _ = NewRef(newURL)
+		if target.Ref.HasFragmentOnly {
+			newURL := fmt.Sprintf("%s%s", remoteURI, target.Ref.String())
+			target.Ref, _ = NewRef(newURL)
+			return
+		}
+		// relative path
+		if !target.Ref.HasFullFilePath {
+			newURL := path.Join(path.Dir(remoteURI), target.Ref.String())
+			target.Ref, _ = NewRef(newURL)
+			return
+		}
 	}
 
-	modifyItemsRefs(target, basePath)
+	modifyItemsRefs(target, remoteURI)
 	for i := range target.AllOf {
-		modifyRefs(&target.AllOf[i], basePath)
+		modifyRefs(&target.AllOf[i], remoteURI)
 	}
 	for i := range target.AnyOf {
-		modifyRefs(&target.AnyOf[i], basePath)
+		modifyRefs(&target.AnyOf[i], remoteURI)
 	}
 	for i := range target.OneOf {
-		modifyRefs(&target.OneOf[i], basePath)
+		modifyRefs(&target.OneOf[i], remoteURI)
 	}
 	if target.Not != nil {
-		modifyRefs(target.Not, basePath)
+		modifyRefs(target.Not, remoteURI)
 	}
 	for k := range target.Properties {
 		s := target.Properties[k]
-		modifyRefs(&s, basePath)
+		modifyRefs(&s, remoteURI)
 		target.Properties[k] = s
 	}
 	if target.AdditionalProperties != nil && target.AdditionalProperties.Schema != nil {
-		modifyRefs(target.AdditionalProperties.Schema, basePath)
+		modifyRefs(target.AdditionalProperties.Schema, remoteURI)
 	}
 	for k := range target.PatternProperties {
 		s := target.PatternProperties[k]
-		modifyRefs(&s, basePath)
+		modifyRefs(&s, remoteURI)
 		target.PatternProperties[k] = s
 	}
 	for k := range target.Dependencies {
 		if target.Dependencies[k].Schema != nil {
-			modifyRefs(target.Dependencies[k].Schema, basePath)
+			modifyRefs(target.Dependencies[k].Schema, remoteURI)
 		}
 	}
 	if target.AdditionalItems != nil && target.AdditionalItems.Schema != nil {
-		modifyRefs(target.AdditionalItems.Schema, basePath)
+		modifyRefs(target.AdditionalItems.Schema, remoteURI)
 	}
 	for k := range target.Definitions {
 		s := target.Definitions[k]
-		modifyRefs(&s, basePath)
+		modifyRefs(&s, remoteURI)
 		target.Definitions[k] = s
 	}
 }
