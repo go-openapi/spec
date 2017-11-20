@@ -332,8 +332,14 @@ func normalizePaths(refPath, base string) string {
 	return baseURL.String()
 }
 
-// relativeBase could be an absolute file path or an absolute URL
+// relativeBase could be an ABSOLUTE file path or an ABSOLUTE URL
 func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
+	// This is important for when the reference is pointing to the root schema
+	if ref.String() == "" {
+		r, _ := NewRef(relativeBase)
+		return &r
+	}
+
 	refURL := ref.GetURL()
 	debugLog("normalizing %s against %s (%s)", ref.String(), relativeBase, refURL.String())
 
@@ -614,7 +620,6 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
 
 	switch r := root.(type) {
 	case *Schema:
@@ -718,10 +723,17 @@ func basePathFromSchemaID(oldBasePath, id string) string {
 
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
 	b, _ := target.MarshalJSON()
-	log.Printf("Expanding Schema: %s", string(b))
+	log.Printf("Expanding Schema: %s with base path: %s", string(b), basePath)
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
-		debugLog("skipping expand schema for no ref and root: %v", resolver.root)
-		return new(Schema), nil
+		log.Printf("Ref is root")
+		// normalizing is important
+		newRef := normalizeFileRef(&target.Ref, basePath)
+		newBasePath := newRef.RemoteURI()
+		log.Printf("new basepath: %s", newBasePath)
+		target.Ref = *newRef
+		log.Printf("target.Ref is %s", target.Ref.String())
+		return &target, nil
+
 	}
 
 	/* change the base path of resolution when an ID is encountered
@@ -729,9 +741,12 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	// important: ID can be relative path
 	if target.ID != "" {
 		// handling the case when id is a folder
+		// remember that basePath has to be a file
 		refPath := target.ID
+		log.Printf("encountered id = %s", refPath)
 		if strings.HasSuffix(target.ID, "/") {
-			refPath = path.Join(refPath, "tmpspec.json")
+			// path.Clean here would not work correctly if basepath is http
+			refPath = fmt.Sprintf("%s%s", refPath, "placeholder.json")
 		}
 		basePath = normalizePaths(refPath, basePath)
 	}
@@ -749,7 +764,9 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		/* this means there is a circle in the recursion tree */
 		/* return the Ref */
 		if swag.ContainsStringsCI(parentRefs, newRef.String()) {
+			log.Printf("Recursion Found!")
 			target.Ref = *newRef
+			log.Printf("target.Ref is %s", target.Ref.String())
 			return &target, nil
 		}
 		debugLog("\nbasePath: %s", basePath)
@@ -958,9 +975,9 @@ func expandResponse(response *Response, resolver *schemaLoader, basePath string)
 	if !resolver.options.SkipSchemas && response.Schema != nil {
 		parentRefs = append(parentRefs, response.Schema.Ref.String())
 		debugLog("response ref: %s", response.Schema.Ref)
-		if err := resolver.Resolve(&response.Schema.Ref, &response.Schema, basePath); shouldStopOnError(err, resolver.options) {
-			return err
-		}
+		// if err := resolver.Resolve(&response.Schema.Ref, &response.Schema, basePath); shouldStopOnError(err, resolver.options) {
+		// 	return err
+		// }
 		s, err := expandSchema(*response.Schema, parentRefs, resolver, basePath)
 		if shouldStopOnError(err, resolver.options) {
 			return err
@@ -986,10 +1003,6 @@ func expandParameter(parameter *Parameter, resolver *schemaLoader, basePath stri
 	}
 	if !resolver.options.SkipSchemas && parameter.Schema != nil {
 		parentRefs = append(parentRefs, parameter.Schema.Ref.String())
-		// ToDo: why do we need to resolve here???
-		if err := resolver.Resolve(&parameter.Schema.Ref, &parameter.Schema, basePath); shouldStopOnError(err, resolver.options) {
-			return err
-		}
 		s, err := expandSchema(*parameter.Schema, parentRefs, resolver, basePath)
 		if shouldStopOnError(err, resolver.options) {
 			return err
