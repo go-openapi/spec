@@ -351,11 +351,6 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 	if refURL == nil {
 		return nil
 	}
-	// if ref.IsRoot() {
-	// 	nv := reflect.ValueOf(node)
-	// 	reflect.Indirect(tgt).Set(reflect.Indirect(nv))
-	// 	return nil
-	// }
 
 	// if no basePath is provided, we attempt to resolve the reference against root
 	if basePath == "" {
