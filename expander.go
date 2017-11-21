@@ -342,28 +342,42 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 	return &r
 }
 
-func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}, basePath string) error {
+func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string) error {
 	tgt := reflect.ValueOf(target)
 	if tgt.Kind() != reflect.Ptr {
 		return fmt.Errorf("resolve ref: target needs to be a pointer")
 	}
 
-	if currentRef == nil {
-		currentRef = ref
-	}
-
-	refURL := currentRef.GetURL()
+	refURL := ref.GetURL()
 	log.Printf("basePath is %s", basePath)
 	if refURL == nil {
 		return nil
 	}
-	if currentRef.IsRoot() {
-		nv := reflect.ValueOf(node)
-		reflect.Indirect(tgt).Set(reflect.Indirect(nv))
-		return nil
+	// if ref.IsRoot() {
+	// 	nv := reflect.ValueOf(node)
+	// 	reflect.Indirect(tgt).Set(reflect.Indirect(nv))
+	// 	return nil
+	// }
+
+	// if no basePath is provided, we attempt to resolve the reference against root
+	if basePath == "" {
+		var b []byte
+		switch rr := r.root.(type) {
+		case *Schema:
+			b, _ = rr.MarshalJSON()
+		case *Swagger:
+			b, _ = rr.MarshalJSON()
+		}
+		f, err := ioutil.TempFile(os.TempDir(), "tmproot")
+		if err != nil {
+			return err
+		}
+		f.Write(b)
+		f.Close()
+		basePath = f.Name()
 	}
 
-	baseRef := normalizeFileRef(currentRef, basePath)
+	baseRef := normalizeFileRef(ref, basePath)
 	log.Printf("base ref: %s", baseRef.String())
 	debugLog("current ref normalized file: %s", baseRef.String())
 	data, _, _, err := r.load(baseRef.GetURL())
@@ -374,9 +388,9 @@ func (r *schemaLoader) resolveRef(currentRef, ref *Ref, node, target interface{}
 
 	var res interface{}
 	res = data
-	if currentRef.String() != "" {
+	if ref.String() != "" {
 		log.Printf("I am here")
-		res, _, err = currentRef.GetPointer().Get(data)
+		res, _, err = ref.GetPointer().Get(data)
 		if err != nil {
 			return err
 		}
@@ -408,8 +422,12 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 	return data, toFetch, fromCache, nil
 }
 
+// Resolve resolves a reference against basePath and stores the result in target
+// Resolve is not in charge of following references, it only resolves ref by following its URL
+// if the schema that ref is referring to has more refs in it. Resolve doesn't resolve them
+// if basePath is an empty string, ref is resolved against the root schema stored in the schemaLoader struct
 func (r *schemaLoader) Resolve(ref *Ref, target interface{}, basePath string) error {
-	return r.resolveRef(nil, ref, nil, target, basePath)
+	return r.resolveRef(ref, target, basePath)
 }
 
 // absPath returns the absolute path of a file
@@ -444,7 +462,9 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 			if def, err = expandSchema(definition, []string{rt + key}, resolver, specBasePath); shouldStopOnError(err, resolver.options) {
 				return err
 			}
-			spec.Definitions[key] = *def
+			if def != nil {
+				spec.Definitions[key] = *def
+			}
 		}
 	}
 
@@ -640,8 +660,11 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		if err := resolver.Resolve(&target.Ref, &t, basePath); shouldStopOnError(err, resolver.options) {
 			return nil, err
 		}
-		parentRefs = append(parentRefs, newRef.String())
-		return expandSchema(*t, parentRefs, resolver, newBasePath)
+
+		if t != nil {
+			parentRefs = append(parentRefs, newRef.String())
+			return expandSchema(*t, parentRefs, resolver, newBasePath)
+		}
 	}
 
 	t, err := expandItems(target, parentRefs, resolver, basePath)
@@ -653,13 +676,15 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	}
 
 	for i := range target.AllOf {
+		b, _ := target.AllOf[i].MarshalJSON()
+		log.Printf("Expanding AllOf %s", string(b))
 		t, err := expandSchema(target.AllOf[i], parentRefs, resolver, basePath)
 		if shouldStopOnError(err, resolver.options) {
 			return &target, err
 		}
-		if t != nil {
-			target.AllOf[i] = *t
-		}
+		b, _ = t.MarshalJSON()
+		log.Printf("After Expansion %s", string(b))
+		target.AllOf[i] = *t
 	}
 	for i := range target.AnyOf {
 		t, err := expandSchema(target.AnyOf[i], parentRefs, resolver, basePath)
@@ -822,9 +847,15 @@ func expandResponse(response *Response, resolver *schemaLoader, basePath string)
 
 	if response.Ref.String() != "" {
 		parentRefs = append(parentRefs, response.Ref.String())
-		if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
-			return err
-		}
+		sch := new(Schema)
+		b, _ := response.MarshalJSON()
+		json.Unmarshal(b, sch)
+		s, _ := expandSchema(*sch, parentRefs, resolver, basePath)
+		// if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
+		// 	return err
+		// }
+		b, _ = s.MarshalJSON()
+		json.Unmarshal(b, response)
 		response.Ref = Ref{}
 	}
 
