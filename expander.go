@@ -322,7 +322,6 @@ func normalizePaths(refPath, base string) string {
 	}
 	// copying fragment from ref to base
 	baseURL.Fragment = refURL.Fragment
-	log.Printf("baseURL string: %s", baseURL.String())
 	return baseURL.String()
 }
 
@@ -349,7 +348,6 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 	}
 
 	refURL := ref.GetURL()
-	log.Printf("basePath is %s", basePath)
 	if refURL == nil {
 		return nil
 	}
@@ -378,18 +376,15 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 	}
 
 	baseRef := normalizeFileRef(ref, basePath)
-	log.Printf("base ref: %s", baseRef.String())
 	debugLog("current ref normalized file: %s", baseRef.String())
 	data, _, _, err := r.load(baseRef.GetURL())
 	if err != nil {
-		log.Printf("ERROR %v", err)
 		return err
 	}
 
 	var res interface{}
 	res = data
 	if ref.String() != "" {
-		log.Printf("I am here")
 		res, _, err = ref.GetPointer().Get(data)
 		if err != nil {
 			return err
@@ -452,7 +447,6 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	if options != nil {
 		specBasePath, _ = absPath(options.RelativeBase)
 	}
-	log.Printf("basePath is %+v", specBasePath)
 
 	if options == nil || !options.SkipSchemas {
 		rt := fmt.Sprintf("%s#/definitions/", specBasePath)
@@ -514,8 +508,6 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 	if root == nil {
 		root = schema
 	}
-	b, _ := schema.MarshalJSON()
-	log.Printf("Expanding Schema Without BasePath: %s", string(b))
 
 	file, err := ioutil.TempFile(os.TempDir(), "root")
 	if err != nil {
@@ -545,9 +537,6 @@ func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *Expan
 	if schema == nil {
 		return nil
 	}
-
-	b, _ := schema.MarshalJSON()
-	log.Printf("Expanding Schema With BasePath: %s", string(b))
 
 	if opts == nil {
 		return errors.New("cannot expand schema without a basPath")
@@ -607,16 +596,10 @@ func basePathFromSchemaID(oldBasePath, id string) string {
 }
 
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
-	b, _ := target.MarshalJSON()
-	log.Printf("Expanding Schema: %s with base path: %s", string(b), basePath)
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
-		log.Printf("Ref is root")
 		// normalizing is important
 		newRef := normalizeFileRef(&target.Ref, basePath)
-		newBasePath := newRef.RemoteURI()
-		log.Printf("new basepath: %s", newBasePath)
 		target.Ref = *newRef
-		log.Printf("target.Ref is %s", target.Ref.String())
 		return &target, nil
 
 	}
@@ -628,7 +611,6 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		// handling the case when id is a folder
 		// remember that basePath has to be a file
 		refPath := target.ID
-		log.Printf("encountered id = %s", refPath)
 		if strings.HasSuffix(target.ID, "/") {
 			// path.Clean here would not work correctly if basepath is http
 			refPath = fmt.Sprintf("%s%s", refPath, "placeholder.json")
@@ -645,13 +627,10 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		/* Here the resolution scope is changed because a $ref was encountered */
 		newRef := normalizeFileRef(&target.Ref, basePath)
 		newBasePath := newRef.RemoteURI()
-		log.Printf("new basepath: %s", newBasePath)
 		/* this means there is a circle in the recursion tree */
 		/* return the Ref */
 		if swag.ContainsStringsCI(parentRefs, newRef.String()) {
-			log.Printf("Recursion Found!")
 			target.Ref = *newRef
-			log.Printf("target.Ref is %s", target.Ref.String())
 			return &target, nil
 		}
 		debugLog("\nbasePath: %s", basePath)
@@ -676,14 +655,10 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	}
 
 	for i := range target.AllOf {
-		b, _ := target.AllOf[i].MarshalJSON()
-		log.Printf("Expanding AllOf %s", string(b))
 		t, err := expandSchema(target.AllOf[i], parentRefs, resolver, basePath)
 		if shouldStopOnError(err, resolver.options) {
 			return &target, err
 		}
-		b, _ = t.MarshalJSON()
-		log.Printf("After Expansion %s", string(b))
 		target.AllOf[i] = *t
 	}
 	for i := range target.AnyOf {
