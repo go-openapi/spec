@@ -34,6 +34,16 @@ func jsonDoc(path string) (json.RawMessage, error) {
 	return json.RawMessage(data), nil
 }
 
+func TestSetResolutionCache(t *testing.T) {
+	cache := initResolutionCache()
+	assert.Equal(t, resCache, cache)
+
+	newCache := &simpleCache{store: map[string]interface{}{}}
+	SetResolutionCache(newCache)
+	assert.NotEqual(t, resCache, cache)
+	assert.Equal(t, resCache, newCache)
+}
+
 func TestExpandsKnownRef(t *testing.T) {
 	schema := RefProperty("http://json-schema.org/draft-04/schema#")
 	if assert.NoError(t, ExpandSchema(schema, nil, nil)) {
