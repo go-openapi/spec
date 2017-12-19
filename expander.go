@@ -535,7 +535,6 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 	if err != nil {
 		return err
 	}
-  defer os.Remove(file.Name())
 
 	switch r := root.(type) {
 	case *Schema:
