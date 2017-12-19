@@ -651,14 +651,16 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	/* Ref also changes the resolution scope of children expandSchema */
 	if target.Ref.String() != "" {
 		/* Here the resolution scope is changed because a $ref was encountered */
-		newRef := normalizeFileRef(&target.Ref, basePath)
-		newBasePath := newRef.RemoteURI()
+		normalizedRef := normalizeFileRef(&target.Ref, basePath)
+		normalizedBasePath := normalizedRef.RemoteURI()
+
 		/* this means there is a circle in the recursion tree */
 		/* return the Ref */
-		if swag.ContainsStringsCI(parentRefs, newRef.String()) {
-			target.Ref = *newRef
+		if basePath != "" && swag.ContainsStringsCI(parentRefs, normalizedRef.String()) {
+			target.Ref = *normalizedRef
 			return &target, nil
 		}
+
 		debugLog("\nbasePath: %s", basePath)
 		b, _ := json.Marshal(target)
 		debugLog("calling Resolve with target: %s", string(b))
@@ -667,8 +669,8 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 
 		if t != nil {
-			parentRefs = append(parentRefs, newRef.String())
-			return expandSchema(*t, parentRefs, resolver, newBasePath)
+			parentRefs = append(parentRefs, normalizedRef.String())
+			return expandSchema(*t, parentRefs, resolver, normalizedBasePath)
 		}
 	}
 
