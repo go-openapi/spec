@@ -444,6 +444,9 @@ func (r *schemaLoader) Resolve(ref *Ref, target interface{}, basePath string) er
 
 // absPath returns the absolute path of a file
 func absPath(fname string) (string, error) {
+	if strings.HasPrefix(fname, "http") {
+		return fname, nil
+	}
 	if filepath.IsAbs(fname) {
 		return fname, nil
 	}
