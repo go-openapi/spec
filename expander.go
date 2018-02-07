@@ -825,6 +825,21 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 	return nil
 }
 
+// ExpandResponse expands a response based on a basepath
+// This is the exported version of expandResponse
+// all refs inside response will be resolved relative to basePath
+func ExpandResponse(response *Response, basePath string) error {
+	opts := &ExpandOptions{
+		RelativeBase: basePath,
+	}
+	resolver, err := defaultSchemaLoader(nil, opts, nil)
+	if err != nil {
+		return err
+	}
+
+	return expandResponse(response, resolver, basePath)
+}
+
 func expandResponse(response *Response, resolver *schemaLoader, basePath string) error {
 	if response == nil {
 		return nil
@@ -856,6 +871,21 @@ func expandResponse(response *Response, resolver *schemaLoader, basePath string)
 		*response.Schema = *s
 	}
 	return nil
+}
+
+// ExpandParameter expands a parameter based on a basepath
+// This is the exported version of expandParameter
+// all refs inside parameter will be resolved relative to basePath
+func ExpandParameter(parameter *Parameter, basePath string) error {
+	opts := &ExpandOptions{
+		RelativeBase: basePath,
+	}
+	resolver, err := defaultSchemaLoader(nil, opts, nil)
+	if err != nil {
+		return err
+	}
+
+	return expandParameter(parameter, resolver, basePath)
 }
 
 func expandParameter(parameter *Parameter, resolver *schemaLoader, basePath string) error {
