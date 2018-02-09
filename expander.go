@@ -318,6 +318,17 @@ func debugLog(msg string, args ...interface{}) {
 	}
 }
 
+// normalize absolute path for cache.
+// on Windows, drive letters should be converted to lower as scheme in net/url.URL
+func normalizeAbsPath(path string) string {
+	u, err := url.Parse(path)
+	if err != nil {
+		debugLog("normalize absolute path failed: %s", err)
+		return path
+	}
+	return u.String()
+}
+
 // base or refPath could be a file path or a URL
 // given a base absolute path and a ref path, return the absolute path of refPath
 // 1) if refPath is absolute, return it
@@ -530,7 +541,7 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 		if cache == nil {
 			cache = resCache
 		}
-		cache.Set(base, root)
+		cache.Set(normalizeAbsPath(base), root)
 		base = "root"
 	}
 
