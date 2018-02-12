@@ -50,7 +50,7 @@
       }
     },
     "anotherPet": {
-      "$ref": "#/responses/petResponse"
+      "$ref": "pet/pet.json#/responses/anotherPet"
     }
   },
   "paths": {

@@ -1,4 +1,21 @@
 {
+  "responses": {
+    "petResponse": {
+      "description": "pet response",
+      "schema": {
+        "$ref": "#/definitions/pet"
+      }
+    },
+    "stringResponse": {
+      "descripion": "string response",
+      "schema": {
+        "type": "string"
+      }
+    },
+    "anotherPet": {
+      "$ref": "#/responses/petResponse"
+    }
+  },
   "definitions": {
     "pet": {
       "required": ["id", "name"],
