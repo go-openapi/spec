@@ -723,6 +723,10 @@ func TestRelativeBaseURI(t *testing.T) {
 	tagParam := spec.Parameters["tag"]
 	idParam := spec.Parameters["idParam"]
 
+	anotherPet := spec.Responses["anotherPet"]
+	anotherPet.Ref = MustCreateRef(server.URL + "/" + anotherPet.Ref.String())
+	err = ExpandResponse(&anotherPet, opts.RelativeBase)
+	spec.Responses["anotherPet"] = anotherPet
 	err = ExpandSpec(spec, opts)
 	assert.NoError(t, err)
 

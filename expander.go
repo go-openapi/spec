@@ -388,6 +388,7 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 		return nil
 	}
 
+	var res interface{}
 	var data interface{}
 	var err error
 	// Resolve against the root if it isn't nil, and if ref is pointing at the root, or has a fragment only which means
@@ -410,7 +411,6 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 		}
 	}
 
-	var res interface{}
 	res = data
 	if ref.String() != "" {
 		res, _, err = ref.GetPointer().Get(data)
@@ -421,6 +421,7 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 	if err := swag.DynamicJSONToStruct(res, target); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -773,11 +774,16 @@ func expandPathItem(pathItem *PathItem, resolver *schemaLoader, basePath string)
 		return nil
 	}
 
-	if pathItem.Ref.String() != "" {
+	curRef := pathItem.Ref.String()
+	for curRef != "" {
 		if err := resolver.Resolve(&pathItem.Ref, &pathItem, basePath); err != nil {
 			return err
 		}
-		pathItem.Ref = Ref{}
+		if curRef == pathItem.Ref.String() {
+			pathItem.Ref = Ref{}
+			break
+		}
+		curRef = pathItem.Ref.String()
 	}
 
 	for idx := range pathItem.Parameters {
@@ -858,29 +864,29 @@ func expandResponse(response *Response, resolver *schemaLoader, basePath string)
 
 	var parentRefs []string
 
-	if response.Ref.String() != "" {
-		parentRefs = append(parentRefs, response.Ref.String())
-		sch := new(Schema)
-		b, _ := response.MarshalJSON()
-		json.Unmarshal(b, sch)
-		s, _ := expandSchema(*sch, parentRefs, resolver, basePath)
-		// if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
-		// 	return err
-		// }
-		b, _ = s.MarshalJSON()
-		json.Unmarshal(b, response)
-		response.Ref = Ref{}
+	curRef := response.Ref.String()
+	for curRef != "" {
+		parentRefs = append(parentRefs, curRef)
+		if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
+			return err
+		}
+
+		if curRef == response.Ref.String() {
+			response.Ref = Ref{}
+			break
+		}
+		curRef = response.Ref.String()
 	}
 
 	if !resolver.options.SkipSchemas && response.Schema != nil {
 		parentRefs = append(parentRefs, response.Schema.Ref.String())
-		debugLog("response ref: %s", response.Schema.Ref)
 		s, err := expandSchema(*response.Schema, parentRefs, resolver, basePath)
 		if shouldStopOnError(err, resolver.options) {
 			return err
 		}
 		*response.Schema = *s
 	}
+
 	return nil
 }
 
@@ -906,13 +912,20 @@ func expandParameter(parameter *Parameter, resolver *schemaLoader, basePath stri
 
 	var parentRefs []string
 
-	if parameter.Ref.String() != "" {
-		parentRefs = append(parentRefs, parameter.Ref.String())
+	curRef := parameter.Ref.String()
+	for curRef != "" {
+		parentRefs = append(parentRefs, curRef)
 		if err := resolver.Resolve(&parameter.Ref, parameter, basePath); shouldStopOnError(err, resolver.options) {
 			return err
 		}
-		parameter.Ref = Ref{}
+
+		if curRef == parameter.Ref.String() {
+			parameter.Ref = Ref{}
+			break
+		}
+		curRef = parameter.Ref.String()
 	}
+
 	if !resolver.options.SkipSchemas && parameter.Schema != nil {
 		parentRefs = append(parentRefs, parameter.Schema.Ref.String())
 		s, err := expandSchema(*parameter.Schema, parentRefs, resolver, basePath)
