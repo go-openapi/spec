@@ -617,6 +617,10 @@ func basePathFromSchemaID(oldBasePath, id string) string {
 	return u.String()
 }
 
+func isCircular(ref *Ref, basePath string, parentRefs ...string) bool {
+	return basePath != "" && swag.ContainsStringsCI(parentRefs, ref.String())
+}
+
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
 		// normalizing is important
@@ -652,14 +656,16 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 
 		/* this means there is a circle in the recursion tree */
 		/* return the Ref */
-		if basePath != "" && swag.ContainsStringsCI(parentRefs, normalizedRef.String()) {
+		if isCircular(normalizedRef, basePath, parentRefs...) {
 			target.Ref = *normalizedRef
 			return &target, nil
 		}
 
 		debugLog("\nbasePath: %s", basePath)
-		b, _ := json.Marshal(target)
-		debugLog("calling Resolve with target: %s", string(b))
+		if Debug {
+			b, _ := json.Marshal(target)
+			debugLog("calling Resolve with target: %s", string(b))
+		}
 		if err := resolver.Resolve(&target.Ref, &t, basePath); shouldStopOnError(err, resolver.options) {
 			return nil, err
 		}
@@ -769,22 +775,41 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	return &target, nil
 }
 
+func derefPathItem(pathItem *PathItem, parentRefs []string, resolver *schemaLoader, basePath string) error {
+	curRef := pathItem.Ref.String()
+	if curRef != "" {
+		normalizedRef := normalizeFileRef(&pathItem.Ref, basePath)
+		normalizedBasePath := normalizedRef.RemoteURI()
+
+		if isCircular(normalizedRef, basePath, parentRefs...) {
+			return nil
+		}
+
+		if err := resolver.Resolve(&pathItem.Ref, pathItem, basePath); shouldStopOnError(err, resolver.options) {
+			return err
+		}
+
+		if pathItem.Ref.String() != "" && pathItem.Ref.String() != curRef && basePath != normalizedBasePath {
+			parentRefs = append(parentRefs, normalizedRef.String())
+			return derefPathItem(pathItem, parentRefs, resolver, normalizedBasePath)
+		}
+	}
+
+	return nil
+}
+
 func expandPathItem(pathItem *PathItem, resolver *schemaLoader, basePath string) error {
 	if pathItem == nil {
 		return nil
 	}
 
-	curRef := pathItem.Ref.String()
-	for curRef != "" {
-		if err := resolver.Resolve(&pathItem.Ref, &pathItem, basePath); err != nil {
-			return err
-		}
-		if curRef == pathItem.Ref.String() {
-			pathItem.Ref = Ref{}
-			break
-		}
-		curRef = pathItem.Ref.String()
+	parentRefs := []string{}
+	if err := derefPathItem(pathItem, parentRefs, resolver, basePath); shouldStopOnError(err, resolver.options) {
+		return err
 	}
+	pathItem.Ref = Ref{}
+
+	parentRefs = parentRefs[0:]
 
 	for idx := range pathItem.Parameters {
 		if err := expandParameter(&(pathItem.Parameters[idx]), resolver, basePath); shouldStopOnError(err, resolver.options) {
@@ -857,27 +882,42 @@ func ExpandResponse(response *Response, basePath string) error {
 	return expandResponse(response, resolver, basePath)
 }
 
+func derefResponse(response *Response, parentRefs []string, resolver *schemaLoader, basePath string) error {
+	curRef := response.Ref.String()
+	if curRef != "" {
+		/* Here the resolution scope is changed because a $ref was encountered */
+		normalizedRef := normalizeFileRef(&response.Ref, basePath)
+		normalizedBasePath := normalizedRef.RemoteURI()
+
+		if isCircular(normalizedRef, basePath, parentRefs...) {
+			return nil
+		}
+
+		if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
+			return err
+		}
+
+		if response.Ref.String() != "" && response.Ref.String() != curRef && basePath != normalizedBasePath {
+			parentRefs = append(parentRefs, normalizedRef.String())
+			return derefResponse(response, parentRefs, resolver, normalizedBasePath)
+		}
+	}
+
+	return nil
+}
+
 func expandResponse(response *Response, resolver *schemaLoader, basePath string) error {
 	if response == nil {
 		return nil
 	}
 
-	var parentRefs []string
-
-	curRef := response.Ref.String()
-	for curRef != "" {
-		parentRefs = append(parentRefs, curRef)
-		if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
-			return err
-		}
-
-		if curRef == response.Ref.String() {
-			response.Ref = Ref{}
-			break
-		}
-		curRef = response.Ref.String()
+	parentRefs := []string{}
+	if err := derefResponse(response, parentRefs, resolver, basePath); shouldStopOnError(err, resolver.options) {
+		return err
 	}
+	response.Ref = Ref{}
 
+	parentRefs = parentRefs[0:]
 	if !resolver.options.SkipSchemas && response.Schema != nil {
 		parentRefs = append(parentRefs, response.Schema.Ref.String())
 		s, err := expandSchema(*response.Schema, parentRefs, resolver, basePath)
@@ -905,27 +945,41 @@ func ExpandParameter(parameter *Parameter, basePath string) error {
 	return expandParameter(parameter, resolver, basePath)
 }
 
+func derefParameter(parameter *Parameter, parentRefs []string, resolver *schemaLoader, basePath string) error {
+	curRef := parameter.Ref.String()
+	if curRef != "" {
+		normalizedRef := normalizeFileRef(&parameter.Ref, basePath)
+		normalizedBasePath := normalizedRef.RemoteURI()
+
+		if isCircular(normalizedRef, basePath, parentRefs...) {
+			return nil
+		}
+
+		if err := resolver.Resolve(&parameter.Ref, parameter, basePath); shouldStopOnError(err, resolver.options) {
+			return err
+		}
+
+		if parameter.Ref.String() != "" && parameter.Ref.String() != curRef && basePath != normalizedBasePath {
+			parentRefs = append(parentRefs, normalizedRef.String())
+			return derefParameter(parameter, parentRefs, resolver, normalizedBasePath)
+		}
+	}
+
+	return nil
+}
+
 func expandParameter(parameter *Parameter, resolver *schemaLoader, basePath string) error {
 	if parameter == nil {
 		return nil
 	}
 
-	var parentRefs []string
-
-	curRef := parameter.Ref.String()
-	for curRef != "" {
-		parentRefs = append(parentRefs, curRef)
-		if err := resolver.Resolve(&parameter.Ref, parameter, basePath); shouldStopOnError(err, resolver.options) {
-			return err
-		}
-
-		if curRef == parameter.Ref.String() {
-			parameter.Ref = Ref{}
-			break
-		}
-		curRef = parameter.Ref.String()
+	parentRefs := []string{}
+	if err := derefParameter(parameter, parentRefs, resolver, basePath); shouldStopOnError(err, resolver.options) {
+		return err
 	}
+	parameter.Ref = Ref{}
 
+	parentRefs = parentRefs[0:]
 	if !resolver.options.SkipSchemas && parameter.Schema != nil {
 		parentRefs = append(parentRefs, parameter.Schema.Ref.String())
 		s, err := expandSchema(*parameter.Schema, parentRefs, resolver, basePath)

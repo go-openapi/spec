@@ -12,6 +12,12 @@
         "type": "string"
       }
     },
+    "circularB": {
+      "$ref": "#/responses/circularC"
+    },
+    "circularC": {
+      "$ref": "../all-the-things.json#/responses/circularA"
+    },
     "anotherPet": {
       "$ref": "#/responses/petResponse"
     }

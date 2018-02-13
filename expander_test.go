@@ -726,7 +726,15 @@ func TestRelativeBaseURI(t *testing.T) {
 	anotherPet := spec.Responses["anotherPet"]
 	anotherPet.Ref = MustCreateRef(server.URL + "/" + anotherPet.Ref.String())
 	err = ExpandResponse(&anotherPet, opts.RelativeBase)
+	assert.NoError(t, err)
 	spec.Responses["anotherPet"] = anotherPet
+
+	circularA := spec.Responses["circularA"]
+	circularA.Ref = MustCreateRef(server.URL + "/" + circularA.Ref.String())
+	err = ExpandResponse(&circularA, opts.RelativeBase)
+	assert.NoError(t, err)
+	spec.Responses["circularA"] = circularA
+
 	err = ExpandSpec(spec, opts)
 	assert.NoError(t, err)
 
