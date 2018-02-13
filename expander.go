@@ -785,11 +785,11 @@ func derefPathItem(pathItem *PathItem, parentRefs []string, resolver *schemaLoad
 			return nil
 		}
 
-		if err := resolver.Resolve(normalizedRef, pathItem, basePath); shouldStopOnError(err, resolver.options) {
+		if err := resolver.Resolve(&pathItem.Ref, pathItem, basePath); shouldStopOnError(err, resolver.options) {
 			return err
 		}
 
-		if pathItem.Ref.String() != "" {
+		if pathItem.Ref.String() != "" && pathItem.Ref.String() != curRef && basePath != normalizedBasePath {
 			parentRefs = append(parentRefs, normalizedRef.String())
 			return derefPathItem(pathItem, parentRefs, resolver, normalizedBasePath)
 		}
@@ -893,11 +893,11 @@ func derefResponse(response *Response, parentRefs []string, resolver *schemaLoad
 			return nil
 		}
 
-		if err := resolver.Resolve(normalizedRef, response, basePath); shouldStopOnError(err, resolver.options) {
+		if err := resolver.Resolve(&response.Ref, response, basePath); shouldStopOnError(err, resolver.options) {
 			return err
 		}
 
-		if response.Ref.String() != "" {
+		if response.Ref.String() != "" && response.Ref.String() != curRef && basePath != normalizedBasePath {
 			parentRefs = append(parentRefs, normalizedRef.String())
 			return derefResponse(response, parentRefs, resolver, normalizedBasePath)
 		}
@@ -955,11 +955,11 @@ func derefParameter(parameter *Parameter, parentRefs []string, resolver *schemaL
 			return nil
 		}
 
-		if err := resolver.Resolve(normalizedRef, parameter, basePath); shouldStopOnError(err, resolver.options) {
+		if err := resolver.Resolve(&parameter.Ref, parameter, basePath); shouldStopOnError(err, resolver.options) {
 			return err
 		}
 
-		if parameter.Ref.String() != "" {
+		if parameter.Ref.String() != "" && parameter.Ref.String() != curRef && basePath != normalizedBasePath {
 			parentRefs = append(parentRefs, normalizedRef.String())
 			return derefParameter(parameter, parentRefs, resolver, normalizedBasePath)
 		}
