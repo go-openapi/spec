@@ -342,7 +342,11 @@ func normalizePaths(refPath, base string) string {
 			return refPath
 		}
 		parts := strings.Split(refPath, "#")
-		return fmt.Sprintf("%s#%s", filepath.FromSlash(parts[0]), parts[1])
+		result := filepath.FromSlash(parts[0])
+		if len(parts) == 2 {
+			result += "#" + parts[1]
+		}
+		return result
 	}
 
 	// relative refPath
