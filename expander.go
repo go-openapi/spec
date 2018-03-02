@@ -336,12 +336,13 @@ func normalizeAbsPath(path string) string {
 // base could be a directory or a full file path
 func normalizePaths(refPath, base string) string {
 	refURL, _ := url.Parse(refPath)
-	if path.IsAbs(refURL.Path) {
+	if path.IsAbs(refURL.Path) || filepath.IsAbs(refPath) {
 		// refPath is actually absolute
 		if refURL.Host != "" {
 			return refPath
 		}
-		return filepath.FromSlash(refPath)
+		parts := strings.Split(refPath, "#")
+		return fmt.Sprintf("%s#%s", filepath.FromSlash(parts[0]), parts[1])
 	}
 
 	// relative refPath
