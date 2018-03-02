@@ -61,6 +61,12 @@ func TestNormalizePaths(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			testCases = append(testCases, testNormalizePathsTestCases{
 				{
+					// file basePath, absolute refPath, no fragment
+					refPath:   `C:\another\base\path.json`,
+					base:      `C:\base\path.json`,
+					expOutput: `C:\another\base\path.json`,
+				},
+				{
 					// file basePath, absolute refPath
 					refPath:   `C:\another\base\path.json#/definitions/Pet`,
 					base:      `C:\base\path.json`,
@@ -77,6 +83,12 @@ func TestNormalizePaths(t *testing.T) {
 		}
 		// linux case
 		testCases = append(testCases, testNormalizePathsTestCases{
+			{
+				// file basePath, absolute refPath, no fragment
+				refPath:   "/another/base/path.json",
+				base:      "/base/path.json",
+				expOutput: "/another/base/path.json",
+			},
 			{
 				// file basePath, absolute refPath
 				refPath:   "/another/base/path.json#/definitions/Pet",
