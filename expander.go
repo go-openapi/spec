@@ -23,7 +23,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -431,9 +430,11 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 	toFetch := *refURL
 	toFetch.Fragment = ""
 
-	data, fromCache := r.cache.Get(toFetch.String())
+	normalized := normalizeAbsPath(toFetch.String())
+
+	data, fromCache := r.cache.Get(normalized)
 	if !fromCache {
-		b, err := r.loadDoc(toFetch.String())
+		b, err := r.loadDoc(normalized)
 		if err != nil {
 			return nil, url.URL{}, false, err
 		}
@@ -441,7 +442,7 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 		if err := json.Unmarshal(b, &data); err != nil {
 			return nil, url.URL{}, false, err
 		}
-		r.cache.Set(toFetch.String(), data)
+		r.cache.Set(normalized, data)
 	}
 
 	return data, toFetch, fromCache, nil
@@ -464,14 +465,7 @@ func absPath(fname string) (string, error) {
 		return fname, nil
 	}
 	wd, err := os.Getwd()
-	fullPath := filepath.Join(wd, fname)
-
-	submatches := regexp.MustCompile(`^[\w]+:`).FindStringSubmatch(fullPath)
-	if len(submatches) > 0 {
-		fullPath = strings.ToLower(submatches[0])+fullPath[len(submatches[0]):]
-	}
-
-	return fullPath, err
+	return filepath.Join(wd, fname), err
 }
 
 // ExpandSpec expands the references in a swagger spec
