@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -463,7 +464,14 @@ func absPath(fname string) (string, error) {
 		return fname, nil
 	}
 	wd, err := os.Getwd()
-	return filepath.Join(wd, fname), err
+	fullPath := filepath.Join(wd, fname)
+
+	submatches := regexp.MustCompile(`^[\w]+:`).FindStringSubmatch(fullPath)
+	if len(submatches) > 0 {
+		fullPath = strings.ToLower(submatches[0])+fullPath[len(submatches[0]):]
+	}
+
+	return fullPath, err
 }
 
 // ExpandSpec expands the references in a swagger spec
