@@ -210,29 +210,6 @@ var PathLoader func(string) (json.RawMessage, error)
 
 func init() {
 	PathLoader = func(path string) (json.RawMessage, error) {
-		// raw, err := swag.LoadFromFileOrHTTP(path)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// var spec *Swagger
-		// err = json.Unmarshal(raw, &spec)
-
-		// s := *spec
-
-		// opts := &ExpandOptions{}
-		// opts.RelativeBase, err = absPath(path)
-		// if err != nil {
-		// 	opts.RelativeBase = path
-		// }
-		// opts.ContinueOnError = false
-
-		// err = ExpandSpec(&s, opts)
-		// if err != nil {
-		// 	return json.Marshal(spec)
-		// }
-
-		// return json.Marshal(s)
 		data, err := swag.LoadFromFileOrHTTP(path)
 		if err != nil {
 			return nil, err
