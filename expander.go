@@ -30,11 +30,6 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-var (
-	// Debug enables logging when SWAGGER_DEBUG env var is not empty
-	Debug = os.Getenv("SWAGGER_DEBUG") != ""
-)
-
 // ExpandOptions provides options for expand.
 type ExpandOptions struct {
 	RelativeBase    string
@@ -67,6 +62,21 @@ func initResolutionCache() ResolutionCache {
 	}}
 }
 
+// resolverContext allows to share a context during spec processing.
+// At the moment, it just holds the index of circular references found.
+type resolverContext struct {
+	// circulars holds all visited circular references, which allows shortcuts.
+	// NOTE: this is not just a performance improvement: it is required to figure out
+	// circular references which participate several cycles.
+	circulars map[string]bool
+}
+
+func newResolverContext() *resolverContext {
+	return &resolverContext{
+		circulars: make(map[string]bool),
+	}
+}
+
 // Get retrieves a cached URI
 func (s *simpleCache) Get(uri string) (interface{}, bool) {
 	debugLog("getting %q from resolution cache", uri)
@@ -87,7 +97,7 @@ func (s *simpleCache) Set(uri string, data interface{}) {
 
 // ResolveRefWithBase resolves a reference against a context root with preservation of base path
 func ResolveRefWithBase(root interface{}, ref *Ref, opts *ExpandOptions) (*Schema, error) {
-	resolver, err := defaultSchemaLoader(root, opts, nil)
+	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +143,7 @@ func ResolveParameter(root interface{}, ref Ref) (*Parameter, error) {
 
 // ResolveParameterWithBase resolves a parameter reference against a context root and base path
 func ResolveParameterWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*Parameter, error) {
-	resolver, err := defaultSchemaLoader(root, opts, nil)
+	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +162,7 @@ func ResolveResponse(root interface{}, ref Ref) (*Response, error) {
 
 // ResolveResponseWithBase resolves response a reference against a context root and base path
 func ResolveResponseWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*Response, error) {
-	resolver, err := defaultSchemaLoader(root, opts, nil)
+	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +176,7 @@ func ResolveResponseWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*R
 
 // ResolveItems resolves header and parameter items reference against a context root and base path
 func ResolveItems(root interface{}, ref Ref, opts *ExpandOptions) (*Items, error) {
-	resolver, err := defaultSchemaLoader(root, opts, nil)
+	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +193,7 @@ func ResolveItems(root interface{}, ref Ref, opts *ExpandOptions) (*Items, error
 
 // ResolvePathItem resolves response a path item against a context root and base path
 func ResolvePathItem(root interface{}, ref Ref, opts *ExpandOptions) (*PathItem, error) {
-	resolver, err := defaultSchemaLoader(root, opts, nil)
+	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +212,7 @@ type schemaLoader struct {
 	root    interface{}
 	options *ExpandOptions
 	cache   ResolutionCache
+	context *resolverContext
 	loadDoc func(string) (json.RawMessage, error)
 }
 
@@ -224,7 +235,8 @@ func init() {
 func defaultSchemaLoader(
 	root interface{},
 	expandOptions *ExpandOptions,
-	cache ResolutionCache) (*schemaLoader, error) {
+	cache ResolutionCache,
+	context *resolverContext) (*schemaLoader, error) {
 
 	if cache == nil {
 		cache = resCache
@@ -232,11 +244,14 @@ func defaultSchemaLoader(
 	if expandOptions == nil {
 		expandOptions = &ExpandOptions{}
 	}
-
+	if context == nil {
+		context = newResolverContext()
+	}
 	return &schemaLoader{
 		root:    root,
 		options: expandOptions,
 		cache:   cache,
+		context: context,
 		loadDoc: func(path string) (json.RawMessage, error) {
 			debugLog("fetching document at %q", path)
 			return PathLoader(path)
@@ -315,12 +330,6 @@ func nextRef(startingNode interface{}, startingRef *Ref, ptr *jsonpointer.Pointe
 	return ret
 }
 
-func debugLog(msg string, args ...interface{}) {
-	if Debug {
-		log.Printf(msg, args...)
-	}
-}
-
 // normalize absolute path for cache.
 // on Windows, drive letters should be converted to lower as scheme in net/url.URL
 func normalizeAbsPath(path string) string {
@@ -369,6 +378,19 @@ func normalizePaths(refPath, base string) string {
 	return baseURL.String()
 }
 
+// denormalizePaths returns to simplest notation on file $ref,
+// i.e. strips the absolute path and sets a path relative to the base path.
+//
+// This is currently used when we rewrite ref after a circular ref has been detected
+func denormalizeFileRef(ref *Ref, relativeBase string) *Ref {
+	if ref.String() == "" || ref.IsRoot() || ref.HasFragmentOnly {
+		return ref
+	}
+	// strip relativeBase from URI
+	r, _ := NewRef(strings.TrimPrefix(ref.String(), relativeBase))
+	return &r
+}
+
 // relativeBase could be an ABSOLUTE file path or an ABSOLUTE URL
 func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 	// This is important for when the reference is pointing to the root schema
@@ -377,8 +399,7 @@ func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
 		return &r
 	}
 
-	refURL := ref.GetURL()
-	debugLog("normalizing %s against %s (%s)", ref.String(), relativeBase, refURL.String())
+	debugLog("normalizing %s against %s (%s)", ref.String(), relativeBase, ref.GetURL().String())
 
 	s := normalizePaths(ref.String(), relativeBase)
 	r, _ := NewRef(s)
@@ -478,7 +499,7 @@ func absPath(fname string) (string, error) {
 
 // ExpandSpec expands the references in a swagger spec
 func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
-	resolver, err := defaultSchemaLoader(spec, options, nil)
+	resolver, err := defaultSchemaLoader(spec, options, nil, nil)
 	// Just in case this ever returns an error.
 	if shouldStopOnError(err, resolver.options) {
 		return err
@@ -575,7 +596,7 @@ func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *Expan
 		basePath, _ = absPath(opts.RelativeBase)
 	}
 
-	resolver, err := defaultSchemaLoader(nil, opts, cache)
+	resolver, err := defaultSchemaLoader(nil, opts, cache, nil)
 	if err != nil {
 		return err
 	}
@@ -627,8 +648,18 @@ func basePathFromSchemaID(oldBasePath, id string) string {
 	return u.String()
 }
 
-func isCircular(ref *Ref, basePath string, parentRefs ...string) bool {
-	return basePath != "" && swag.ContainsStringsCI(parentRefs, ref.String())
+func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...string) (foundCycle bool) {
+	normalizedRef := normalizePaths(ref.String(), basePath)
+	if _, ok := r.context.circulars[normalizedRef]; ok {
+		// circular $ref has been already detected in another explored cycle
+		foundCycle = true
+		return
+	}
+	foundCycle = swag.ContainsStringsCI(parentRefs, normalizedRef)
+	if foundCycle {
+		r.context.circulars[normalizedRef] = true
+	}
+	return
 }
 
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
@@ -666,12 +697,14 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 
 		/* this means there is a circle in the recursion tree */
 		/* return the Ref */
-		if isCircular(normalizedRef, basePath, parentRefs...) {
-			target.Ref = *normalizedRef
+		if resolver.isCircular(normalizedRef, basePath, parentRefs...) {
+			debugLog("shortcut circular ref")
+			// circular refs cannot be expanded. We leave them as ref
+			target.Ref = *denormalizeFileRef(normalizedRef, basePath)
 			return &target, nil
 		}
 
-		debugLog("\nbasePath: %s", basePath)
+		debugLog("basePath: %s", basePath)
 		if Debug {
 			b, _ := json.Marshal(target)
 			debugLog("calling Resolve with target: %s", string(b))
@@ -687,7 +720,6 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			if shouldStopOnError(err, resolver.options) {
 				return nil, err
 			}
-
 			return expandSchema(*t, parentRefs, resolver, normalizedBasePath)
 		}
 	}
@@ -797,7 +829,7 @@ func derefPathItem(pathItem *PathItem, parentRefs []string, resolver *schemaLoad
 		normalizedRef := normalizeFileRef(&pathItem.Ref, basePath)
 		normalizedBasePath := normalizedRef.RemoteURI()
 
-		if isCircular(normalizedRef, basePath, parentRefs...) {
+		if resolver.isCircular(normalizedRef, basePath, parentRefs...) {
 			return nil
 		}
 
@@ -904,7 +936,7 @@ func transitiveResolver(basePath string, ref Ref, resolver *schemaLoader) (*sche
 		rootURL.Fragment = ""
 		root, _ := resolver.cache.Get(rootURL.String())
 		var err error
-		resolver, err = defaultSchemaLoader(root, resolver.options, resolver.cache)
+		resolver, err = defaultSchemaLoader(root, resolver.options, resolver.cache, resolver.context)
 		if err != nil {
 			return nil, err
 		}
@@ -920,7 +952,7 @@ func ExpandResponse(response *Response, basePath string) error {
 	opts := &ExpandOptions{
 		RelativeBase: basePath,
 	}
-	resolver, err := defaultSchemaLoader(nil, opts, nil)
+	resolver, err := defaultSchemaLoader(nil, opts, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -935,7 +967,7 @@ func derefResponse(response *Response, parentRefs []string, resolver *schemaLoad
 		normalizedRef := normalizeFileRef(&response.Ref, basePath)
 		normalizedBasePath := normalizedRef.RemoteURI()
 
-		if isCircular(normalizedRef, basePath, parentRefs...) {
+		if resolver.isCircular(normalizedRef, basePath, parentRefs...) {
 			return nil
 		}
 
@@ -998,7 +1030,7 @@ func ExpandParameter(parameter *Parameter, basePath string) error {
 	opts := &ExpandOptions{
 		RelativeBase: basePath,
 	}
-	resolver, err := defaultSchemaLoader(nil, opts, nil)
+	resolver, err := defaultSchemaLoader(nil, opts, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -1012,7 +1044,7 @@ func derefParameter(parameter *Parameter, parentRefs []string, resolver *schemaL
 		normalizedRef := normalizeFileRef(&parameter.Ref, basePath)
 		normalizedBasePath := normalizedRef.RemoteURI()
 
-		if isCircular(normalizedRef, basePath, parentRefs...) {
+		if resolver.isCircular(normalizedRef, basePath, parentRefs...) {
 			return nil
 		}
 
