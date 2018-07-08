@@ -968,6 +968,14 @@ func expandResponse(response *Response, resolver *schemaLoader, basePath string)
 			return err
 		}
 	}
+	if response.Schema != nil && response.Schema.Ref.String() != "" {
+		// schema expanded to a $ref in another root
+		var ern error
+		response.Schema.Ref, ern = NewRef(normalizePaths(response.Schema.Ref.String(), response.Ref.RemoteURI()))
+		if ern != nil {
+			return ern
+		}
+	}
 	response.Ref = Ref{}
 
 	parentRefs = parentRefs[0:]
@@ -1035,6 +1043,15 @@ func expandParameter(parameter *Parameter, resolver *schemaLoader, basePath stri
 		resolver, err = transitiveResolver(basePath, parameter.Ref, resolver)
 		if shouldStopOnError(err, resolver.options) {
 			return err
+		}
+	}
+
+	if parameter.Schema != nil && parameter.Schema.Ref.String() != "" {
+		// schema expanded to a $ref in another root
+		var ern error
+		parameter.Schema.Ref, ern = NewRef(normalizePaths(parameter.Schema.Ref.String(), parameter.Ref.RemoteURI()))
+		if ern != nil {
+			return ern
 		}
 	}
 	parameter.Ref = Ref{}
