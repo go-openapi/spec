@@ -17,4 +17,3 @@ linters:
   enable-all: true
   disable:
     - maligned
-    - unparam
