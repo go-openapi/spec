@@ -30,17 +30,21 @@ func init() {
 }
 
 // OperationProps describes an operation
+//
+// NOTES:
+// - schemes, when present must be from [http, https, ws, wss]: see validate
+// - Security is handled as a special case: see MarshalJSON function
 type OperationProps struct {
 	Description  string                 `json:"description,omitempty"`
 	Consumes     []string               `json:"consumes,omitempty"`
 	Produces     []string               `json:"produces,omitempty"`
-	Schemes      []string               `json:"schemes,omitempty"` // the scheme, when present must be from [http, https, ws, wss]
+	Schemes      []string               `json:"schemes,omitempty"`
 	Tags         []string               `json:"tags,omitempty"`
 	Summary      string                 `json:"summary,omitempty"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
 	ID           string                 `json:"operationId,omitempty"`
 	Deprecated   bool                   `json:"deprecated,omitempty"`
-	Security     []map[string][]string  `json:"security,omitempty"` //Special case, see MarshalJSON function
+	Security     []map[string][]string  `json:"security,omitempty"`
 	Parameters   []Parameter            `json:"parameters,omitempty"`
 	Responses    *Responses             `json:"responses,omitempty"`
 }
@@ -107,10 +111,7 @@ func (o *Operation) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &o.OperationProps); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(data, &o.VendorExtensible); err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(data, &o.VendorExtensible)
 }
 
 // MarshalJSON converts this items object to JSON
