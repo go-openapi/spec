@@ -17,6 +17,7 @@ package spec_test
 import (
 	"encoding/json"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -26,7 +27,7 @@ import (
 )
 
 // mimics what the go-openapi/load does
-var yamlLoader func(string) (json.RawMessage, error) = swag.YAMLDoc
+var yamlLoader = swag.YAMLDoc
 
 func loadOrFail(t *testing.T, path string) *spec.Swagger {
 	raw, erl := yamlLoader(path)
@@ -59,6 +60,8 @@ func Test_Issue1429(t *testing.T) {
 		t.FailNow()
 		return
 	}
+	//bbb, _ := json.MarshalIndent(sp, "", " ")
+	//t.Log(string(bbb))
 
 	// assert well expanded
 	if !assert.Truef(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture") {
@@ -141,5 +144,54 @@ func Test_Issue1429(t *testing.T) {
 	}
 	for _, def := range sp.Definitions {
 		assert.Contains(t, def.Ref.String(), "responses.yaml#/")
+	}
+}
+
+func Test_MoreLocalExpansion(t *testing.T) {
+	prevPathLoader := spec.PathLoader
+	defer func() {
+		spec.PathLoader = prevPathLoader
+	}()
+	spec.PathLoader = yamlLoader
+	path := filepath.Join("fixtures", "local_expansion", "spec2.yaml")
+
+	// load and full expand
+	sp := loadOrFail(t, path)
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return
+	}
+	// asserts all $ref expanded
+	jazon, _ := json.MarshalIndent(sp, "", " ")
+	assert.NotContains(t, jazon, `"$ref"`)
+	//t.Log(string(jazon))
+}
+
+func Test_Issue69(t *testing.T) {
+	// this checks expansion for the dapperbox spec (circular ref issues)
+
+	path := filepath.Join("fixtures", "bugs", "69", "dapperbox.json")
+
+	// expand with relative path
+	// load and expand
+	sp := loadOrFail(t, path)
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return
+	}
+	// asserts all $ref expanded
+	jazon, _ := json.MarshalIndent(sp, "", " ")
+
+	// assert all $ref maches  "$ref": "#/definitions/something"
+	rex := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m := rex.FindAllStringSubmatch(string(jazon), -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
+				"expected $ref to be inlined, got: %s", matched[0])
+		}
 	}
 }
