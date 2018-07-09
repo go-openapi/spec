@@ -248,8 +248,9 @@ func defaultSchemaLoader(
 	if expandOptions == nil {
 		expandOptions = &ExpandOptions{}
 	}
+	absBase, _ := absPath(expandOptions.RelativeBase)
 	if context == nil {
-		context = newResolverContext(expandOptions.RelativeBase)
+		context = newResolverContext(absBase)
 	}
 	return &schemaLoader{
 		root:    root,
