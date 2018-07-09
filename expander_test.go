@@ -22,7 +22,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/go-openapi/jsonpointer"
@@ -379,25 +381,25 @@ func TestCircularRefsExpansion(t *testing.T) {
 }
 
 func TestCircularSpec2Expansion(t *testing.T) {
-	// TODO: assert repeatable result
+	// TODO: assert repeatable results (see commented section below)
+
 	fixturePath := filepath.Join("fixtures", "expansion", "circular-minimal.json")
 	jazon := expandThisOrDieTrying(t, fixturePath)
+	assert.NotEmpty(t, jazon)
 	// assert stripped $ref in result
 	assert.NotContainsf(t, jazon, "circular-minimal.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
 	fixturePath = "fixtures/expansion/circularSpec2.json"
 	jazon = expandThisOrDieTrying(t, fixturePath)
+	assert.NotEmpty(t, jazon)
 	assert.NotContainsf(t, jazon, "circularSpec.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
-	fixturePath = "fixtures/bugs/957/fixture-957.json"
-	jazon = expandThisOrDieTrying(t, fixturePath)
-	assert.NotContainsf(t, jazon, "fixture-957.json#/",
-		"expected %s to be expanded with stripped circular $ref", fixturePath)
 	/*
 
-		At the moment, the result of expanding circular references is not stable, when several cycles have intersections:
+		At the moment, the result of expanding circular references is not stable,
+		when several cycles have intersections:
 		the spec structure is randomly walked through and mutating as expansion is carried out.
 		detected cycles in $ref are not necessarily the shortest matches.
 
@@ -412,6 +414,159 @@ func TestCircularSpec2Expansion(t *testing.T) {
 				}
 			}
 	*/
+}
+
+func Test_MoreCircular(t *testing.T) {
+	// Additional testcase for circular $ref (from go-openapi/validate):
+	// - $ref with file = current file
+	// - circular is located in remote file
+	//
+	// There are 4 variants to run:
+	// - with/without $ref with local file (so its not really remote)
+	// - with circular in a schema in  #/responses
+	// - with circular in a schema in  #/parameters
+
+	fixturePath := "fixtures/more_circulars/spec.json"
+	jazon := expandThisOrDieTrying(t, fixturePath)
+	rex := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m := rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "item.json#/item"),
+				"expected $ref to be relative, got: %s", matched[0])
+		}
+	}
+
+	fixturePath = "fixtures/more_circulars/spec2.json"
+	jazon = expandThisOrDieTrying(t, fixturePath)
+	rex = regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m = rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "item2.json#/item"),
+				"expected $ref to be relative, got: %s", matched[0])
+		}
+	}
+
+	fixturePath = "fixtures/more_circulars/spec3.json"
+	jazon = expandThisOrDieTrying(t, fixturePath)
+	rex = regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m = rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "item.json#/item"),
+				"expected $ref to be relative, got: %s", matched[0])
+		}
+	}
+
+	fixturePath = "fixtures/more_circulars/spec4.json"
+	jazon = expandThisOrDieTrying(t, fixturePath)
+	rex = regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m = rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "item4.json#/item"),
+				"expected $ref to be relative, got: %s", matched[0])
+		}
+	}
+}
+
+func Test_Issue957(t *testing.T) {
+	fixturePath := "fixtures/bugs/957/fixture-957.json"
+	jazon := expandThisOrDieTrying(t, fixturePath)
+	if assert.NotEmpty(t, jazon) {
+		assert.NotContainsf(t, jazon, "fixture-957.json#/",
+			"expected %s to be expanded with stripped circular $ref", fixturePath)
+		rex := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+		m := rex.FindAllStringSubmatch(jazon, -1)
+		if assert.NotNil(t, m) {
+			for _, matched := range m {
+				subMatch := matched[1]
+				assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
+					"expected $ref to be inlined, got: %s", matched[0])
+			}
+		}
+		//t.Log(jazon)
+	}
+}
+
+func Test_Bitbucket(t *testing.T) {
+	// Additional testcase for circular $ref (from bitbucket api)
+
+	fixturePath := "fixtures/more_circulars/bitbucket.json"
+	jazon := expandThisOrDieTrying(t, fixturePath)
+	rex := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m := rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
+				"expected $ref to be inlined, got: %s", matched[0])
+		}
+	}
+}
+
+func Test_ExpandJSONSchemaDraft4(t *testing.T) {
+	fixturePath := filepath.Join("schemas", "jsonschema-draft-04.json")
+	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+	// assert all $ref maches  "$ref": "http://json-schema.org/draft-04/something"
+	rex := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m := rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "http://json-schema.org/draft-04/"),
+				"expected $ref to be remote, got: %s", matched[0])
+		}
+	}
+}
+
+func Test_ExpandSwaggerSchema(t *testing.T) {
+	fixturePath := filepath.Join("schemas", "v2", "schema.json")
+	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+	// assert all $ref maches  "$ref": "#/definitions/something"
+	rex := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+	m := rex.FindAllStringSubmatch(jazon, -1)
+	if assert.NotNil(t, m) {
+		for _, matched := range m {
+			subMatch := matched[1]
+			assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
+				"expected $ref to be inlined, got: %s", matched[0])
+		}
+	}
+}
+
+func expandThisSchemaOrDieTrying(t *testing.T, fixturePath string) string {
+	doc, err := jsonDoc(fixturePath)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return ""
+	}
+
+	specPath, _ := absPath(fixturePath)
+
+	opts := &ExpandOptions{
+		RelativeBase: specPath,
+	}
+
+	sch := new(Schema)
+	err = json.Unmarshal(doc, sch)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return ""
+	}
+
+	assert.NotPanics(t, func() {
+		err = ExpandSchemaWithBasePath(sch, nil, opts)
+		assert.NoError(t, err)
+	}, "Calling expand schema circular refs, should not panic!")
+
+	bbb, _ := json.MarshalIndent(sch, "", " ")
+	return string(bbb)
 }
 
 func expandThisOrDieTrying(t *testing.T, fixturePath string) string {

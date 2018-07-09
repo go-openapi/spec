@@ -68,13 +68,16 @@ type resolverContext struct {
 	// circulars holds all visited circular references, which allows shortcuts.
 	// NOTE: this is not just a performance improvement: it is required to figure out
 	// circular references which participate several cycles.
-	sync.RWMutex
+	// This structure is privately instantiated and needs not be locked against
+	// concurrent access, unless we chose to implement a parallel spec walking.
 	circulars map[string]bool
+	basePath  string
 }
 
-func newResolverContext() *resolverContext {
+func newResolverContext(originalBasePath string) *resolverContext {
 	return &resolverContext{
 		circulars: make(map[string]bool),
+		basePath:  originalBasePath, // keep the root base path in context
 	}
 }
 
@@ -246,7 +249,7 @@ func defaultSchemaLoader(
 		expandOptions = &ExpandOptions{}
 	}
 	if context == nil {
-		context = newResolverContext()
+		context = newResolverContext(expandOptions.RelativeBase)
 	}
 	return &schemaLoader{
 		root:    root,
@@ -383,14 +386,52 @@ func normalizePaths(refPath, base string) string {
 // i.e. strips the absolute path and sets a path relative to the base path.
 //
 // This is currently used when we rewrite ref after a circular ref has been detected
-func denormalizeFileRef(ref *Ref, relativeBase string) *Ref {
+func denormalizeFileRef(ref *Ref, relativeBase, originalRelativeBase string) *Ref {
+	debugLog("denormalizeFileRef for: %s", ref.String())
+
 	if ref.String() == "" || ref.IsRoot() || ref.HasFragmentOnly {
 		return ref
 	}
 	// strip relativeBase from URI
 	relativeBaseURL, _ := url.Parse(relativeBase)
 	relativeBaseURL.Fragment = ""
-	r, _ := NewRef(strings.TrimPrefix(ref.String(), relativeBaseURL.String()))
+
+	if relativeBaseURL.IsAbs() && strings.HasPrefix(ref.String(), relativeBase) {
+		// this should work for absolute URI (e.g. http://...): we have an exact match, just trim prefix
+		r, _ := NewRef(strings.TrimPrefix(ref.String(), relativeBase))
+		return &r
+	}
+
+	if relativeBaseURL.IsAbs() {
+		// other absolute URL get unchanged (i.e. with a non-empty scheme)
+		return ref
+	}
+
+	// for relative file URIs:
+	originalRelativeBaseURL, _ := url.Parse(originalRelativeBase)
+	originalRelativeBaseURL.Fragment = ""
+	if strings.HasPrefix(ref.String(), originalRelativeBaseURL.String()) {
+		// the resulting ref is in the expanded spec: return a local ref
+		r, _ := NewRef(strings.TrimPrefix(ref.String(), originalRelativeBaseURL.String()))
+		return &r
+	}
+
+	// check if we may set a relative path, considering the original base path for this spec.
+	// Example:
+	//   spec is located at /mypath/spec.json
+	//   my normalized ref points to: /mypath/item.json#/target
+	//   expected result: item.json#/target
+	parts := strings.Split(ref.String(), "#")
+	relativePath, err := filepath.Rel(path.Dir(originalRelativeBaseURL.String()), parts[0])
+	if err != nil {
+		// there is no common ancestor (e.g. different drives on windows)
+		// leaves the ref unchanged
+		return ref
+	}
+	if len(parts) == 2 {
+		relativePath += "#" + parts[1]
+	}
+	r, _ := NewRef(relativePath)
 	return &r
 }
 
@@ -651,10 +692,10 @@ func basePathFromSchemaID(oldBasePath, id string) string {
 	return u.String()
 }
 
+// isCircular detects cycles in sequences of $ref.
+// It relies on a private context (which needs not be locked).
 func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...string) (foundCycle bool) {
 	normalizedRef := normalizePaths(ref.String(), basePath)
-	r.context.Lock()
-	defer r.context.Unlock()
 	if _, ok := r.context.circulars[normalizedRef]; ok {
 		// circular $ref has been already detected in another explored cycle
 		foundCycle = true
@@ -699,12 +740,15 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		normalizedRef := normalizeFileRef(&target.Ref, basePath)
 		normalizedBasePath := normalizedRef.RemoteURI()
 
-		/* this means there is a circle in the recursion tree */
-		/* return the Ref */
 		if resolver.isCircular(normalizedRef, basePath, parentRefs...) {
+			// this means there is a cycle in the recursion tree: return the Ref
+			// - circular refs cannot be expanded. We leave them as ref.
+			// - denormalization means that a new local file ref is set relative to the original basePath
 			debugLog("shortcut circular ref")
-			// circular refs cannot be expanded. We leave them as ref
-			target.Ref = *denormalizeFileRef(normalizedRef, basePath)
+			debugLog("basePath: %s", basePath)
+			debugLog("normalized basePath: %s", normalizedBasePath)
+			debugLog("normalized ref: %s", normalizedRef.String())
+			target.Ref = *denormalizeFileRef(normalizedRef, normalizedBasePath, resolver.context.basePath)
 			return &target, nil
 		}
 
@@ -726,8 +770,10 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			}
 
 			if transitiveResolver != resolver {
+				debugLog("got a new resolver")
 				if transitiveResolver.options != nil && transitiveResolver.options.RelativeBase != "" {
 					basePath, _ = absPath(transitiveResolver.options.RelativeBase)
+					debugLog("new basePath = %s", basePath)
 				}
 			} else {
 				basePath = normalizedBasePath
@@ -949,7 +995,13 @@ func transitiveResolver(basePath string, ref Ref, resolver *schemaLoader) (*sche
 		rootURL.Fragment = ""
 		root, _ := resolver.cache.Get(rootURL.String())
 		var err error
-		resolver, err = defaultSchemaLoader(root, resolver.options, resolver.cache, resolver.context)
+
+		// shallow copy of resolver options to set a new RelativeBase when
+		// traversing multiple documents
+		newOptions := resolver.options
+		newOptions.RelativeBase = rootURL.String()
+		debugLog("setting new root: %s", newOptions.RelativeBase)
+		resolver, err = defaultSchemaLoader(root, newOptions, resolver.cache, resolver.context)
 		if err != nil {
 			return nil, err
 		}

@@ -26,7 +26,7 @@ import (
 )
 
 // mimics what the go-openapi/load does
-var yamlLoader func(string) (json.RawMessage, error) = swag.YAMLDoc
+var yamlLoader = swag.YAMLDoc
 
 func loadOrFail(t *testing.T, path string) *spec.Swagger {
 	raw, erl := yamlLoader(path)
@@ -59,6 +59,8 @@ func Test_Issue1429(t *testing.T) {
 		t.FailNow()
 		return
 	}
+	//bbb, _ := json.MarshalIndent(sp, "", " ")
+	//t.Log(string(bbb))
 
 	// assert well expanded
 	if !assert.Truef(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture") {
@@ -142,4 +144,25 @@ func Test_Issue1429(t *testing.T) {
 	for _, def := range sp.Definitions {
 		assert.Contains(t, def.Ref.String(), "responses.yaml#/")
 	}
+}
+
+func Test_MoreLocalExpansion(t *testing.T) {
+	prevPathLoader := spec.PathLoader
+	defer func() {
+		spec.PathLoader = prevPathLoader
+	}()
+	spec.PathLoader = yamlLoader
+	path := filepath.Join("fixtures", "local_expansion", "spec2.yaml")
+
+	// load and full expand
+	sp := loadOrFail(t, path)
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return
+	}
+	// asserts all $ref expanded
+	jazon, _ := json.MarshalIndent(sp, "", " ")
+	assert.NotContains(t, jazon, `"$ref"`)
+	//t.Log(string(jazon))
 }
