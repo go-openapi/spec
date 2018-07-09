@@ -44,7 +44,7 @@ type ResolutionCache interface {
 }
 
 type simpleCache struct {
-	lock  sync.Mutex
+	lock  sync.RWMutex
 	store map[string]interface{}
 }
 
@@ -68,6 +68,7 @@ type resolverContext struct {
 	// circulars holds all visited circular references, which allows shortcuts.
 	// NOTE: this is not just a performance improvement: it is required to figure out
 	// circular references which participate several cycles.
+	sync.RWMutex
 	circulars map[string]bool
 }
 
@@ -80,11 +81,11 @@ func newResolverContext() *resolverContext {
 // Get retrieves a cached URI
 func (s *simpleCache) Get(uri string) (interface{}, bool) {
 	debugLog("getting %q from resolution cache", uri)
-	s.lock.Lock()
+	s.lock.RLock()
 	v, ok := s.store[uri]
 	debugLog("got %q from resolution cache: %t", uri, ok)
 
-	s.lock.Unlock()
+	s.lock.RUnlock()
 	return v, ok
 }
 
@@ -387,7 +388,9 @@ func denormalizeFileRef(ref *Ref, relativeBase string) *Ref {
 		return ref
 	}
 	// strip relativeBase from URI
-	r, _ := NewRef(strings.TrimPrefix(ref.String(), relativeBase))
+	relativeBaseURL, _ := url.Parse(relativeBase)
+	relativeBaseURL.Fragment = ""
+	r, _ := NewRef(strings.TrimPrefix(ref.String(), relativeBaseURL.String()))
 	return &r
 }
 
@@ -650,6 +653,8 @@ func basePathFromSchemaID(oldBasePath, id string) string {
 
 func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...string) (foundCycle bool) {
 	normalizedRef := normalizePaths(ref.String(), basePath)
+	r.context.Lock()
+	defer r.context.Unlock()
 	if _, ok := r.context.circulars[normalizedRef]; ok {
 		// circular $ref has been already detected in another explored cycle
 		foundCycle = true
@@ -686,7 +691,6 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	}
 
 	/* Explain here what this function does */
-
 	var t *Schema
 	/* if Ref is found, everything else doesn't matter */
 	/* Ref also changes the resolution scope of children expandSchema */
@@ -716,11 +720,20 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		if t != nil {
 			parentRefs = append(parentRefs, normalizedRef.String())
 			var err error
-			resolver, err = transitiveResolver(basePath, target.Ref, resolver)
+			transitiveResolver, err := transitiveResolver(basePath, target.Ref, resolver)
 			if shouldStopOnError(err, resolver.options) {
 				return nil, err
 			}
-			return expandSchema(*t, parentRefs, resolver, normalizedBasePath)
+
+			if transitiveResolver != resolver {
+				if transitiveResolver.options != nil && transitiveResolver.options.RelativeBase != "" {
+					basePath, _ = absPath(transitiveResolver.options.RelativeBase)
+				}
+			} else {
+				basePath = normalizedBasePath
+			}
+
+			return expandSchema(*t, parentRefs, transitiveResolver, basePath)
 		}
 	}
 
