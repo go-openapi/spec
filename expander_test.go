@@ -370,12 +370,12 @@ func TestCircularRefsExpansion(t *testing.T) {
 	err = json.Unmarshal(carsDoc, spec)
 	assert.NoError(t, err)
 
-	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
+	resolver, err := defaultSchemaLoader(spec, &ExpandOptions{RelativeBase: basePath}, nil, nil)
 	assert.NoError(t, err)
 	schema := spec.Definitions["car"]
 
 	assert.NotPanics(t, func() {
-		_, err = expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath)
+		_, err := expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath)
 		assert.NoError(t, err)
 	}, "Calling expand schema with circular refs, should not panic!")
 }
