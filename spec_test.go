@@ -425,3 +425,63 @@ func Test_PointersLoop(t *testing.T) {
 
 	require.Len(t, refs, 1)
 }
+
+func Test_Issue102(t *testing.T) {
+	// go-openapi/validate/issues#102
+	path := filepath.Join("fixtures", "bugs", "102", "fixture-102.json")
+	sp := loadOrFail(t, path)
+
+	require.NoError(t, spec.ExpandSpec(sp, nil))
+
+	jazon, err := json.MarshalIndent(sp, " ", "")
+	require.NoError(t, err)
+
+	m := rex.FindAllStringSubmatch(string(jazon), -1)
+	require.NotEmpty(t, m)
+
+	for _, matched := range m {
+		subMatch := matched[1]
+		assert.Equal(t, "#/definitions/Error", subMatch)
+	}
+
+	sp = loadOrFail(t, path)
+	sch := spec.RefSchema("#/definitions/Error")
+	require.NoError(t, spec.ExpandSchema(sch, sp, nil))
+
+	jazon, err = json.MarshalIndent(sch, " ", "")
+	require.NoError(t, err)
+
+	m = rex.FindAllStringSubmatch(string(jazon), -1)
+	for _, matched := range m {
+		subMatch := matched[1]
+		assert.Equal(t, "#/definitions/Error", subMatch)
+	}
+
+	sp = loadOrFail(t, path)
+	sch = spec.RefSchema("#/definitions/Error")
+	resp := spec.NewResponse().WithDescription("ok").WithSchema(sch)
+	require.NoError(t, spec.ExpandResponseWithRoot(resp, sp, nil))
+
+	jazon, err = json.MarshalIndent(resp, " ", "")
+	require.NoError(t, err)
+
+	m = rex.FindAllStringSubmatch(string(jazon), -1)
+	for _, matched := range m {
+		subMatch := matched[1]
+		assert.Equal(t, "#/definitions/Error", subMatch)
+	}
+
+	sp = loadOrFail(t, path)
+	sch = spec.RefSchema("#/definitions/Error")
+	param := spec.BodyParam("error", sch)
+	require.NoError(t, spec.ExpandParameterWithRoot(param, sp, nil))
+
+	jazon, err = json.MarshalIndent(resp, " ", "")
+	require.NoError(t, err)
+
+	m = rex.FindAllStringSubmatch(string(jazon), -1)
+	for _, matched := range m {
+		subMatch := matched[1]
+		assert.Equal(t, "#/definitions/Error", subMatch)
+	}
+}
