@@ -250,9 +250,9 @@ func (s *StringOrArray) UnmarshalJSON(data []byte) error {
 	if single == nil {
 		return nil
 	}
-	switch single.(type) {
+	switch v := single.(type) {
 	case string:
-		*s = StringOrArray([]string{single.(string)})
+		*s = StringOrArray([]string{v})
 		return nil
 	default:
 		return fmt.Errorf("only string or array is allowed, not %T", single)

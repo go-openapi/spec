@@ -58,7 +58,7 @@ var operation = Operation{
 	},
 }
 
-var operationJSON = `{
+const operationJSON = `{
 	"description": "operation description",
 	"x-framework": "go-swagger",
 	"consumes": [ "application/json", "application/x-yaml" ],

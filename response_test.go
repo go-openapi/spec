@@ -34,7 +34,7 @@ var response = Response{
 	},
 }
 
-var responseJSON = `{
+const responseJSON = `{
 	"$ref": "Dog",
 	"x-go-name": "PutDogExists",
 	"description": "Dog exists",

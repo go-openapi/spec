@@ -59,7 +59,7 @@ var spec = Swagger{
 	}},
 }
 
-var specJSON = `{
+const specJSON = `{
 	"id": "http://localhost:3849/api-docs",
 	"consumes": ["application/json", "application/x-yaml"],
 	"produces": ["application/json"],

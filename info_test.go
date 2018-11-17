@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var infoJSON = `{
+const infoJSON = `{
 	"description": "A sample API that uses a petstore as an example to demonstrate features in ` +
 	`the swagger-2.0 specification",
 	"title": "Swagger Sample API",

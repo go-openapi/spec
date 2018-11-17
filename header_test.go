@@ -57,7 +57,7 @@ var header = Header{
 	},
 }
 
-var headerJSON = `{
+const headerJSON = `{
   "items": {
     "$ref": "Cat"
   },

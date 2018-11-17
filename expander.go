@@ -168,14 +168,16 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 		}
 	}
 
-	for key, parameter := range spec.Parameters {
+	for key := range spec.Parameters {
+		parameter := spec.Parameters[key]
 		if err := expandParameterOrResponse(&parameter, resolver, specBasePath); resolver.shouldStopOnError(err) {
 			return err
 		}
 		spec.Parameters[key] = parameter
 	}
 
-	for key, response := range spec.Responses {
+	for key := range spec.Responses {
+		response := spec.Responses[key]
 		if err := expandParameterOrResponse(&response, resolver, specBasePath); resolver.shouldStopOnError(err) {
 			return err
 		}
@@ -183,7 +185,8 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	}
 
 	if spec.Paths != nil {
-		for key, path := range spec.Paths.Paths {
+		for key := range spec.Paths.Paths {
+			path := spec.Paths.Paths[key]
 			if err := expandPathItem(&path, resolver, specBasePath); resolver.shouldStopOnError(err) {
 				return err
 			}
@@ -485,7 +488,8 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 		return nil
 	}
 
-	for i, param := range op.Parameters {
+	for i := range op.Parameters {
+		param := op.Parameters[i]
 		if err := expandParameterOrResponse(&param, resolver, basePath); resolver.shouldStopOnError(err) {
 			return err
 		}
@@ -497,7 +501,8 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 		if err := expandParameterOrResponse(responses.Default, resolver, basePath); resolver.shouldStopOnError(err) {
 			return err
 		}
-		for code, response := range responses.StatusCodeResponses {
+		for code := range responses.StatusCodeResponses {
+			response := responses.StatusCodeResponses[code]
 			if err := expandParameterOrResponse(&response, resolver, basePath); resolver.shouldStopOnError(err) {
 				return err
 			}

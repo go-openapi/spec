@@ -48,7 +48,7 @@ var items = Items{
 	},
 }
 
-var itemsJSON = `{
+const itemsJSON = `{
 	"items": {
 		"$ref": "Cat"
 	},

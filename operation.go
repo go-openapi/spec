@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"sort"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
@@ -88,10 +89,16 @@ func (o *Operation) SuccessResponse() (*Response, int, bool) {
 		return nil, 0, false
 	}
 
-	for k, v := range o.Responses.StatusCodeResponses {
-		if k/100 == 2 {
-			return &v, k, true
+	responseCodes := make([]int, 0, len(o.Responses.StatusCodeResponses))
+	for k := range o.Responses.StatusCodeResponses {
+		if k >= 200 && k < 300 {
+			responseCodes = append(responseCodes, k)
 		}
+	}
+	if len(responseCodes) > 0 {
+		sort.Ints(responseCodes)
+		v := o.Responses.StatusCodeResponses[responseCodes[0]]
+		return &v, responseCodes[0], true
 	}
 
 	return o.Responses.Default, 0, false
