@@ -48,8 +48,9 @@ var schema = Schema{
 		Items:            &SchemaOrArray{Schema: &Schema{SchemaProps: SchemaProps{Type: []string{"string"}}}},
 		AllOf:            []Schema{{SchemaProps: SchemaProps{Type: []string{"string"}}}},
 		Properties: map[string]Schema{
-			"id":   {SchemaProps: SchemaProps{Type: []string{"integer"}, Format: "int64"}},
-			"name": {SchemaProps: SchemaProps{Type: []string{"string"}}},
+			"id":       {SchemaProps: SchemaProps{Type: []string{"integer"}, Format: "int64"}},
+			"name":     {SchemaProps: SchemaProps{Type: []string{"string"}}},
+			"nickname": {SchemaProps: SchemaProps{Type: []string{"string"}, Nullable: true}},
 		},
 		AdditionalProperties: &SchemaOrBool{Allows: true, Schema: &Schema{SchemaProps: SchemaProps{
 			Type:   []string{"integer"},
@@ -115,6 +116,10 @@ var schemaJSON = `{
     },
     "name": {
       "type": "string"
+    },
+    "nickname": {
+      "type": "string",
+			"nullable": true
     }
   },
   "discriminator": "not this",

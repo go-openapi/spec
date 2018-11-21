@@ -210,6 +210,7 @@ type SchemaProps struct {
 	Schema               SchemaURL         `json:"-"`
 	Description          string            `json:"description,omitempty"`
 	Type                 StringOrArray     `json:"type,omitempty"`
+	Nullable             bool              `json:"nullable,omitempty"`
 	Format               string            `json:"format,omitempty"`
 	Title                string            `json:"title,omitempty"`
 	Default              interface{}       `json:"default,omitempty"`
