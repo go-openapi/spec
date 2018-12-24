@@ -57,7 +57,7 @@ func FileParam(name string) *Parameter {
 // SimpleArrayParam creates a param for a simple array (string, int, date etc)
 func SimpleArrayParam(name, tpe, fmt string) *Parameter {
 	return &Parameter{ParamProps: ParamProps{Name: name},
-		SimpleSchema: SimpleSchema{Type: "array", CollectionFormat: "csv",
+		SimpleSchema: SimpleSchema{Type: jsonArray, CollectionFormat: "csv",
 			Items: &Items{SimpleSchema: SimpleSchema{Type: "string", Format: fmt}}}}
 }
 
@@ -170,7 +170,7 @@ func (p *Parameter) Typed(tpe, format string) *Parameter {
 
 // CollectionOf a fluent builder method for an array parameter
 func (p *Parameter) CollectionOf(items *Items, format string) *Parameter {
-	p.Type = "array"
+	p.Type = jsonArray
 	p.Items = items
 	p.CollectionFormat = format
 	return p

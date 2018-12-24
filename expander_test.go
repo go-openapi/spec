@@ -149,8 +149,6 @@ func TestExpandResponseSchema(t *testing.T) {
 
 func TestSpecExpansion(t *testing.T) {
 	spec := new(Swagger)
-	// resolver, err := defaultSchemaLoader(spec, nil, nil,nil)
-	// assert.NoError(t, err)
 
 	err := ExpandSpec(spec, nil)
 	assert.NoError(t, err)
@@ -208,6 +206,14 @@ func TestResolveRef(t *testing.T) {
 	assert.NoError(t, err)
 	b, _ := sch.MarshalJSON()
 	assert.JSONEq(t, `{"id":"Category","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string"}}}`, string(b))
+
+	// WithBase variant
+	sch, err = ResolveRefWithBase(root, &ref, &ExpandOptions{
+		RelativeBase: "/",
+	})
+	assert.NoError(t, err)
+	b, _ = sch.MarshalJSON()
+	assert.JSONEq(t, `{"id":"Category","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string"}}}`, string(b))
 }
 
 func TestResponseExpansion(t *testing.T) {
@@ -229,11 +235,30 @@ func TestResponseExpansion(t *testing.T) {
 	err = expandParameterOrResponse(&expected, resolver, basePath)
 	assert.NoError(t, err)
 
+	jazon, _ := json.MarshalIndent(expected, "", " ")
+	assert.JSONEq(t, `{
+         "description": "pet response",
+         "schema": {
+          "required": [
+           "id",
+           "name"
+          ],
+          "properties": {
+           "id": {
+            "type": "integer",
+            "format": "int64"
+           },
+           "name": {
+            "type": "string"
+           },
+           "tag": {
+            "type": "string"
+           }
+          }
+         }
+			 }`, string(jazon))
+
 	err = expandParameterOrResponse(&resp, resolver, basePath)
-	// b, _ := resp.MarshalJSON()
-	// log.Printf(string(b))
-	// b, _ = expected.MarshalJSON()
-	// log.Printf(string(b))
 	assert.NoError(t, err)
 	assert.Equal(t, expected, resp)
 
@@ -244,18 +269,45 @@ func TestResponseExpansion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, *resp2)
 
+	// cascading ref
 	resp = spec.Paths.Paths["/"].Get.Responses.StatusCodeResponses[200]
 	expected = spec.Responses["petResponse"]
+	jazon, _ = json.MarshalIndent(resp, "", " ")
+	assert.JSONEq(t, `{
+         "$ref": "#/responses/anotherPet"
+        }`, string(jazon))
 
 	err = expandParameterOrResponse(&resp, resolver, basePath)
 	assert.NoError(t, err)
-	// assert.Equal(t, expected, resp)
+	// NOTE(fredbi): fixed this testcase in schema_loader.go#227
+	assert.Equal(t, expected, resp)
+}
+
+func TestResponseResolve(t *testing.T) {
+	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
+	assert.NoError(t, err)
+
+	spec := new(Swagger)
+	err = json.Unmarshal(specDoc, spec)
+	assert.NoError(t, err)
+
+	// Resolve with root version
+	resp := spec.Paths.Paths["/"].Get.Responses.StatusCodeResponses[200]
+	resp2, err := ResolveResponse(spec, resp.Ref)
+	assert.NoError(t, err)
+	// resolve resolves the ref, but dos not expand
+	jazon, _ := json.MarshalIndent(resp2, "", " ")
+	assert.JSONEq(t, `{
+         "$ref": "#/responses/petResponse"
+        }`, string(jazon))
 }
 
 // test the exported version of ExpandResponse
 func TestExportedResponseExpansion(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
 
 	basePath, err := absPath("fixtures/expansion/all-the-things.json")
 	assert.NoError(t, err)
@@ -270,10 +322,6 @@ func TestExportedResponseExpansion(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = ExpandResponse(&resp, basePath)
-	// b, _ := resp.MarshalJSON()
-	// log.Printf(string(b))
-	// b, _ = expected.MarshalJSON()
-	// log.Printf(string(b))
 	assert.NoError(t, err)
 	assert.Equal(t, expected, resp)
 
@@ -289,7 +337,8 @@ func TestExportedResponseExpansion(t *testing.T) {
 
 	err = ExpandResponse(&resp, basePath)
 	assert.NoError(t, err)
-	// assert.Equal(t, expected, resp)
+	// NOTE(fredbi): fixed this testcase in schema_loader.go#227
+	assert.Equal(t, expected, resp)
 }
 
 func TestExpandResponseAndParamWithRoot(t *testing.T) {
@@ -323,6 +372,28 @@ func TestExpandResponseAndParamWithRoot(t *testing.T) {
 	jazon, _ = json.MarshalIndent(param, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
 	assert.Nil(t, m)
+}
+
+func TestResolveParam(t *testing.T) {
+	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	var spec Swagger
+	_ = json.Unmarshal(specDoc, &spec)
+
+	param := spec.Paths.Paths["/pets/{id}"].Get.Parameters[0]
+	par, err := ResolveParameter(spec, param.Ref)
+	assert.NoError(t, err)
+	jazon, _ := json.MarshalIndent(par, "", " ")
+	assert.JSONEq(t, `{
+      "name": "id",
+      "in": "path",
+      "description": "ID of pet to fetch",
+      "required": true,
+      "type": "integer",
+      "format": "int64"
+      }`, string(jazon))
 }
 
 func TestIssue3(t *testing.T) {
@@ -1511,6 +1582,185 @@ func expandRootWithID(t *testing.T, root *Swagger, testcase string) {
 		bbb, _ := json.MarshalIndent(sch, "", " ")
 		t.Log(string(bbb))
 	}
+}
+
+const pathItemsFixture = "fixtures/expansion/pathItems.json"
+
+func TestExpandPathItem(t *testing.T) {
+	spec := new(Swagger)
+	specDoc, err := jsonDoc(pathItemsFixture)
+	assert.NoError(t, err)
+	_ = json.Unmarshal(specDoc, spec)
+	specPath, _ := absPath(pathItemsFixture)
+
+	// ExpandSpec use case
+	err = ExpandSpec(spec, &ExpandOptions{RelativeBase: specPath})
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	jazon, _ := json.MarshalIndent(spec, "", " ")
+	assert.JSONEq(t, `{
+         "swagger": "2.0",
+         "info": {
+          "title": "PathItems refs",
+          "version": "1.0"
+         },
+         "paths": {
+          "/todos": {
+           "get": {
+            "responses": {
+             "200": {
+              "description": "List Todos",
+              "schema": {
+               "type": "array",
+               "items": {
+                "type": "string"
+               }
+              }
+             },
+             "404": {
+              "description": "error"
+             }
+            }
+           }
+          }
+         }
+			 }`, string(jazon))
+}
+
+func TestResolvePathItem(t *testing.T) {
+	spec := new(Swagger)
+	specDoc, err := jsonDoc(pathItemsFixture)
+	assert.NoError(t, err)
+	_ = json.Unmarshal(specDoc, spec)
+	specPath, _ := absPath(pathItemsFixture)
+
+	// Resolve use case
+	pth := spec.Paths.Paths["/todos"]
+	pathItem, err := ResolvePathItem(spec, pth.Ref, &ExpandOptions{RelativeBase: specPath})
+	assert.NoError(t, err)
+	jazon, _ := json.MarshalIndent(pathItem, "", " ")
+	assert.JSONEq(t, `{
+         "get": {
+          "responses": {
+           "200": {
+            "description": "List Todos",
+            "schema": {
+             "type": "array",
+             "items": {
+              "type": "string"
+             }
+            }
+           },
+           "404": {
+            "description": "error"
+           }
+          }
+         }
+			 }`, string(jazon))
+}
+
+const extraRefFixture = "fixtures/expansion/extraRef.json"
+
+func TestExpandExtraItems(t *testing.T) {
+	spec := new(Swagger)
+	specDoc, err := jsonDoc(extraRefFixture)
+	assert.NoError(t, err)
+	_ = json.Unmarshal(specDoc, spec)
+	specPath, _ := absPath(extraRefFixture)
+
+	// ExpandSpec use case: unsupported $refs are not expanded
+	err = ExpandSpec(spec, &ExpandOptions{RelativeBase: specPath})
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	jazon, _ := json.MarshalIndent(spec, "", " ")
+	assert.JSONEq(t, `{
+         "schemes": [
+          "http"
+         ],
+         "swagger": "2.0",
+         "info": {
+          "title": "Supported, but non Swagger 20 compliant $ref constructs",
+          "version": "2.1.0"
+         },
+         "host": "item.com",
+         "basePath": "/extraRefs",
+         "paths": {
+          "/employees": {
+           "get": {
+            "summary": "List Employee Types",
+            "operationId": "LIST-Employees",
+            "parameters": [
+             {
+							"description": "unsupported $ref in simple param",
+              "type": "array",
+              "items": {
+               "$ref": "#/definitions/arrayType"
+              },
+              "name": "myQueryParam",
+              "in": "query"
+             }
+            ],
+            "responses": {
+             "200": {
+							"description": "unsupported $ref in header",
+              "schema": {
+               "type": "string"
+              },
+              "headers": {
+               "X-header": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/headerType"
+                  }
+							  }
+              }
+             }
+            }
+           }
+          }
+         },
+         "definitions": {
+          "arrayType": {
+           "type": "integer",
+           "format": "int32"
+          },
+          "headerType": {
+           "type": "string",
+           "format": "uuid"
+          }
+         }
+			 }`, string(jazon))
+}
+
+func TestResolveExtraItem(t *testing.T) {
+	// go-openapi extra goodie: $ref in simple schema Items and Headers
+	spec := new(Swagger)
+	specDoc, err := jsonDoc(extraRefFixture)
+	assert.NoError(t, err)
+	_ = json.Unmarshal(specDoc, spec)
+	specPath, _ := absPath(extraRefFixture)
+
+	// Resolve param Items use case: here we explicitly resolve the unsuppord case
+	parm := spec.Paths.Paths["/employees"].Get.Parameters[0]
+	parmItem, err := ResolveItems(spec, parm.Items.Ref, &ExpandOptions{RelativeBase: specPath})
+	assert.NoError(t, err)
+	jazon, _ := json.MarshalIndent(parmItem, "", " ")
+	assert.JSONEq(t, `{
+         "type": "integer",
+         "format": "int32"
+			 }`, string(jazon))
+
+	// Resolve header Items use case: here we explicitly resolve the unsuppord case
+	hdr := spec.Paths.Paths["/employees"].Get.Responses.StatusCodeResponses[200].Headers["X-header"]
+	hdrItem, err := ResolveItems(spec, hdr.Items.Ref, &ExpandOptions{RelativeBase: specPath})
+	assert.NoError(t, err)
+	jazon, _ = json.MarshalIndent(hdrItem, "", " ")
+	assert.JSONEq(t, `{
+         "type": "string",
+         "format": "uuid"
+			 }`, string(jazon))
 }
 
 // PetStoreJSONMessage json raw message for Petstore20

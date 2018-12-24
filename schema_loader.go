@@ -220,11 +220,12 @@ func (r *schemaLoader) deref(input interface{}, parentRefs []string, basePath st
 			return nil
 		}
 
-		if err := r.Resolve(ref, input, basePath); r.shouldStopOnError(err) {
+		if err := r.resolveRef(ref, input, basePath); r.shouldStopOnError(err) {
 			return err
 		}
 
-		if ref.String() != "" && ref.String() != curRef && basePath != normalizedBasePath {
+		// NOTE(fredbi): removed basePath check => needs more testing
+		if ref.String() != "" && ref.String() != curRef {
 			parentRefs = append(parentRefs, normalizedRef.String())
 			return r.deref(input, parentRefs, normalizedBasePath)
 		}

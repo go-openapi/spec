@@ -232,7 +232,7 @@ func (o *Operation) AddParam(param *Parameter) *Operation {
 // RemoveParam removes a parameter from the operation
 func (o *Operation) RemoveParam(name, in string) *Operation {
 	for i, p := range o.Parameters {
-		if p.Name == name && p.In == name {
+		if p.Name == name && p.In == in {
 			o.Parameters = append(o.Parameters[:i], o.Parameters[i+1:]...)
 			return o
 		}

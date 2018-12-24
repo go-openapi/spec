@@ -107,7 +107,10 @@ func ResolveResponseWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*R
 	return result, nil
 }
 
-// ResolveItems resolves header and parameter items reference against a context root and base path
+// ResolveItems resolves parameter items reference against a context root and base path.
+//
+// NOTE: stricly speaking, this construct is not supported by Swagger 2.0.
+// Similarly, $ref are forbidden in response headers.
 func ResolveItems(root interface{}, ref Ref, opts *ExpandOptions) (*Items, error) {
 	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
@@ -321,11 +324,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			return &target, nil
 		}
 
-		debugLog("basePath: %s", basePath)
-		if Debug {
-			b, _ := json.Marshal(target)
-			debugLog("calling Resolve with target: %s", string(b))
-		}
+		debugLog("basePath: %s: calling Resolve with target: %#v", basePath, target)
 		if err := resolver.Resolve(&target.Ref, &t, basePath); resolver.shouldStopOnError(err) {
 			return nil, err
 		}
@@ -601,7 +600,7 @@ func getRefAndSchema(input interface{}) (*Ref, *Schema, error) {
 		ref = &refable.Ref
 		sch = refable.Schema
 	default:
-		return nil, nil, fmt.Errorf("expand: unsupported type %T", input)
+		return nil, nil, fmt.Errorf("expand: unsupported type %T. Input should be of type *Parameter or *Response", input)
 	}
 	return ref, sch, nil
 }

@@ -304,7 +304,7 @@ func (s *Schema) AddType(tpe, format string) *Schema {
 
 // CollectionOf a fluent builder method for an array parameter
 func (s *Schema) CollectionOf(items Schema) *Schema {
-	s.Type = []string{"array"}
+	s.Type = []string{jsonArray}
 	s.Items = &SchemaOrArray{Schema: &items}
 	return s
 }
