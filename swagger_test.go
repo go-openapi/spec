@@ -329,8 +329,7 @@ func TestOptionalSwaggerProps_Serialize(t *testing.T) {
 	}
 }
 
-func TestSecurityRequirements(t *testing.T) {
-	minimalJSONSpec := []byte(`{
+var minimalJSONSpec = []byte(`{
 		"swagger": "2.0",
 		"info": {
 			"version": "0.0.0",
@@ -375,6 +374,7 @@ func TestSecurityRequirements(t *testing.T) {
 		}
 	}`)
 
+func TestSecurityRequirements(t *testing.T) {
 	var minimalSpec Swagger
 	err := json.Unmarshal(minimalJSONSpec, &minimalSpec)
 	if assert.NoError(t, err) {
@@ -386,4 +386,20 @@ func TestSecurityRequirements(t *testing.T) {
 		assert.Empty(t, sec[1])
 		assert.Contains(t, sec[2], "queryKey")
 	}
+}
+
+func TestSwaggerGobEncoding(t *testing.T) {
+	doTestSwaggerGobEncoding(t, specJSON)
+
+	doTestSwaggerGobEncoding(t, string(minimalJSONSpec))
+}
+
+func doTestSwaggerGobEncoding(t *testing.T, fixture string) {
+	var src, dst Swagger
+
+	if !assert.NoError(t, json.Unmarshal([]byte(fixture), &src)) {
+		t.FailNow()
+	}
+
+	doTestAnyGobEncoding(t, &src, &dst)
 }
