@@ -286,63 +286,62 @@ func TestOperationGobEncoding(t *testing.T) {
 
 	// 2. nil security requirements
 	doTestOperationGobEncoding(t, `{
-	"description": "operation description",
-	"x-framework": "go-swagger",
-	"consumes": [ "application/json", "application/x-yaml" ],
-	"produces": [ "application/json", "application/x-yaml" ],
-	"schemes": ["http", "https"],
-	"tags": ["dogs"],
-	"summary": "the summary of the operation",
-	"operationId": "sendCat",
-	"deprecated": true,
-	"parameters": [{"$ref":"Cat"}],
-	"responses": {
-		"default": {
-			"description": "void response"
-		}
-	}
-}`)
+			"description": "operation description",
+			"x-framework": "go-swagger",
+			"consumes": [ "application/json", "application/x-yaml" ],
+			"produces": [ "application/json", "application/x-yaml" ],
+			"schemes": ["http", "https"],
+			"tags": ["dogs"],
+			"summary": "the summary of the operation",
+			"operationId": "sendCat",
+			"deprecated": true,
+			"parameters": [{"$ref":"Cat"}],
+			"responses": {
+				"default": {
+					"description": "void response"
+				}
+			}
+		}`)
 
 	// 3. empty security requirement
 	doTestOperationGobEncoding(t, `{
-	"description": "operation description",
-	"x-framework": "go-swagger",
-	"consumes": [ "application/json", "application/x-yaml" ],
-	"produces": [ "application/json", "application/x-yaml" ],
-	"schemes": ["http", "https"],
-	"tags": ["dogs"],
-	"security": [],
-	"summary": "the summary of the operation",
-	"operationId": "sendCat",
-	"deprecated": true,
-	"parameters": [{"$ref":"Cat"}],
-	"responses": {
-		"default": {
-			"description": "void response"
-		}
-	}
-}`)
+			"description": "operation description",
+			"x-framework": "go-swagger",
+			"consumes": [ "application/json", "application/x-yaml" ],
+			"produces": [ "application/json", "application/x-yaml" ],
+			"schemes": ["http", "https"],
+			"tags": ["dogs"],
+			"security": [],
+			"summary": "the summary of the operation",
+			"operationId": "sendCat",
+			"deprecated": true,
+			"parameters": [{"$ref":"Cat"}],
+			"responses": {
+				"default": {
+					"description": "void response"
+				}
+			}
+		}`)
 
 	// 4. non-empty security requirements
 	doTestOperationGobEncoding(t, `{
-	"description": "operation description",
-	"x-framework": "go-swagger",
-	"consumes": [ "application/json", "application/x-yaml" ],
-	"produces": [ "application/json", "application/x-yaml" ],
-	"schemes": ["http", "https"],
-	"tags": ["dogs"],
-	"summary": "the summary of the operation",
-	"security": [ { "scoped-auth": [ "phone", "email" ] , "api-key": []} ],
-	"operationId": "sendCat",
-	"deprecated": true,
-	"parameters": [{"$ref":"Cat"}],
-	"responses": {
-		"default": {
-			"description": "void response"
-		}
-	}
-}`)
-
+			"description": "operation description",
+			"x-framework": "go-swagger",
+			"consumes": [ "application/json", "application/x-yaml" ],
+			"produces": [ "application/json", "application/x-yaml" ],
+			"schemes": ["http", "https"],
+			"tags": ["dogs"],
+			"summary": "the summary of the operation",
+			"security": [ { "scoped-auth": [ "phone", "email" ] , "api-key": []} ],
+			"operationId": "sendCat",
+			"deprecated": true,
+			"parameters": [{"$ref":"Cat"}],
+			"responses": {
+				"default": {
+					"description": "void response"
+				}
+			}
+		}`)
 }
 
 func doTestOperationGobEncoding(t *testing.T, fixture string) {
