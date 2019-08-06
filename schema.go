@@ -167,18 +167,6 @@ type SchemaProps struct {
 	Format               string            `json:"format,omitempty"`
 	Title                string            `json:"title,omitempty"`
 	Default              interface{}       `json:"default,omitempty"`
-	Maximum              *float64          `json:"maximum,omitempty"`
-	ExclusiveMaximum     bool              `json:"exclusiveMaximum,omitempty"`
-	Minimum              *float64          `json:"minimum,omitempty"`
-	ExclusiveMinimum     bool              `json:"exclusiveMinimum,omitempty"`
-	MaxLength            *int64            `json:"maxLength,omitempty"`
-	MinLength            *int64            `json:"minLength,omitempty"`
-	Pattern              string            `json:"pattern,omitempty"`
-	MaxItems             *int64            `json:"maxItems,omitempty"`
-	MinItems             *int64            `json:"minItems,omitempty"`
-	UniqueItems          bool              `json:"uniqueItems,omitempty"`
-	MultipleOf           *float64          `json:"multipleOf,omitempty"`
-	Enum                 []interface{}     `json:"enum,omitempty"`
 	MaxProperties        *int64            `json:"maxProperties,omitempty"`
 	MinProperties        *int64            `json:"minProperties,omitempty"`
 	Required             []string          `json:"required,omitempty"`
@@ -193,6 +181,7 @@ type SchemaProps struct {
 	Dependencies         Dependencies      `json:"dependencies,omitempty"`
 	AdditionalItems      *SchemaOrBool     `json:"additionalItems,omitempty"`
 	Definitions          Definitions       `json:"definitions,omitempty"`
+	CommonValidations
 }
 
 // SwaggerSchemaProps are additional properties supported by swagger schemas, but not JSON-schema (draft 4)
