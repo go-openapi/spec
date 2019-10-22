@@ -211,6 +211,7 @@ func baseForRoot(root interface{}, cache ResolutionCache) string {
 		normalizedBase := normalizeAbsPath(base)
 		debugLog("setting root doc in cache at: %s", normalizedBase)
 		if cache == nil {
+			onceCache.Do(initResolutionCache)
 			cache = resCache
 		}
 		cache.Set(normalizedBase, root)

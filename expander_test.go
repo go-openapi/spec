@@ -383,7 +383,7 @@ func TestExpandResponseWithRoot_CircularRefs(t *testing.T) {
 		path := rootDoc.Paths.Paths["/api/v1/getx"]
 		resp := path.Post.Responses.StatusCodeResponses[200]
 
-		resCache = initResolutionCache()
+		resCache = defaultResolutionCache()
 
 		// during first response expand, refs are getting expanded,
 		// so the following expands cannot properly resolve them w/o the document.
@@ -1039,8 +1039,10 @@ func TestSchemaExpansion(t *testing.T) {
 }
 
 func TestDefaultResolutionCache(t *testing.T) {
+	jsonSchema := MustLoadJSONSchemaDraft04()
+	swaggerSchema := MustLoadSwagger20Schema()
 
-	cache := initResolutionCache()
+	cache := defaultResolutionCache()
 
 	sch, ok := cache.Get("not there")
 	assert.False(t, ok)
@@ -1236,7 +1238,7 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/refed.json#/definitions/pet")
 		if assert.NoError(t, err) {
-			resolver := &schemaLoader{root: rootDoc, cache: initResolutionCache(), loadDoc: jsonDoc}
+			resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), loadDoc: jsonDoc}
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt, "")) {
 				assert.Equal(t, []string{"id", "name"}, tgt.Required)
 			}
