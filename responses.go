@@ -15,7 +15,7 @@
 package spec
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -109,7 +109,7 @@ func (r ResponsesProps) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals responses from JSON
 func (r *ResponsesProps) UnmarshalJSON(data []byte) error {
-	var res map[string]json.RawMessage
+	var res map[string]stdjson.RawMessage
 	if err := json.Unmarshal(data, &res); err != nil {
 		return err
 	}

@@ -1,7 +1,7 @@
 package spec
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -14,12 +14,12 @@ import (
 
 var rex = regexp.MustCompile(`"\$ref":\s*"(.*?)"`)
 
-func jsonDoc(path string) (json.RawMessage, error) {
+func jsonDoc(path string) (stdjson.RawMessage, error) {
 	data, err := swag.LoadFromFileOrHTTP(path)
 	if err != nil {
 		return nil, err
 	}
-	return json.RawMessage(data), nil
+	return stdjson.RawMessage(data), nil
 }
 
 func docAndOpts(t testing.TB, fixturePath string) ([]byte, *ExpandOptions) {

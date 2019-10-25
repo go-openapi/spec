@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"path/filepath"
 	"testing"
 

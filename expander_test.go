@@ -15,7 +15,7 @@
 package spec
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -38,7 +38,7 @@ const (
 
 var (
 	// PetStoreJSONMessage json raw message for Petstore20
-	PetStoreJSONMessage = json.RawMessage([]byte(PetStore20))
+	PetStoreJSONMessage = stdjson.RawMessage([]byte(PetStore20))
 	specs               = filepath.Join("fixtures", "specs")
 )
 

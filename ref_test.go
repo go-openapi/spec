@@ -17,7 +17,6 @@ package spec
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

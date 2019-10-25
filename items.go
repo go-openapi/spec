@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/go-openapi/jsonpointer"

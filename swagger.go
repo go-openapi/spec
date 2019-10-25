@@ -17,7 +17,6 @@ package spec
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
