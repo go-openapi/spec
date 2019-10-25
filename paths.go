@@ -15,9 +15,10 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	stdjson "encoding/json"
 
 	"github.com/go-openapi/swag"
 )
@@ -46,7 +47,7 @@ func (p Paths) JSONLookup(token string) (interface{}, error) {
 
 // UnmarshalJSON hydrates this items instance with the data from JSON
 func (p *Paths) UnmarshalJSON(data []byte) error {
-	var res map[string]json.RawMessage
+	var res map[string]stdjson.RawMessage
 	if err := json.Unmarshal(data, &res); err != nil {
 		return err
 	}

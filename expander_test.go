@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -26,6 +25,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	stdjson "encoding/json"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
@@ -39,12 +40,12 @@ var (
 	rex = regexp.MustCompile(`"\$ref":\s*"(.+)"`)
 )
 
-func jsonDoc(path string) (json.RawMessage, error) {
+func jsonDoc(path string) (stdjson.RawMessage, error) {
 	data, err := swag.LoadFromFileOrHTTP(path)
 	if err != nil {
 		return nil, err
 	}
-	return json.RawMessage(data), nil
+	return stdjson.RawMessage(data), nil
 }
 
 // tests that paths are normalized correctly
@@ -1030,8 +1031,9 @@ func TestSchemaExpansion(t *testing.T) {
 }
 
 func TestDefaultResolutionCache(t *testing.T) {
-
 	cache := initResolutionCache()
+	jsonSchema := MustLoadJSONSchemaDraft04()
+	swaggerSchema := MustLoadSwagger20Schema()
 
 	sch, ok := cache.Get("not there")
 	assert.False(t, ok)
@@ -1760,7 +1762,7 @@ func TestResolveExtraItem(t *testing.T) {
 }
 
 // PetStoreJSONMessage json raw message for Petstore20
-var PetStoreJSONMessage = json.RawMessage([]byte(PetStore20))
+var PetStoreJSONMessage = stdjson.RawMessage([]byte(PetStore20))
 
 // PetStore20 json doc for swagger 2.0 pet store
 const PetStore20 = `{
