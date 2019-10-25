@@ -15,12 +15,12 @@
 package spec
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // Extensions vendor specific extensions

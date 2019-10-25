@@ -17,11 +17,11 @@ package spec
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"sort"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 func init() {

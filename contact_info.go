@@ -15,9 +15,8 @@
 package spec
 
 import (
-	"encoding/json"
-
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // ContactInfo contact information for the exposed API.

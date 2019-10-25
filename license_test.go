@@ -15,9 +15,9 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,9 +36,9 @@ func TestIntegrationLicense(t *testing.T) {
 
 	// const licenseYAML = "name: the name\nurl: the url\n"
 
-	b, err := json.MarshalIndent(license, "", "\t")
+	b, err := json.MarshalIndent(license, "", " ")
 	require.NoError(t, err)
-	assert.Equal(t, licenseJSON, string(b))
+	assert.JSONEq(t, licenseJSON, string(b))
 
 	actual := License{}
 	err = json.Unmarshal([]byte(licenseJSON), &actual)

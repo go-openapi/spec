@@ -15,10 +15,9 @@
 package spec
 
 import (
-	"encoding/json"
-
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // TagProps describe a tag entry in the top level tags section of a swagger spec

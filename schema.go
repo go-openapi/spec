@@ -15,12 +15,12 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // BooleanProperty creates a boolean property

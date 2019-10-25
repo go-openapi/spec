@@ -1,7 +1,6 @@
 package spec_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

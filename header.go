@@ -15,11 +15,11 @@
 package spec
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 const (

@@ -15,13 +15,13 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // Responses is a container for the expected responses of an operation.

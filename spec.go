@@ -14,14 +14,14 @@
 
 package spec
 
-import (
-	"encoding/json"
-)
-
 //go:generate curl -L --progress -o ./schemas/v2/schema.json http://swagger.io/v2/schema.json
 //go:generate curl -L --progress  -o ./schemas/jsonschema-draft-04.json http://json-schema.org/draft-04/schema
 //go:generate go-bindata -pkg=spec -prefix=./schemas -ignore=.*\.md ./schemas/...
 //go:generate perl -pi -e s,Json,JSON,g bindata.go
+
+import (
+	json "github.com/goccy/go-json"
+)
 
 const (
 	// SwaggerSchemaURL the url for the swagger 2.0 schema to validate specs

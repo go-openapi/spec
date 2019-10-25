@@ -15,9 +15,8 @@
 package spec
 
 import (
-	"encoding/json"
-
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // License information for the exposed API.

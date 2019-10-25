@@ -17,12 +17,12 @@ package spec
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/go-openapi/jsonreference"
+	json "github.com/goccy/go-json"
 )
 
 // Refable is a struct for things that accept a $ref property
