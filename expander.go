@@ -339,7 +339,13 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 
 			basePath = resolver.updateBasePath(transitiveResolver, normalizedBasePath)
 
-			return expandSchema(*t, parentRefs, transitiveResolver, basePath)
+			t, err := expandSchema(*t, parentRefs, transitiveResolver, basePath)
+			if t != nil {
+				for k, v := range target.VendorExtensible.Extensions {
+					t.VendorExtensible.AddExtension(k, v)
+				}
+			}
+			return t, err
 		}
 	}
 
