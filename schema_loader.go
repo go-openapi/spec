@@ -256,10 +256,6 @@ func defaultSchemaLoader(
 	cache ResolutionCache,
 	context *resolverContext) (*schemaLoader, error) {
 
-	if cache == nil {
-		onceCache.Do(initResolutionCache)
-		cache = resCache
-	}
 	if expandOptions == nil {
 		expandOptions = &ExpandOptions{}
 	}
@@ -267,10 +263,11 @@ func defaultSchemaLoader(
 	if context == nil {
 		context = newResolverContext(absBase)
 	}
+
 	return &schemaLoader{
 		root:    root,
 		options: expandOptions,
-		cache:   cache,
+		cache:   cacheOrDefault(cache),
 		context: context,
 		loadDoc: func(path string) (json.RawMessage, error) {
 			debugLog("fetching document at %q", path)
