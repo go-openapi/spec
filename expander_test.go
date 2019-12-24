@@ -76,19 +76,19 @@ func TestNormalizePaths(t *testing.T) {
 					// file basePath, absolute refPath, no fragment
 					refPath:   `C:\another\base\path.json`,
 					base:      `C:\base\path.json`,
-					expOutput: `C:\another\base\path.json`,
+					expOutput: `c:\another\base\path.json`,
 				},
 				{
 					// file basePath, absolute refPath
 					refPath:   `C:\another\base\path.json#/definitions/Pet`,
 					base:      `C:\base\path.json`,
-					expOutput: `C:\another\base\path.json#/definitions/Pet`,
+					expOutput: `c:\another\base\path.json#/definitions/Pet`,
 				},
 				{
 					// file basePath, relative refPath
 					refPath:   `another\base\path.json#/definitions/Pet`,
 					base:      `C:\base\path.json`,
-					expOutput: `C:\base\another\base\path.json#/definitions/Pet`,
+					expOutput: `c:\base\another\base\path.json#/definitions/Pet`,
 				},
 			}...)
 			return testCases

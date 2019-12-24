@@ -114,7 +114,8 @@ func Test_Issue1429(t *testing.T) {
 				}
 				if param.Name == "nestedBody" {
 					// this one is local
-					assert.True(t, strings.HasPrefix(param.Schema.Ref.String(), "#/definitions/"))
+					assert.Truef(t, strings.HasPrefix(param.Schema.Ref.String(), "#/definitions/"),
+						"expected rooted definitions $ref, got: %s", param.Schema.Ref.String())
 					continue
 				}
 				if param.Name == "remoteRequest" {
@@ -273,4 +274,26 @@ func Test_Issue2113(t *testing.T) {
 	// assert all $ref match have been expanded
 	m := rex.FindAllStringSubmatch(string(jazon), -1)
 	assert.Emptyf(t, m, "expected all $ref to be expanded")
+
+	// now trying with SkipSchemas
+	sp = loadOrFail(t, path)
+	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true})
+	require.NoError(t, err)
+	jazon, _ = json.MarshalIndent(sp, "", " ")
+	m = rex.FindAllStringSubmatch(string(jazon), -1)
+	require.NotEmpty(t, m)
+	for _, matched := range m {
+		subMatch := matched[1]
+		switch {
+		case strings.Contains(subMatch, "dummy"):
+			assert.True(t, strings.HasPrefix(subMatch, "schemas/dummy/dummy.yaml"),
+				"expected $ref to be rebased to new relative base, got: %s", matched[0])
+		case strings.Contains(subMatch, "example"):
+			assert.True(t, strings.HasPrefix(subMatch, "schemas/example/example.yaml"),
+				"expected $ref to be rebased to new relative base, got: %s", matched[0])
+		default:
+			t.Fail()
+			t.Logf("unexpected $ref after skip-schemas expansion: %s", subMatch)
+		}
+	}
 }
