@@ -45,8 +45,8 @@ var info = Info{
 		Description: "A sample API that uses a petstore as an example to demonstrate features in " +
 			"the swagger-2.0 specification",
 		TermsOfService: "http://helloreverb.com/terms/",
-		Contact:        &ContactInfo{ContactInfoProps:ContactInfoProps{Name: "wordnik api team", URL: "http://developer.wordnik.com"}},
-		License: &License{LicenseProps:LicenseProps{
+		Contact:        &ContactInfo{ContactInfoProps: ContactInfoProps{Name: "wordnik api team", URL: "http://developer.wordnik.com"}},
+		License: &License{LicenseProps: LicenseProps{
 			Name: "Creative Commons 4.0 International",
 			URL:  "http://creativecommons.org/licenses/by/4.0/",
 		},

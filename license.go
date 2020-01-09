@@ -32,8 +32,7 @@ type LicenseProps struct {
 	URL  string `json:"url,omitempty"`
 }
 
-
-func (l *License) UnmarshalJSON(data []byte) error  {
+func (l *License) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &l.LicenseProps); err != nil {
 		return err
 	}

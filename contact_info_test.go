@@ -27,11 +27,11 @@ const contactInfoJSON = `{
 	"x-teams": "test team"
 }`
 
-var contactInfo = ContactInfo{ContactInfoProps:ContactInfoProps{
-	Name: "wordnik api team",
-	URL: "http://developer.wordnik.com",
+var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
+	Name:  "wordnik api team",
+	URL:   "http://developer.wordnik.com",
 	Email: "some@mailayada.dkdkd",
-},VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-teams": "test team"}},}
+}, VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-teams": "test team"}}}
 
 func TestIntegrationContactInfo(t *testing.T) {
 	b, err := json.MarshalIndent(contactInfo, "", "\t")
