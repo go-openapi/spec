@@ -21,8 +21,8 @@ import (
 )
 
 var license = License{
-	LicenseProps:LicenseProps{Name: "the name", URL: "the url"},
-	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-license": "custom term"}},}
+	LicenseProps:     LicenseProps{Name: "the name", URL: "the url"},
+	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-license": "custom term"}}}
 
 const licenseJSON = `{
 	"name": "the name",

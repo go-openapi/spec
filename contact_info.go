@@ -33,7 +33,7 @@ type ContactInfoProps struct {
 	Email string `json:"email,omitempty"`
 }
 
-func (c *ContactInfo) UnmarshalJSON(data []byte) error  {
+func (c *ContactInfo) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &c.ContactInfoProps); err != nil {
 		return err
 	}
@@ -51,4 +51,3 @@ func (c ContactInfo) MarshalJSON() ([]byte, error) {
 	}
 	return swag.ConcatJSON(b1, b2), nil
 }
-
