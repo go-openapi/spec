@@ -15,24 +15,33 @@
 package spec
 
 import (
+	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-const contactInfoJSON = `{"name":"wordnik api team","url":"http://developer.wordnik.com","email":"some@mailayada.dkdkd"}`
-const contactInfoYAML = `name: wordnik api team
-url: http://developer.wordnik.com
-email: some@mailayada.dkdkd
-`
+const contactInfoJSON = `{
+	"name": "wordnik api team",
+	"url": "http://developer.wordnik.com",
+	"email": "some@mailayada.dkdkd",
+	"x-teams": "test team"
+}`
 
-var contactInfo = ContactInfo{
+var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
 	Name:  "wordnik api team",
 	URL:   "http://developer.wordnik.com",
 	Email: "some@mailayada.dkdkd",
-}
+}, VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-teams": "test team"}}}
 
 func TestIntegrationContactInfo(t *testing.T) {
-	assertSerializeJSON(t, contactInfo, contactInfoJSON)
-	assertSerializeYAML(t, contactInfo, contactInfoYAML)
-	assertParsesJSON(t, contactInfoJSON, contactInfo)
-	assertParsesYAML(t, contactInfoYAML, contactInfo)
+	b, err := json.MarshalIndent(contactInfo, "", "\t")
+	if assert.NoError(t, err) {
+		assert.Equal(t, contactInfoJSON, string(b))
+	}
+
+	actual := ContactInfo{}
+	err = json.Unmarshal([]byte(contactInfoJSON), &actual)
+	if assert.NoError(t, err) {
+		assert.EqualValues(t, contactInfo, actual)
+	}
 }
