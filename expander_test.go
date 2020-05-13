@@ -375,6 +375,25 @@ func TestExpandResponseAndParamWithRoot(t *testing.T) {
 	assert.Nil(t, m)
 }
 
+func TestExpandResponseWithRoot_CircularRefs(t *testing.T) {
+	rootDoc := new(Swagger)
+	b, err := ioutil.ReadFile("fixtures/more_circulars/resp.json")
+	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
+		path := rootDoc.Paths.Paths["/api/v1/getx"]
+		resp := path.Post.Responses.StatusCodeResponses[200]
+
+		resCache = initResolutionCache()
+
+		// during first response expand, refs are getting expanded,
+		// so the following expands cannot properly resolve them w/o the document.
+		// this happens in validator.Validate() when different validators try to expand the same mutable response.
+		err := ExpandResponseWithRoot(&resp, rootDoc, resCache)
+		assert.NoError(t, err)
+		err = ExpandResponseWithRoot(&resp, rootDoc, resCache)
+		assert.NoError(t, err)
+	}
+}
+
 func TestResolveParam(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	if !assert.NoError(t, err) {
