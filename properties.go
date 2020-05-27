@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"reflect"
+	"sort"
 )
 
 type OrderSchemaItem struct {
@@ -74,6 +75,6 @@ func (properties SchemaProperties) MarshalJSON() ([]byte, error) {
 			Schema: v,
 		})
 	}
-
+	sort.Sort(items)
 	return json.Marshal(items)
 }
