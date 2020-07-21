@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,9 +55,9 @@ var info = Info{
 }
 
 func TestIntegrationInfo_Serialize(t *testing.T) {
-	b, err := json.MarshalIndent(info, "", "\t")
+	b, err := json.MarshalIndent(info, "", " ")
 	if assert.NoError(t, err) {
-		assert.Equal(t, infoJSON, string(b))
+		assert.JSONEq(t, infoJSON, string(b))
 	}
 }
 

@@ -14,7 +14,11 @@
 
 package spec
 
-import "sync"
+import (
+	"sync"
+
+	jsoniter "github.com/json-iterator/go"
+)
 
 // ResolutionCache a cache for resolving urls
 type ResolutionCache interface {
@@ -45,9 +49,13 @@ func (s *simpleCache) Set(uri string, data interface{}) {
 	s.lock.Unlock()
 }
 
-var resCache ResolutionCache
+var (
+	resCache ResolutionCache
+	json     jsoniter.API
+)
 
 func init() {
+	json = jsoniter.ConfigFastest
 	resCache = initResolutionCache()
 }
 

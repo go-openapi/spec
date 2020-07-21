@@ -15,7 +15,7 @@
 package spec
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -26,15 +26,15 @@ import (
 )
 
 // PathLoader function to use when loading remote refs
-var PathLoader func(string) (json.RawMessage, error)
+var PathLoader func(string) (stdjson.RawMessage, error)
 
 func init() {
-	PathLoader = func(path string) (json.RawMessage, error) {
+	PathLoader = func(path string) (stdjson.RawMessage, error) {
 		data, err := swag.LoadFromFileOrHTTP(path)
 		if err != nil {
 			return nil, err
 		}
-		return json.RawMessage(data), nil
+		return stdjson.RawMessage(data), nil
 	}
 }
 
@@ -62,7 +62,7 @@ type schemaLoader struct {
 	options *ExpandOptions
 	cache   ResolutionCache
 	context *resolverContext
-	loadDoc func(string) (json.RawMessage, error)
+	loadDoc func(string) (stdjson.RawMessage, error)
 }
 
 func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) (*schemaLoader, error) {
@@ -271,7 +271,7 @@ func defaultSchemaLoader(
 		options: expandOptions,
 		cache:   cache,
 		context: context,
-		loadDoc: func(path string) (json.RawMessage, error) {
+		loadDoc: func(path string) (stdjson.RawMessage, error) {
 			debugLog("fetching document at %q", path)
 			return PathLoader(path)
 		},
