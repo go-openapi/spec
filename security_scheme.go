@@ -24,6 +24,7 @@ import (
 const (
 	basic       = "basic"
 	apiKey      = "apiKey"
+	bearer      = "http"
 	oauth2      = "oauth2"
 	implicit    = "implicit"
 	password    = "password"
@@ -39,6 +40,11 @@ func BasicAuth() *SecurityScheme {
 // APIKeyAuth creates an api key auth security scheme
 func APIKeyAuth(fieldName, valueSource string) *SecurityScheme {
 	return &SecurityScheme{SecuritySchemeProps: SecuritySchemeProps{Type: apiKey, Name: fieldName, In: valueSource}}
+}
+
+// BearerAuth creates an http bearer auth security scheme
+func BearerAuth(scheme, bearerFormat string) *SecurityScheme {
+	return &SecurityScheme{SecuritySchemeProps: SecuritySchemeProps{Type: bearer, Scheme: scheme, BearerFormat: bearerFormat}}
 }
 
 // OAuth2Implicit creates an implicit flow oauth2 security scheme
@@ -88,6 +94,8 @@ type SecuritySchemeProps struct {
 	AuthorizationURL string            `json:"authorizationUrl,omitempty"` // oauth2
 	TokenURL         string            `json:"tokenUrl,omitempty"`         // oauth2
 	Scopes           map[string]string `json:"scopes,omitempty"`           // oauth2
+	Scheme           string            `json:"scheme,omitempty"`           // bearer
+	BearerFormat     string            `json:"bearerFormat,omitempty"`     // bearer
 }
 
 // AddScope adds a scope to this security scheme
