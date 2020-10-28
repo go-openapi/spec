@@ -142,16 +142,16 @@ func TestParameterSerialization(t *testing.T) {
 
 	assertSerializeJSON(t,
 		BodyParam("", schema),
-		`{"type":"object","in":"body","schema":{"properties":{"name":{"type":"string"}}}}`)
+		`{"in":"body","schema":{"properties":{"name":{"type":"string"}}}}`)
 
 	assertSerializeJSON(t,
 		BodyParam("", refSchema),
-		`{"type":"object","in":"body","schema":{"$ref":"Cat"}}`)
+		`{"in":"body","schema":{"$ref":"Cat"}}`)
 
 	// array body param
 	assertSerializeJSON(t,
 		BodyParam("", ArrayProperty(RefProperty("Cat"))),
-		`{"type":"object","in":"body","schema":{"type":"array","items":{"$ref":"Cat"}}}`)
+		`{"in":"body","schema":{"type":"array","items":{"$ref":"Cat"}}}`)
 
 }
 
