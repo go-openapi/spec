@@ -1,0 +1,18 @@
+{
+  "definitions": {
+    "a": {
+      "properties": {
+        "a_b": {
+          "$ref": "#/definitions/b"
+        }
+      }
+    },
+    "b": {
+      "properties": {
+        "b_a": {
+          "$ref": "#/definitions/a"
+        }
+      }
+    }
+  }
+}

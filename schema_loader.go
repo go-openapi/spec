@@ -41,18 +41,11 @@ func init() {
 // resolverContext allows to share a context during spec processing.
 // At the moment, it just holds the index of circular references found.
 type resolverContext struct {
-	// circulars holds all visited circular references, which allows shortcuts.
-	// NOTE: this is not just a performance improvement: it is required to figure out
-	// circular references which participate several cycles.
-	// This structure is privately instantiated and needs not be locked against
-	// concurrent access, unless we chose to implement a parallel spec walking.
-	circulars map[string]bool
 	basePath  string
 }
 
 func newResolverContext(originalBasePath string) *resolverContext {
 	return &resolverContext{
-		circulars: make(map[string]bool),
 		basePath:  originalBasePath, // keep the root base path in context
 	}
 }
@@ -180,16 +173,7 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 // It relies on a private context (which needs not be locked).
 func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...string) (foundCycle bool) {
 	normalizedRef := normalizePaths(ref.String(), basePath)
-	if _, ok := r.context.circulars[normalizedRef]; ok {
-		// circular $ref has been already detected in another explored cycle
-		foundCycle = true
-		return
-	}
-	foundCycle = swag.ContainsStringsCI(parentRefs, normalizedRef)
-	if foundCycle {
-		r.context.circulars[normalizedRef] = true
-	}
-	return
+	return swag.ContainsStringsCI(parentRefs, normalizedRef)
 }
 
 // Resolve resolves a reference against basePath and stores the result in target
@@ -266,8 +250,14 @@ func defaultSchemaLoader(
 	if context == nil {
 		context = newResolverContext(absBase)
 	}
+
+	newRoot, err := deepCopyRoot(root)
+	if err != nil {
+		return nil, err
+	}
+
 	return &schemaLoader{
-		root:    root,
+		root:    newRoot,
 		options: expandOptions,
 		cache:   cache,
 		context: context,
@@ -276,4 +266,35 @@ func defaultSchemaLoader(
 			return PathLoader(path)
 		},
 	}, nil
+}
+
+func deepCopyRoot(root interface{}) (interface{}, error) {
+	var newRoot interface{}
+	switch root.(type) {
+	case *Swagger:
+		var tmp Swagger
+		newRoot = tmp
+	case *Schema:
+		var tmp Schema
+		newRoot = tmp
+	case *Parameter:
+		var tmp Parameter
+		newRoot = tmp
+	case *Response:
+		var tmp Response
+		newRoot = tmp
+	case *PathItem:
+		var tmp PathItem
+		newRoot = tmp
+	}
+
+	bytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal root: %s", err)
+	}
+	err = json.Unmarshal(bytes, &newRoot)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal into new root: %s", err)
+	}
+	return newRoot, nil
 }
