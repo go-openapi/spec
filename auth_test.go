@@ -19,9 +19,9 @@ import (
 )
 
 func TestSerialization_AuthSerialization(t *testing.T) {
-	assertSerializeJSON(t, BasicAuth(), `{"type":"basic"}`)
+	assertSerializeJSON(t, BasicAuth(), `{"type":"basic","authorizationUrl":""}`)
 
-	assertSerializeJSON(t, APIKeyAuth("api-key", "header"), `{"type":"apiKey","name":"api-key","in":"header"}`)
+	assertSerializeJSON(t, APIKeyAuth("api-key", "header"), `{"type":"apiKey","name":"api-key","in":"header","authorizationUrl":""}`)
 
 	assertSerializeJSON(
 		t,
@@ -31,11 +31,11 @@ func TestSerialization_AuthSerialization(t *testing.T) {
 	assertSerializeJSON(
 		t,
 		OAuth2Password("http://foo.com/token"),
-		`{"type":"oauth2","flow":"password","tokenUrl":"http://foo.com/token"}`)
+		`{"type":"oauth2","flow":"password","authorizationUrl":"","tokenUrl":"http://foo.com/token"}`)
 
 	assertSerializeJSON(t,
 		OAuth2Application("http://foo.com/token"),
-		`{"type":"oauth2","flow":"application","tokenUrl":"http://foo.com/token"}`)
+		`{"type":"oauth2","flow":"application","authorizationUrl":"","tokenUrl":"http://foo.com/token"}`)
 
 	assertSerializeJSON(
 		t,
@@ -56,7 +56,7 @@ func TestSerialization_AuthSerialization(t *testing.T) {
 	assertSerializeJSON(
 		t,
 		auth2,
-		`{"type":"oauth2","flow":"password","tokenUrl":"http://foo.com/authorization",`+
+		`{"type":"oauth2","flow":"password","authorizationUrl":"","tokenUrl":"http://foo.com/authorization",`+
 			`"scopes":{"email":"read your email"}}`)
 
 	auth3 := OAuth2Application("http://foo.com/token")
@@ -64,7 +64,7 @@ func TestSerialization_AuthSerialization(t *testing.T) {
 	assertSerializeJSON(
 		t,
 		auth3,
-		`{"type":"oauth2","flow":"application","tokenUrl":"http://foo.com/token","scopes":{"email":"read your email"}}`)
+		`{"type":"oauth2","flow":"application","authorizationUrl":"","tokenUrl":"http://foo.com/token","scopes":{"email":"read your email"}}`)
 
 	auth4 := OAuth2AccessToken("http://foo.com/authorization", "http://foo.com/token")
 	auth4.AddScope("email", "read your email")

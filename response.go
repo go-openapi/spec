@@ -23,7 +23,7 @@ import (
 
 // ResponseProps properties specific to a response
 type ResponseProps struct {
-	Description string                 `json:"description,omitempty"`
+	Description string                 `json:"description"`
 	Schema      *Schema                `json:"schema,omitempty"`
 	Headers     map[string]Header      `json:"headers,omitempty"`
 	Examples    map[string]interface{} `json:"examples,omitempty"`

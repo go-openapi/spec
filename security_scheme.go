@@ -82,12 +82,12 @@ func OAuth2AccessToken(authorizationURL, tokenURL string) *SecurityScheme {
 type SecuritySchemeProps struct {
 	Description      string            `json:"description,omitempty"`
 	Type             string            `json:"type"`
-	Name             string            `json:"name,omitempty"`             // api key
-	In               string            `json:"in,omitempty"`               // api key
-	Flow             string            `json:"flow,omitempty"`             // oauth2
-	AuthorizationURL string            `json:"authorizationUrl,omitempty"` // oauth2
-	TokenURL         string            `json:"tokenUrl,omitempty"`         // oauth2
-	Scopes           map[string]string `json:"scopes,omitempty"`           // oauth2
+	Name             string            `json:"name,omitempty"`     // api key
+	In               string            `json:"in,omitempty"`       // api key
+	Flow             string            `json:"flow,omitempty"`     // oauth2
+	AuthorizationURL string            `json:"authorizationUrl"`   // oauth2
+	TokenURL         string            `json:"tokenUrl,omitempty"` // oauth2
+	Scopes           map[string]string `json:"scopes,omitempty"`   // oauth2
 }
 
 // AddScope adds a scope to this security scheme

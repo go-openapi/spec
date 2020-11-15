@@ -275,8 +275,9 @@ func TestResponseExpansion(t *testing.T) {
 	expected = spec.Responses["petResponse"]
 	jazon, _ = json.MarshalIndent(resp, "", " ")
 	assert.JSONEq(t, `{
-         "$ref": "#/responses/anotherPet"
-        }`, string(jazon))
+		"$ref": "#/responses/anotherPet",
+		"description":""
+  }`, string(jazon))
 
 	err = expandParameterOrResponse(&resp, resolver, basePath)
 	assert.NoError(t, err)
@@ -299,7 +300,8 @@ func TestResponseResolve(t *testing.T) {
 	// resolve resolves the ref, but dos not expand
 	jazon, _ := json.MarshalIndent(resp2, "", " ")
 	assert.JSONEq(t, `{
-         "$ref": "#/responses/petResponse"
+         "$ref": "#/responses/petResponse",
+				 "description":""
         }`, string(jazon))
 }
 

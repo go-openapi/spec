@@ -97,7 +97,8 @@ const specJSON = `{
 		"internalApiKey": {
 			"type": "apiKey",
 			"in": "header",
-			"name": "api_key"
+			"name": "api_key",
+			"authorizationUrl": ""
 		}
 	},
 	"security": [{"internalApiKey":[]}],
