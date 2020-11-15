@@ -267,7 +267,7 @@ func TestSecurityProperty(t *testing.T) {
 		assert.NotContains(t, string(jsonResult), "security", "security key should be omitted when unset")
 	}
 
-	// Ensure we preseve the security key when it contains an empty (zero length) slice
+	// Ensure we preserve the security key when it contains an empty (zero length) slice
 	securityContainsEmptyArray := OperationProps{
 		Security: []map[string][]string{},
 	}
