@@ -33,7 +33,7 @@ const licenseJSON = `{
 
 func TestIntegrationLicense(t *testing.T) {
 
-	const licenseYAML = "name: the name\nurl: the url\n"
+	// const licenseYAML = "name: the name\nurl: the url\n"
 
 	b, err := json.MarshalIndent(license, "", "\t")
 	if assert.NoError(t, err) {

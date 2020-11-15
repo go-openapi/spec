@@ -617,7 +617,7 @@ func Test_Issue957(t *testing.T) {
 					"expected $ref to be inlined, got: %s", matched[0])
 			}
 		}
-		//t.Log(jazon)
+		// t.Log(jazon)
 	}
 }
 
@@ -1548,7 +1548,7 @@ func TestExpandSchemaWithRoot(t *testing.T) {
 
 	// 2. put back ID in Pet definition
 	// nested $ref should fail
-	//Debug = true
+	// Debug = true
 	root.Definitions["Pet"] = origPet
 	expandRootWithID(t, root, withSchemaID)
 }
