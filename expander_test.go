@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
@@ -665,18 +666,22 @@ func Test_ExpandSwaggerSchema(t *testing.T) {
 	}
 }
 
-func expandThisSchemaOrDieTrying(t *testing.T, fixturePath string) string {
+func docAndOpts(t *testing.T, fixturePath string) ([]byte, *ExpandOptions) {
 	doc, err := jsonDoc(fixturePath)
 	require.NoError(t, err)
 
 	specPath, _ := absPath(fixturePath)
 
-	opts := &ExpandOptions{
+	return doc, &ExpandOptions{
 		RelativeBase: specPath,
 	}
+}
+
+func expandThisSchemaOrDieTrying(t *testing.T, fixturePath string) string {
+	doc, opts := docAndOpts(t, fixturePath)
 
 	sch := new(Schema)
-	err = json.Unmarshal(doc, sch)
+	err := json.Unmarshal(doc, sch)
 	require.NoError(t, err)
 
 	require.NotPanics(t, func() {
@@ -689,24 +694,11 @@ func expandThisSchemaOrDieTrying(t *testing.T, fixturePath string) string {
 }
 
 func expandThisOrDieTrying(t *testing.T, fixturePath string) string {
-	doc, err := jsonDoc(fixturePath)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-		return ""
-	}
-
-	specPath, _ := absPath(fixturePath)
-
-	opts := &ExpandOptions{
-		RelativeBase: specPath,
-	}
+	doc, opts := docAndOpts(t, fixturePath)
 
 	spec := new(Swagger)
-	err = json.Unmarshal(doc, spec)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-		return ""
-	}
+	err := json.Unmarshal(doc, spec)
+	require.NoError(t, err)
 
 	assert.NotPanics(t, func() {
 		err = ExpandSpec(spec, opts)
@@ -739,8 +731,6 @@ func TestContinueOnErrorExpansion(t *testing.T) {
 	}
 	err = ExpandSpec(testCase.Input, opts)
 	assert.NoError(t, err)
-	// b, _ := testCase.Input.MarshalJSON()
-	// log.Printf(string(b))
 	assert.Equal(t, testCase.Input, testCase.Expected, "Should continue expanding spec when a definition can't be found.")
 
 	doc, err := jsonDoc("fixtures/expansion/missingItemRef.json")
@@ -1778,6 +1768,33 @@ func TestResolveExtraItem(t *testing.T) {
          "type": "string",
          "format": "uuid"
 			 }`, string(jazon))
+}
+
+func Test_CircularID(t *testing.T) {
+	go func() {
+		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("fixtures/more_circulars/remote")))
+		if err != nil {
+			panic(err.Error())
+		}
+	}()
+	time.Sleep(100 * time.Millisecond)
+
+	fixturePath := "http://localhost:1234/tree"
+	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+
+	sch := new(Schema)
+	err := json.Unmarshal([]byte(jazon), sch)
+	require.NoError(t, err)
+
+	require.NotPanics(t, func() {
+		err = ExpandSchemaWithBasePath(sch, nil, &ExpandOptions{})
+		assert.NoError(t, err)
+	})
+
+	fixturePath = "fixtures/more_circulars/with-id.json"
+	jazon = expandThisOrDieTrying(t, fixturePath)
+	// TODO(fred): assert this
+	t.Logf("%s", jazon)
 }
 
 // PetStoreJSONMessage json raw message for Petstore20

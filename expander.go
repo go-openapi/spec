@@ -301,6 +301,9 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			refPath = fmt.Sprintf("%s%s", refPath, "placeholder.json")
 		}
 		basePath = normalizePaths(refPath, basePath)
+
+		// store found IDs for possible future reuse in $ref
+		resCache.Set(basePath, target)
 	}
 
 	var t *Schema
@@ -325,7 +328,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			return &target, nil
 		}
 
-		debugLog("basePath: %s: calling Resolve with target: %#v", basePath, target)
+		debugLog("basePath: %s: calling Resolve with target: %s", basePath, target.Ref.String())
 		if err := resolver.Resolve(&target.Ref, &t, basePath); resolver.shouldStopOnError(err) {
 			return nil, err
 		}
@@ -341,6 +344,16 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			basePath = resolver.updateBasePath(transitiveResolver, normalizedBasePath)
 
 			return expandSchema(*t, parentRefs, transitiveResolver, basePath)
+		}
+	}
+
+	for k := range target.Definitions {
+		tt, err := expandSchema(target.Definitions[k], parentRefs, resolver, basePath)
+		if resolver.shouldStopOnError(err) {
+			return &target, err
+		}
+		if tt != nil {
+			target.Definitions[k] = *tt
 		}
 	}
 
@@ -429,15 +442,6 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 		if t != nil {
 			*target.AdditionalItems.Schema = *t
-		}
-	}
-	for k := range target.Definitions {
-		t, err := expandSchema(target.Definitions[k], parentRefs, resolver, basePath)
-		if resolver.shouldStopOnError(err) {
-			return &target, err
-		}
-		if t != nil {
-			target.Definitions[k] = *t
 		}
 	}
 	return &target, nil
