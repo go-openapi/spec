@@ -63,9 +63,30 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON converts this items object to JSON
 func (r Response) MarshalJSON() ([]byte, error) {
-	b1, err := json.Marshal(r.ResponseProps)
-	if err != nil {
-		return nil, err
+	var (
+		b1  []byte
+		err error
+	)
+	if r.Ref.String() == "" {
+		b1, err = json.Marshal(r.ResponseProps)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		props := struct {
+			Description string                 `json:"description,omitempty"`
+			Schema      *Schema                `json:"schema,omitempty"`
+			Headers     map[string]Header      `json:"headers,omitempty"`
+			Examples    map[string]interface{} `json:"examples,omitempty"`
+		}{
+			Description: r.ResponseProps.Description,
+			Schema:      r.ResponseProps.Schema,
+			Examples:    r.ResponseProps.Examples,
+		}
+		b1, err = json.Marshal(props)
+		if err != nil {
+			return nil, err
+		}
 	}
 	b2, err := json.Marshal(r.Refable)
 	if err != nil {
