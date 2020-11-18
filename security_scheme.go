@@ -129,7 +129,7 @@ func (s SecurityScheme) MarshalJSON() ([]byte, error) {
 		// when oauth2, empty AuthorizationURL is added as empty string
 		b1, err = json.Marshal(s.SecuritySchemeProps)
 	} else {
-		// when not oauth2, empty AuthorizationURL should be omited
+		// when not oauth2, empty AuthorizationURL should be omitted
 		b1, err = json.Marshal(struct {
 			Description      string            `json:"description,omitempty"`
 			Type             string            `json:"type"`
@@ -154,16 +154,6 @@ func (s SecurityScheme) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	type SecuritySchemeProps struct {
-		Description      string            `json:"description,omitempty"`
-		Type             string            `json:"type"`
-		Name             string            `json:"name,omitempty"`     // api key
-		In               string            `json:"in,omitempty"`       // api key
-		Flow             string            `json:"flow,omitempty"`     // oauth2
-		AuthorizationURL string            `json:"authorizationUrl"`   // oauth2
-		TokenURL         string            `json:"tokenUrl,omitempty"` // oauth2
-		Scopes           map[string]string `json:"scopes,omitempty"`   // oauth2
-	}
 	b2, err := json.Marshal(s.VendorExtensible)
 	if err != nil {
 		return nil, err

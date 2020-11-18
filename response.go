@@ -73,7 +73,7 @@ func (r Response) MarshalJSON() ([]byte, error) {
 		b1, err = json.Marshal(r.ResponseProps)
 	} else {
 		// when there is $ref inside the schema, description should be omitempty-ied
-		props := struct {
+		b1, err = json.Marshal(struct {
 			Description string                 `json:"description,omitempty"`
 			Schema      *Schema                `json:"schema,omitempty"`
 			Headers     map[string]Header      `json:"headers,omitempty"`
@@ -82,8 +82,7 @@ func (r Response) MarshalJSON() ([]byte, error) {
 			Description: r.ResponseProps.Description,
 			Schema:      r.ResponseProps.Schema,
 			Examples:    r.ResponseProps.Examples,
-		}
-		b1, err = json.Marshal(props)
+		})
 	}
 	if err != nil {
 		return nil, err
