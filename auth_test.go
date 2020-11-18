@@ -19,9 +19,9 @@ import (
 )
 
 func TestSerialization_AuthSerialization(t *testing.T) {
-	assertSerializeJSON(t, BasicAuth(), `{"type":"basic","authorizationUrl":""}`)
+	assertSerializeJSON(t, BasicAuth(), `{"type":"basic"}`)
 
-	assertSerializeJSON(t, APIKeyAuth("api-key", "header"), `{"type":"apiKey","name":"api-key","in":"header","authorizationUrl":""}`)
+	assertSerializeJSON(t, APIKeyAuth("api-key", "header"), `{"type":"apiKey","name":"api-key","in":"header"}`)
 
 	assertSerializeJSON(
 		t,

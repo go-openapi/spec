@@ -67,12 +67,12 @@ func (r Response) MarshalJSON() ([]byte, error) {
 		b1  []byte
 		err error
 	)
+
 	if r.Ref.String() == "" {
+		// when there is no $ref, empty description is rendered as an empty string
 		b1, err = json.Marshal(r.ResponseProps)
-		if err != nil {
-			return nil, err
-		}
 	} else {
+		// when there is $ref inside the schema, description should be omitempty-ied
 		props := struct {
 			Description string                 `json:"description,omitempty"`
 			Schema      *Schema                `json:"schema,omitempty"`
@@ -84,10 +84,11 @@ func (r Response) MarshalJSON() ([]byte, error) {
 			Examples:    r.ResponseProps.Examples,
 		}
 		b1, err = json.Marshal(props)
-		if err != nil {
-			return nil, err
-		}
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	b2, err := json.Marshal(r.Refable)
 	if err != nil {
 		return nil, err
