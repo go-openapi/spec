@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -209,4 +210,14 @@ func BenchmarkSchemaUnmarshal(b *testing.B) {
 		sch := &Schema{}
 		_ = sch.UnmarshalJSON([]byte(schemaJSON))
 	}
+}
+
+func TestSchemaWithValidation(t *testing.T) {
+	s := new(Schema).WithValidations(SchemaValidations{CommonValidations: CommonValidations{MaxLength: swag.Int64(15)}})
+	assert.EqualValues(t, swag.Int64(15), s.MaxLength)
+
+	val := mkVal()
+	s = new(Schema).WithValidations(val)
+
+	assert.EqualValues(t, val, s.Validations())
 }

@@ -185,3 +185,8 @@ func TestJSONLookupItems(t *testing.T) {
 		return
 	}
 }
+
+func TestItemsWithValidation(t *testing.T) {
+	i := new(Items).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
+	assert.EqualValues(t, swag.Int64(15), i.MaxLength)
+}
