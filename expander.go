@@ -620,47 +620,60 @@ func expandParameterOrResponse(input interface{}, resolver *schemaLoader, basePa
 		return nil
 	}
 	parentRefs := []string{}
-	if err := resolver.deref(input, parentRefs, basePath); resolver.shouldStopOnError(err) {
+	if err = resolver.deref(input, parentRefs, basePath); resolver.shouldStopOnError(err) {
 		return err
 	}
 	ref, sch, _ := getRefAndSchema(input)
 	if ref.String() != "" {
-		transitiveResolver, err := resolver.transitiveResolver(basePath, *ref)
-		if transitiveResolver.shouldStopOnError(err) {
-			return err
+		transitiveResolver, ert := resolver.transitiveResolver(basePath, *ref)
+		if transitiveResolver.shouldStopOnError(ert) {
+			return ert
 		}
 		basePath = resolver.updateBasePath(transitiveResolver, basePath)
 		resolver = transitiveResolver
 	}
 
-	if sch != nil && sch.Ref.String() != "" {
-		// schema expanded to a $ref in another root
-		var ern error
+	if sch == nil {
+		// nothing to be expanded
+		if ref != nil {
+			*ref = Ref{}
+		}
+		return nil
+	}
 
-		sch.Ref, ern = NewRef(normalizePaths(sch.Ref.String(), ref.RemoteURI()))
+	if sch.Ref.String() != "" {
+		// schema expanded to a $ref in another root
+
+		rebasedRef, ern := NewRef(normalizePaths(sch.Ref.String(), basePath))
 		if ern != nil {
 			return ern
 		}
+
+		if resolver.options.SkipSchemas {
+			// skip schema expansion but rebase $ref to schema
+			sch.Ref = *denormalizeFileRef(&rebasedRef, basePath, resolver.context.basePath)
+
+			if ref != nil {
+				*ref = Ref{}
+			}
+
+			return nil
+		}
+
+		// rebase ref before expansion
+		sch.Ref = rebasedRef
 	}
+
 	if ref != nil {
 		*ref = Ref{}
 	}
-	if sch != nil {
-		if !resolver.options.SkipSchemas {
-			// expand schema
-			s, err := expandSchema(*sch, parentRefs, resolver, basePath)
-			if resolver.shouldStopOnError(err) {
-				return err
-			}
-			*sch = *s
-		} else if sch.Ref.String() != "" {
-			// skip schema expansion but rebase $ref to schema
-			rebasedRef, ern := NewRef(normalizePaths(sch.Ref.String(), basePath))
-			if ern != nil {
-				return ern
-			}
-			sch.Ref = *denormalizeFileRef(&rebasedRef, basePath, resolver.context.basePath)
-		}
+
+	// expand schema
+	s, err := expandSchema(*sch, parentRefs, resolver, basePath)
+	if resolver.shouldStopOnError(err) {
+		return err
 	}
+	*sch = *s
+
 	return nil
 }

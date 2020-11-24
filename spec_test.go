@@ -279,6 +279,7 @@ func Test_Issue2113(t *testing.T) {
 	sp = loadOrFail(t, path)
 	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true})
 	require.NoError(t, err)
+
 	jazon, _ = json.MarshalIndent(sp, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
 	require.NotEmpty(t, m)
@@ -296,4 +297,45 @@ func Test_Issue2113(t *testing.T) {
 			t.Logf("unexpected $ref after skip-schemas expansion: %s", subMatch)
 		}
 	}
+}
+
+func Test_Issue2113_External(t *testing.T) {
+	// issue #2113 exercises the SkipSchema mode from spec flattening in go-openapi/analysis
+	// Provide more ground for testing with schemas nested in $refs
+
+	prevPathLoader := spec.PathLoader
+	defer func() {
+		spec.PathLoader = prevPathLoader
+	}()
+
+	spec.PathLoader = testLoader
+	// this checks expansion with nested specs
+	path := filepath.Join("fixtures", "skipschema", "external_definitions_valid.yml")
+
+	// load and expand, skipping schema expansion
+	sp := loadOrFail(t, path)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true}))
+
+	// asserts all $ref are expanded as expected
+	jazon, _ := json.MarshalIndent(sp, "", " ")
+
+	m := rex.FindAllStringSubmatch(string(jazon), -1)
+	require.NotEmpty(t, m)
+	for _, matched := range m {
+		subMatch := matched[1]
+		require.Truef(t,
+			strings.HasPrefix(subMatch, "external/definitions.yml#/definitions") ||
+				strings.HasPrefix(subMatch, "external/errors.yml#/error") ||
+				strings.HasPrefix(subMatch, "external/nestedParams.yml#/bodyParam"),
+			"$ref %q did not match expectation", subMatch,
+		)
+	}
+
+	// load and expand everythin
+	sp = loadOrFail(t, path)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
+
+	jazon, _ = json.MarshalIndent(sp, "", " ")
+	m = rex.FindAllStringSubmatch(string(jazon), -1)
+	require.Empty(t, m)
 }
