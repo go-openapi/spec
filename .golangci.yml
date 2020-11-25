@@ -36,3 +36,4 @@ linters:
     - nestif
     - godot
     - gofumpt
+    - paralleltest
