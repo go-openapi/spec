@@ -331,7 +331,7 @@ func Test_Issue2113_External(t *testing.T) {
 		)
 	}
 
-	// load and expand everythin
+	// load and expand everything
 	sp = loadOrFail(t, path)
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
 
@@ -340,7 +340,7 @@ func Test_Issue2113_External(t *testing.T) {
 	require.Empty(t, m)
 }
 
-func Test_Issue2113_Flatten(t *testing.T) {
+func Test_Issue2113_SkipSchema(t *testing.T) {
 	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
 	// Provides more ground for testing with schemas nested in $refs
 
@@ -372,5 +372,47 @@ func Test_Issue2113_Flatten(t *testing.T) {
 			"$ref %q did not match expectation", subMatch,
 		)
 	}
-	//t.Logf("%s", string(bbb))
+
+	sp = loadOrFail(t, path)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
+
+	jazon, _ = json.MarshalIndent(sp, "", " ")
+	m = rex.FindAllStringSubmatch(string(jazon), -1)
+	require.Empty(t, m)
+}
+
+func Test_PointersLoop(t *testing.T) {
+	// this a spec that cannot be flattened (self-referencing pointer).
+	// however, it should be expanded without errors
+
+	prevPathLoader := spec.PathLoader
+	defer func() {
+		spec.PathLoader = prevPathLoader
+	}()
+
+	spec.PathLoader = testLoader
+	// this checks expansion with nested specs
+	path := filepath.Join("fixtures", "more_circulars", "pointers", "fixture-pointers-loop.yaml")
+
+	// load and expand, skipping schema expansion
+	sp := loadOrFail(t, path)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true}))
+
+	sp = loadOrFail(t, path)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
+
+	// cannot guarantee which ref will be kept, but only one remains: expand reduces all $ref down
+	// to the last self-referencing one (the one picked changes from one run to another, depending
+	// on where during the walk the cycle is detected).
+	jazon, _ := json.MarshalIndent(sp, "", " ")
+	m := rex.FindAllStringSubmatch(string(jazon), -1)
+	require.NotEmpty(t, m)
+
+	refs := make(map[string]struct{}, 5)
+	for _, matched := range m {
+		subMatch := matched[1]
+		refs[subMatch] = struct{}{}
+	}
+
+	require.Len(t, refs, 1)
 }
