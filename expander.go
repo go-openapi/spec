@@ -645,28 +645,17 @@ func expandParameterOrResponse(input interface{}, resolver *schemaLoader, basePa
 	}
 
 	if sch.Ref.String() != "" {
+		rebasedRef, ern := NewRef(normalizePaths(sch.Ref.String(), basePath))
+		if ern != nil {
+			return ern
+		}
+
 		if !resolver.options.SkipSchemas {
 			// schema expanded to a $ref in another root
-			rebasedRef, ern := NewRef(normalizePaths(sch.Ref.String(), basePath))
-			if ern != nil {
-				return ern
-			}
-
 			sch.Ref = rebasedRef
 		} else {
 			// skip schema expansion but rebase $ref to schema
-			rebasedRef, ern := NewRef(normalizePaths(sch.Ref.String(), basePath))
-			if ern != nil {
-				return ern
-			}
-
 			sch.Ref = *denormalizeFileRef(&rebasedRef, basePath, resolver.context.basePath)
-
-			if ref != nil {
-				*ref = Ref{}
-			}
-
-			return nil
 		}
 	}
 
