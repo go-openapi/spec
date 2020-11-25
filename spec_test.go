@@ -72,25 +72,8 @@ func Test_Issue1429(t *testing.T) {
 	// assert well expanded
 	require.Truef(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture")
 
-	for _, pi := range sp.Paths.Paths {
-		for _, param := range pi.Get.Parameters {
-			if assert.NotNilf(t, param.Schema, "expected param schema not to be nil") {
-				// all param fixtures are body param with schema
-				// all $ref expanded
-				assert.Equal(t, "", param.Schema.Ref.String())
-			}
-		}
-		for code, response := range pi.Get.Responses.StatusCodeResponses {
-			// all response fixtures are with StatusCodeResponses, but 200
-			if code == 200 {
-				assert.Nilf(t, response.Schema, "expected response schema to be nil")
-				continue
-			}
-			if assert.NotNilf(t, response.Schema, "expected response schema not to be nil") {
-				assert.Equal(t, "", response.Schema.Ref.String())
-			}
-		}
-	}
+	assertPaths1429(t, sp)
+
 	for _, def := range sp.Definitions {
 		assert.Equal(t, "", def.Ref.String())
 	}
@@ -103,47 +86,73 @@ func Test_Issue1429(t *testing.T) {
 	// assert well resolved
 	require.Truef(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture")
 
+	assertPaths1429SkipSchema(t, sp)
+
+	for _, def := range sp.Definitions {
+		assert.Contains(t, def.Ref.String(), "responses.yaml#/")
+	}
+}
+
+func assertPaths1429(t testing.TB, sp *spec.Swagger) {
 	for _, pi := range sp.Paths.Paths {
 		for _, param := range pi.Get.Parameters {
-			if assert.NotNilf(t, param.Schema, "expected param schema not to be nil") {
-				// all param fixtures are body param with schema
-				if param.Name == "plainRequest" {
-					// this one is expanded
-					assert.Equal(t, "", param.Schema.Ref.String())
-					continue
-				}
-				if param.Name == "nestedBody" {
-					// this one is local
-					assert.Truef(t, strings.HasPrefix(param.Schema.Ref.String(), "#/definitions/"),
-						"expected rooted definitions $ref, got: %s", param.Schema.Ref.String())
-					continue
-				}
-				if param.Name == "remoteRequest" {
-					assert.Contains(t, param.Schema.Ref.String(), "remote/remote.yaml#/")
-					continue
-				}
-				assert.Contains(t, param.Schema.Ref.String(), "responses.yaml#/")
-			}
+			require.NotNilf(t, param.Schema, "expected param schema not to be nil")
+			// all param fixtures are body param with schema
+			// all $ref expanded
+			assert.Equal(t, "", param.Schema.Ref.String())
 		}
+
 		for code, response := range pi.Get.Responses.StatusCodeResponses {
 			// all response fixtures are with StatusCodeResponses, but 200
 			if code == 200 {
 				assert.Nilf(t, response.Schema, "expected response schema to be nil")
 				continue
 			}
-			if code == 204 {
-				assert.Contains(t, response.Schema.Ref.String(), "remote/remote.yaml#/")
+			require.NotNilf(t, response.Schema, "expected response schema not to be nil")
+			assert.Equal(t, "", response.Schema.Ref.String())
+		}
+	}
+}
+
+func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
+	for _, pi := range sp.Paths.Paths {
+		for _, param := range pi.Get.Parameters {
+			require.NotNilf(t, param.Schema, "expected param schema not to be nil")
+
+			// all param fixtures are body param with schema
+			switch param.Name {
+			case "plainRequest":
+				// this one is expanded
+				assert.Equal(t, "", param.Schema.Ref.String())
+				continue
+			case "nestedBody":
+				// this one is local
+				assert.Truef(t, strings.HasPrefix(param.Schema.Ref.String(), "#/definitions/"),
+					"expected rooted definitions $ref, got: %s", param.Schema.Ref.String())
+				continue
+			case "remoteRequest":
+				assert.Contains(t, param.Schema.Ref.String(), "remote/remote.yaml#/")
 				continue
 			}
-			if code == 404 {
+			assert.Contains(t, param.Schema.Ref.String(), "responses.yaml#/")
+
+		}
+
+		for code, response := range pi.Get.Responses.StatusCodeResponses {
+			// all response fixtures are with StatusCodeResponses, but 200
+			switch code {
+			case 200:
+				assert.Nilf(t, response.Schema, "expected response schema to be nil")
+				continue
+			case 204:
+				assert.Contains(t, response.Schema.Ref.String(), "remote/remote.yaml#/")
+				continue
+			case 404:
 				assert.Equal(t, "", response.Schema.Ref.String())
 				continue
 			}
 			assert.Containsf(t, response.Schema.Ref.String(), "responses.yaml#/", "expected remote ref at resp. %d", code)
 		}
-	}
-	for _, def := range sp.Definitions {
-		assert.Contains(t, def.Ref.String(), "responses.yaml#/")
 	}
 }
 
