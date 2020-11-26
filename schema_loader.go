@@ -257,6 +257,7 @@ func defaultSchemaLoader(
 	context *resolverContext) (*schemaLoader, error) {
 
 	if cache == nil {
+		onceCache.Do(initResolutionCache)
 		cache = resCache
 	}
 	if expandOptions == nil {

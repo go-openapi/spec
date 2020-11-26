@@ -45,14 +45,17 @@ func (s *simpleCache) Set(uri string, data interface{}) {
 	s.lock.Unlock()
 }
 
-var resCache ResolutionCache
+var (
+	resCache  ResolutionCache
+	onceCache sync.Once
+)
 
-func init() {
-	resCache = initResolutionCache()
+// initResolutionCache initializes the URI resolution cache. To be wrapped in a sync.Once.Do call.
+func initResolutionCache() {
+	resCache = defaultResolutionCache()
 }
 
-// initResolutionCache initializes the URI resolution cache
-func initResolutionCache() ResolutionCache {
+func defaultResolutionCache() ResolutionCache {
 	return &simpleCache{store: map[string]interface{}{
 		"http://swagger.io/v2/schema.json":       MustLoadSwagger20Schema(),
 		"http://json-schema.org/draft-04/schema": MustLoadJSONSchemaDraft04(),
