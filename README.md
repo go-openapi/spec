@@ -15,10 +15,10 @@ The object model for OpenAPI specification documents.
 
 * How does it play with the rest of the go-openapi packages ?
 
-> 1. This package is a the core of the go-openapi suite of packages and [code generator](https://github.com/go-swagger/go-swagger)
-> 2. There is [spec loading package](https://github.com/go-openapi/loads) to fetch specs as JSON or YAML from local or remote locations
-> 3. There is [spec validation package](https://github.com/go-openapi/validate) built on top of it
-> 4. There is [spec analysis package](https://github.com/go-openapi/analysis) built on top of it, to analyze, flatten, fix and merge spec documents
+> 1. This package is at the core of the go-openapi suite of packages and [code generator](https://github.com/go-swagger/go-swagger)
+> 2. There is a [spec loading package](https://github.com/go-openapi/loads) to fetch specs as JSON or YAML from local or remote locations
+> 3. There is a [spec validation package](https://github.com/go-openapi/validate) built on top of it
+> 4. There is a [spec analysis package](https://github.com/go-openapi/analysis) built on top of it, to analyze, flatten, fix and merge spec documents
 
 * Does this library support OpenAPI 3?
 
