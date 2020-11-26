@@ -616,41 +616,61 @@ func expandParameterOrResponse(input interface{}, resolver *schemaLoader, basePa
 	if err != nil {
 		return err
 	}
+
 	if ref == nil {
 		return nil
 	}
+
 	parentRefs := []string{}
-	if err := resolver.deref(input, parentRefs, basePath); resolver.shouldStopOnError(err) {
+	if err = resolver.deref(input, parentRefs, basePath); resolver.shouldStopOnError(err) {
 		return err
 	}
+
 	ref, sch, _ := getRefAndSchema(input)
 	if ref.String() != "" {
-		transitiveResolver, err := resolver.transitiveResolver(basePath, *ref)
-		if transitiveResolver.shouldStopOnError(err) {
-			return err
+		transitiveResolver, ert := resolver.transitiveResolver(basePath, *ref)
+		if transitiveResolver.shouldStopOnError(ert) {
+			return ert
 		}
 		basePath = resolver.updateBasePath(transitiveResolver, basePath)
 		resolver = transitiveResolver
 	}
 
-	if sch != nil && sch.Ref.String() != "" {
-		// schema expanded to a $ref in another root
-		var ern error
-		sch.Ref, ern = NewRef(normalizePaths(sch.Ref.String(), ref.RemoteURI()))
+	if sch == nil {
+		// nothing to be expanded
+		if ref != nil {
+			*ref = Ref{}
+		}
+		return nil
+	}
+
+	if sch.Ref.String() != "" {
+		rebasedRef, ern := NewRef(normalizePaths(sch.Ref.String(), basePath))
 		if ern != nil {
 			return ern
 		}
+
+		if !resolver.options.SkipSchemas {
+			// schema expanded to a $ref in another root
+			sch.Ref = rebasedRef
+		} else {
+			// skip schema expansion but rebase $ref to schema
+			sch.Ref = *denormalizeFileRef(&rebasedRef, basePath, resolver.context.basePath)
+		}
 	}
+
 	if ref != nil {
 		*ref = Ref{}
 	}
 
-	if !resolver.options.SkipSchemas && sch != nil {
+	// expand schema
+	if !resolver.options.SkipSchemas {
 		s, err := expandSchema(*sch, parentRefs, resolver, basePath)
 		if resolver.shouldStopOnError(err) {
 			return err
 		}
 		*sch = *s
 	}
+
 	return nil
 }
