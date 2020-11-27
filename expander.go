@@ -34,6 +34,7 @@ func ResolveRefWithBase(root interface{}, ref *Ref, opts *ExpandOptions) (*Schem
 	if err != nil {
 		return nil, err
 	}
+
 	specBasePath := ""
 	if opts != nil && opts.RelativeBase != "" {
 		specBasePath, _ = absPath(opts.RelativeBase)
@@ -200,7 +201,7 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	return nil
 }
 
-const rootBase = "root"
+const rootBase = ".root"
 
 // baseForRoot loads in the cache the root document and produces a fake "root" base path entry
 // for further $ref resolution
@@ -215,7 +216,7 @@ func baseForRoot(root interface{}, cache ResolutionCache) string {
 			cache = resCache
 		}
 		cache.Set(normalizedBase, root)
-		return rootBase
+		return normalizedBase
 	}
 	return ""
 }
@@ -230,7 +231,7 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 		SkipSchemas:     false,
 		ContinueOnError: false,
 		// when no base path is specified, remaining $ref (circular) are rendered with an absolute path
-		AbsoluteCircularRef: true,
+		AbsoluteCircularRef: false,
 	}
 	return ExpandSchemaWithBasePath(schema, cache, opts)
 }
@@ -319,7 +320,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 			// this means there is a cycle in the recursion tree: return the Ref
 			// - circular refs cannot be expanded. We leave them as ref.
 			// - denormalization means that a new local file ref is set relative to the original basePath
-			debugLog("shortcut circular ref: basePath: %s, normalizedPath: %s, normalized ref: %s",
+			debugLog("short circuit circular ref: basePath: %s, normalizedPath: %s, normalized ref: %s",
 				basePath, normalizedBasePath, normalizedRef.String())
 			if !resolver.options.AbsoluteCircularRef {
 				target.Ref = *denormalizeFileRef(normalizedRef, normalizedBasePath, resolver.context.basePath)
@@ -525,7 +526,7 @@ func ExpandResponseWithRoot(response *Response, root interface{}, cache Resoluti
 		SkipSchemas:     false,
 		ContinueOnError: false,
 		// when no base path is specified, remaining $ref (circular) are rendered with an absolute path
-		AbsoluteCircularRef: true,
+		AbsoluteCircularRef: false,
 	}
 	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
@@ -561,7 +562,7 @@ func ExpandParameterWithRoot(parameter *Parameter, root interface{}, cache Resol
 		SkipSchemas:     false,
 		ContinueOnError: false,
 		// when no base path is specified, remaining $ref (circular) are rendered with an absolute path
-		AbsoluteCircularRef: true,
+		AbsoluteCircularRef: false,
 	}
 	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
 	if err != nil {
@@ -651,10 +652,18 @@ func expandParameterOrResponse(input interface{}, resolver *schemaLoader, basePa
 			return ern
 		}
 
-		if !resolver.options.SkipSchemas {
+		switch {
+		case resolver.isCircular(&rebasedRef, basePath, parentRefs...):
+			// this is a circular $ref: stop expansion
+			if !resolver.options.AbsoluteCircularRef {
+				sch.Ref = *denormalizeFileRef(&rebasedRef, basePath, resolver.context.basePath)
+			} else {
+				sch.Ref = rebasedRef
+			}
+		case !resolver.options.SkipSchemas:
 			// schema expanded to a $ref in another root
 			sch.Ref = rebasedRef
-		} else {
+		default:
 			// skip schema expansion but rebase $ref to schema
 			sch.Ref = *denormalizeFileRef(&rebasedRef, basePath, resolver.context.basePath)
 		}
