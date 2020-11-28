@@ -304,6 +304,27 @@ func TestResponseResolve(t *testing.T) {
         }`, string(jazon))
 }
 
+const crossFileRefFixture = "fixtures/expansion/crossFileRef.json"
+
+func TestResponseResolveWithBase(t *testing.T) {
+	specDoc, err := jsonDoc(crossFileRefFixture)
+	assert.NoError(t, err)
+
+	spec := new(Swagger)
+	err = json.Unmarshal(specDoc, spec)
+	assert.NoError(t, err)
+
+	// Resolve with root version
+	resp := spec.Paths.Paths["/"].Get.Responses.StatusCodeResponses[200]
+	resp2, err := ResolveResponseWithBase(spec, resp.Ref, &ExpandOptions{RelativeBase: crossFileRefFixture})
+	assert.NoError(t, err)
+	// resolve resolves the ref, but dos not expand
+	jazon, _ := json.MarshalIndent(resp2, "", " ")
+	assert.JSONEq(t, `{
+         "$ref": "#/responses/petResponse"
+        }`, string(jazon))
+}
+
 // test the exported version of ExpandResponse
 func TestExportedResponseExpansion(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
@@ -415,6 +436,28 @@ func TestResolveParam(t *testing.T) {
       "type": "integer",
       "format": "int64"
       }`, string(jazon))
+}
+
+func TestResolveParamWithBase(t *testing.T) {
+	specDoc, err := jsonDoc(crossFileRefFixture)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	var spec Swagger
+	_ = json.Unmarshal(specDoc, &spec)
+
+	param := spec.Paths.Paths["/pets"].Get.Parameters[0]
+	par, err := ResolveParameterWithBase(spec, param.Ref, &ExpandOptions{RelativeBase: crossFileRefFixture})
+	assert.NoError(t, err)
+	jazon, _ := json.MarshalIndent(par, "", " ")
+	assert.JSONEq(t, `{
+"description":"ID of pet to fetch",
+"format":"int64",
+"in":"path",
+"name":"id",
+"required":true,
+"type":"integer"
+}`, string(jazon))
 }
 
 func TestIssue3(t *testing.T) {

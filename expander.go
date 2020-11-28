@@ -81,9 +81,13 @@ func ResolveParameterWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*
 	if err != nil {
 		return nil, err
 	}
+	specBasePath := ""
+	if opts != nil && opts.RelativeBase != "" {
+		specBasePath, _ = absPath(opts.RelativeBase)
+	}
 
 	result := new(Parameter)
-	if err := resolver.Resolve(&ref, result, ""); err != nil {
+	if err := resolver.Resolve(&ref, result, specBasePath); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -101,8 +105,13 @@ func ResolveResponseWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*R
 		return nil, err
 	}
 
+	specBasePath := ""
+	if opts != nil && opts.RelativeBase != "" {
+		specBasePath, _ = absPath(opts.RelativeBase)
+	}
+
 	result := new(Response)
-	if err := resolver.Resolve(&ref, result, ""); err != nil {
+	if err := resolver.Resolve(&ref, result, specBasePath); err != nil {
 		return nil, err
 	}
 	return result, nil
