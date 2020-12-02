@@ -55,12 +55,27 @@ type resolverContext struct {
 	// concurrent access, unless we chose to implement a parallel spec walking.
 	circulars map[string]bool
 	basePath  string
+	loadDoc   func(string) (json.RawMessage, error)
 }
 
-func newResolverContext(originalBasePath string) *resolverContext {
+func newResolverContext(expandOptions *ExpandOptions) *resolverContext {
+	absBase, _ := absPath(expandOptions.RelativeBase)
+
+	// path loader may be overridden from option
+	var loader func(string) (json.RawMessage, error)
+	if expandOptions.PathLoader == nil {
+		loader = PathLoader
+	} else {
+		loader = expandOptions.PathLoader
+	}
+
 	return &resolverContext{
 		circulars: make(map[string]bool),
-		basePath:  originalBasePath, // keep the root base path in context
+		basePath:  absBase, // keep the root base path in context
+		loadDoc: func(path string) (json.RawMessage, error) {
+			debugLog("fetching document at %q", path)
+			return loader(path)
+		},
 	}
 }
 
@@ -69,7 +84,6 @@ type schemaLoader struct {
 	options *ExpandOptions
 	cache   ResolutionCache
 	context *resolverContext
-	loadDoc func(string) (json.RawMessage, error)
 }
 
 func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) (*schemaLoader, error) {
@@ -90,11 +104,10 @@ func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) (*schemaLoad
 
 	// shallow copy of resolver options to set a new RelativeBase when
 	// traversing multiple documents
-	newOptions := *r.options
-	newOptions.PathLoader = r.loadDoc
+	newOptions := r.options
 	newOptions.RelativeBase = rootURL.String()
 	debugLog("setting new root: %s", newOptions.RelativeBase)
-	return defaultSchemaLoader(root, &newOptions, r.cache, r.context)
+	return defaultSchemaLoader(root, newOptions, r.cache, r.context)
 }
 
 func (r *schemaLoader) updateBasePath(transitive *schemaLoader, basePath string) string {
@@ -169,7 +182,7 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 
 	data, fromCache := r.cache.Get(normalized)
 	if !fromCache {
-		b, err := r.loadDoc(normalized)
+		b, err := r.context.loadDoc(normalized)
 		if err != nil {
 			return nil, url.URL{}, false, err
 		}
@@ -266,18 +279,9 @@ func defaultSchemaLoader(
 	if expandOptions == nil {
 		expandOptions = &ExpandOptions{}
 	}
-	absBase, _ := absPath(expandOptions.RelativeBase)
+
 	if context == nil {
-		context = newResolverContext(absBase)
-	}
-
-	// path loader may be overridden from option
-	var loader func(string) (json.RawMessage, error)
-	if expandOptions.PathLoader == nil {
-		loader = PathLoader
-	} else {
-		loader = expandOptions.PathLoader
-
+		context = newResolverContext(expandOptions)
 	}
 
 	return &schemaLoader{
@@ -285,9 +289,5 @@ func defaultSchemaLoader(
 		options: expandOptions,
 		cache:   cacheOrDefault(cache),
 		context: context,
-		loadDoc: func(path string) (json.RawMessage, error) {
-			debugLog("fetching document at %q", path)
-			return loader(path)
-		},
 	}, nil
 }

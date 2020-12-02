@@ -46,6 +46,7 @@ func init() {
 		return json.RawMessage(data), nil
 	}
 }
+
 func loadOrFail(t *testing.T, path string) *spec.Swagger {
 	raw, err := testLoader(path)
 	require.NoErrorf(t, err, "can't load fixture %s: %v", path, err)
@@ -57,16 +58,11 @@ func loadOrFail(t *testing.T, path string) *spec.Swagger {
 
 // Test unitary fixture for dev and bug fixing
 func Test_Issue1429(t *testing.T) {
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-	spec.PathLoader = testLoader
 	path := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
 
 	// load and full expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// assert well expanded
@@ -80,7 +76,7 @@ func Test_Issue1429(t *testing.T) {
 
 	// reload and SkipSchemas: true
 	sp = loadOrFail(t, path)
-	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true})
+	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// assert well resolved
@@ -157,16 +153,11 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 }
 
 func Test_MoreLocalExpansion(t *testing.T) {
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-	spec.PathLoader = testLoader
 	path := filepath.Join("fixtures", "local_expansion", "spec2.yaml")
 
 	// load and full expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// asserts all $ref expanded
@@ -182,7 +173,7 @@ func Test_Issue69(t *testing.T) {
 	// expand with relative path
 	// load and expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// asserts all $ref expanded
@@ -200,18 +191,13 @@ func Test_Issue69(t *testing.T) {
 }
 
 func Test_Issue1621(t *testing.T) {
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-	spec.PathLoader = testLoader
 	path := filepath.Join("fixtures", "bugs", "1621", "fixture-1621.yaml")
 
 	// expand with relative path
 	// load and expand
 	sp := loadOrFail(t, path)
 
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// asserts all $ref expanded
@@ -227,7 +213,7 @@ func Test_Issue1614(t *testing.T) {
 	// expand with relative path
 	// load and expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// asserts all $ref expanded
@@ -245,7 +231,7 @@ func Test_Issue1614(t *testing.T) {
 
 	// now with option CircularRefAbsolute
 	sp = loadOrFail(t, path)
-	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, AbsoluteCircularRef: true})
+	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, AbsoluteCircularRef: true, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	// asserts all $ref expanded
@@ -265,17 +251,12 @@ func Test_Issue1614(t *testing.T) {
 }
 
 func Test_Issue2113(t *testing.T) {
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-	spec.PathLoader = testLoader
 	// this checks expansion with nested specs
 	path := filepath.Join("fixtures", "bugs", "2113", "base.yaml")
 
 	// load and expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false})
+	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
 	// asserts all $ref expanded
 	jazon, _ := json.MarshalIndent(sp, "", " ")
@@ -286,7 +267,7 @@ func Test_Issue2113(t *testing.T) {
 
 	// now trying with SkipSchemas
 	sp = loadOrFail(t, path)
-	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true})
+	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader})
 	require.NoError(t, err)
 
 	jazon, _ = json.MarshalIndent(sp, "", " ")
@@ -312,18 +293,12 @@ func Test_Issue2113_External(t *testing.T) {
 	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
 	// Provides more ground for testing with schemas nested in $refs
 
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-
-	spec.PathLoader = testLoader
 	// this checks expansion with nested specs
 	path := filepath.Join("fixtures", "skipschema", "external_definitions_valid.yml")
 
 	// load and expand, skipping schema expansion
 	sp := loadOrFail(t, path)
-	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true}))
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}))
 
 	// asserts all $ref are expanded as expected
 	jazon, _ := json.MarshalIndent(sp, "", " ")
@@ -342,7 +317,7 @@ func Test_Issue2113_External(t *testing.T) {
 
 	// load and expand everything
 	sp = loadOrFail(t, path)
-	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	jazon, _ = json.MarshalIndent(sp, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
@@ -353,18 +328,12 @@ func Test_Issue2113_SkipSchema(t *testing.T) {
 	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
 	// Provides more ground for testing with schemas nested in $refs
 
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-
-	spec.PathLoader = testLoader
 	// this checks expansion with nested specs
 	path := filepath.Join("fixtures", "flatten", "flatten.yml")
 
 	// load and expand, skipping schema expansion
 	sp := loadOrFail(t, path)
-	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true}))
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}))
 
 	// asserts all $ref are expanded as expected
 	jazon, err := json.MarshalIndent(sp, "", " ")
@@ -383,7 +352,7 @@ func Test_Issue2113_SkipSchema(t *testing.T) {
 	}
 
 	sp = loadOrFail(t, path)
-	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	jazon, _ = json.MarshalIndent(sp, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
@@ -394,21 +363,15 @@ func Test_PointersLoop(t *testing.T) {
 	// this a spec that cannot be flattened (self-referencing pointer).
 	// however, it should be expanded without errors
 
-	prevPathLoader := spec.PathLoader
-	defer func() {
-		spec.PathLoader = prevPathLoader
-	}()
-
-	spec.PathLoader = testLoader
 	// this checks expansion with nested specs
 	path := filepath.Join("fixtures", "more_circulars", "pointers", "fixture-pointers-loop.yaml")
 
 	// load and expand, skipping schema expansion
 	sp := loadOrFail(t, path)
-	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true}))
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}))
 
 	sp = loadOrFail(t, path)
-	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false}))
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	// cannot guarantee which ref will be kept, but only one remains: expand reduces all $ref down
 	// to the last self-referencing one (the one picked changes from one run to another, depending

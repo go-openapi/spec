@@ -26,7 +26,7 @@ type ExpandOptions struct {
 	SkipSchemas         bool
 	ContinueOnError     bool
 	AbsoluteCircularRef bool
-	PathLoader          func(string) (json.RawMessage, error)
+	PathLoader          func(string) (json.RawMessage, error) `json:"-"`
 }
 
 // ResolveRefWithBase resolves a reference against a context root with preservation of base path

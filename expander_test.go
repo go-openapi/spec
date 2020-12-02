@@ -1276,7 +1276,7 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/refed.json#/definitions/pet")
 		if assert.NoError(t, err) {
-			resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), loadDoc: jsonDoc}
+			resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: &resolverContext{loadDoc: jsonDoc}}
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt, "")) {
 				assert.Equal(t, []string{"id", "name"}, tgt.Required)
 			}
