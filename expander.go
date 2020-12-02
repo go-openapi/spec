@@ -26,6 +26,7 @@ type ExpandOptions struct {
 	SkipSchemas         bool
 	ContinueOnError     bool
 	AbsoluteCircularRef bool
+	PathLoader          func(string) (json.RawMessage, error) `json:"-"`
 }
 
 // ResolveRefWithBase resolves a reference against a context root with preservation of base path
@@ -81,6 +82,7 @@ func ResolveParameterWithBase(root interface{}, ref Ref, opts *ExpandOptions) (*
 	if err != nil {
 		return nil, err
 	}
+
 	specBasePath := ""
 	if opts != nil && opts.RelativeBase != "" {
 		specBasePath, _ = absPath(opts.RelativeBase)
@@ -126,10 +128,12 @@ func ResolveItems(root interface{}, ref Ref, opts *ExpandOptions) (*Items, error
 	if err != nil {
 		return nil, err
 	}
+
 	basePath := ""
 	if opts.RelativeBase != "" {
 		basePath = opts.RelativeBase
 	}
+
 	result := new(Items)
 	if err := resolver.Resolve(&ref, result, basePath); err != nil {
 		return nil, err
@@ -143,10 +147,12 @@ func ResolvePathItem(root interface{}, ref Ref, opts *ExpandOptions) (*PathItem,
 	if err != nil {
 		return nil, err
 	}
+
 	basePath := ""
 	if opts.RelativeBase != "" {
 		basePath = opts.RelativeBase
 	}
+
 	result := new(PathItem)
 	if err := resolver.Resolve(&ref, result, basePath); err != nil {
 		return nil, err
@@ -157,7 +163,7 @@ func ResolvePathItem(root interface{}, ref Ref, opts *ExpandOptions) (*PathItem,
 // ExpandSpec expands the references in a swagger spec
 func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	resolver, err := defaultSchemaLoader(spec, options, nil, nil)
-	// Just in case this ever returns an error.
+	// just in case this ever returns an error
 	if resolver.shouldStopOnError(err) {
 		return err
 	}
@@ -212,28 +218,31 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 
 const rootBase = ".root"
 
-// baseForRoot loads in the cache the root document and produces a fake "root" base path entry
+// baseForRoot loads in the cache the root document and produces a fake ".root" base path entry
 // for further $ref resolution
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
 func baseForRoot(root interface{}, cache ResolutionCache) string {
-	// cache the root document to resolve $ref's
-	if root != nil {
-		base, _ := absPath(rootBase)
-		normalizedBase := normalizeAbsPath(base)
-		debugLog("setting root doc in cache at: %s", normalizedBase)
-		if cache == nil {
-			onceCache.Do(initResolutionCache)
-			cache = resCache
-		}
-		cache.Set(normalizedBase, root)
-		return normalizedBase
+	if root == nil {
+		return ""
 	}
-	return ""
+
+	// cache the root document to resolve $ref's
+	base, _ := absPath(rootBase)
+	normalizedBase := normalizeAbsPath(base)
+	debugLog("setting root doc in cache at: %s", normalizedBase)
+	cache.Set(normalizedBase, root)
+
+	return normalizedBase
 }
 
 // ExpandSchema expands the refs in the schema object with reference to the root object
 // go-openapi/validate uses this function
 // notice that it is impossible to reference a json schema in a different file other than root
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
 func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error {
+	cache = cacheOrDefault(cache)
 	opts := &ExpandOptions{
 		// when a root is specified, cache the root as an in-memory document for $ref retrieval
 		RelativeBase:    baseForRoot(root, cache),
@@ -245,11 +254,15 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 	return ExpandSchemaWithBasePath(schema, cache, opts)
 }
 
-// ExpandSchemaWithBasePath expands the refs in the schema object, base path configured through expand options
+// ExpandSchemaWithBasePath expands the refs in the schema object, base path configured through expand options.
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
 func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *ExpandOptions) error {
 	if schema == nil {
 		return nil
 	}
+
+	cache = cacheOrDefault(cache)
 
 	var basePath string
 	if opts.RelativeBase != "" {
@@ -314,7 +327,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		basePath = normalizePaths(refPath, basePath)
 
 		// store found IDs for possible future reuse in $ref
-		resCache.Set(basePath, target)
+		resolver.cache.Set(basePath, target)
 	}
 
 	var t *Schema
@@ -529,7 +542,10 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 }
 
 // ExpandResponseWithRoot expands a response based on a root document, not a fetchable document
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
 func ExpandResponseWithRoot(response *Response, root interface{}, cache ResolutionCache) error {
+	cache = cacheOrDefault(cache)
 	opts := &ExpandOptions{
 		RelativeBase:    baseForRoot(root, cache),
 		SkipSchemas:     false,
@@ -537,7 +553,7 @@ func ExpandResponseWithRoot(response *Response, root interface{}, cache Resoluti
 		// when no base path is specified, remaining $ref (circular) are rendered with an absolute path
 		AbsoluteCircularRef: false,
 	}
-	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
+	resolver, err := defaultSchemaLoader(root, opts, cache, nil)
 	if err != nil {
 		return err
 	}
@@ -566,6 +582,7 @@ func ExpandResponse(response *Response, basePath string) error {
 
 // ExpandParameterWithRoot expands a parameter based on a root document, not a fetchable document
 func ExpandParameterWithRoot(parameter *Parameter, root interface{}, cache ResolutionCache) error {
+	cache = cacheOrDefault(cache)
 	opts := &ExpandOptions{
 		RelativeBase:    baseForRoot(root, cache),
 		SkipSchemas:     false,
@@ -573,7 +590,7 @@ func ExpandParameterWithRoot(parameter *Parameter, root interface{}, cache Resol
 		// when no base path is specified, remaining $ref (circular) are rendered with an absolute path
 		AbsoluteCircularRef: false,
 	}
-	resolver, err := defaultSchemaLoader(root, opts, nil, nil)
+	resolver, err := defaultSchemaLoader(root, opts, cache, nil)
 	if err != nil {
 		return err
 	}

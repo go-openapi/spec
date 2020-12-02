@@ -366,67 +366,66 @@ func TestExportedResponseExpansion(t *testing.T) {
 
 func TestExpandResponseAndParamWithRoot(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/bugs/1614/gitea.json")
-	if !assert.NoError(t, err) {
-		t.FailNow()
-		return
-	}
+	require.NoError(t, err)
+
 	var spec Swagger
 	_ = json.Unmarshal(specDoc, &spec)
 
 	// check responses with $ref
 	resp := spec.Paths.Paths["/admin/users"].Post.Responses.StatusCodeResponses[201]
-	err = ExpandResponseWithRoot(&resp, spec, nil)
-	assert.NoError(t, err)
+	require.NoError(t, ExpandResponseWithRoot(&resp, spec, nil))
+
 	jazon, _ := json.MarshalIndent(resp, "", " ")
 	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	assert.Nil(t, m)
+	require.Nil(t, m)
 
 	resp = spec.Paths.Paths["/admin/users"].Post.Responses.StatusCodeResponses[403]
-	err = ExpandResponseWithRoot(&resp, spec, nil)
-	assert.NoError(t, err)
+	require.NoError(t, ExpandResponseWithRoot(&resp, spec, nil))
+
 	jazon, _ = json.MarshalIndent(resp, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	assert.Nil(t, m)
+	require.Nil(t, m)
 
 	// check param with $ref
 	param := spec.Paths.Paths["/admin/users"].Post.Parameters[0]
-	err = ExpandParameterWithRoot(&param, spec, nil)
-	assert.NoError(t, err)
+	require.NoError(t, ExpandParameterWithRoot(&param, spec, nil))
+
 	jazon, _ = json.MarshalIndent(param, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	assert.Nil(t, m)
+	require.Nil(t, m)
 }
 
 func TestExpandResponseWithRoot_CircularRefs(t *testing.T) {
 	rootDoc := new(Swagger)
 	b, err := ioutil.ReadFile("fixtures/more_circulars/resp.json")
-	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
-		path := rootDoc.Paths.Paths["/api/v1/getx"]
-		resp := path.Post.Responses.StatusCodeResponses[200]
+	require.NoError(t, err)
 
-		resCache = defaultResolutionCache()
+	require.NoError(t, json.Unmarshal(b, rootDoc))
 
-		// during first response expand, refs are getting expanded,
-		// so the following expands cannot properly resolve them w/o the document.
-		// this happens in validator.Validate() when different validators try to expand the same mutable response.
-		err := ExpandResponseWithRoot(&resp, rootDoc, resCache)
-		assert.NoError(t, err)
-		err = ExpandResponseWithRoot(&resp, rootDoc, resCache)
-		assert.NoError(t, err)
-	}
+	path := rootDoc.Paths.Paths["/api/v1/getx"]
+	resp := path.Post.Responses.StatusCodeResponses[200]
+
+	thisCache := cacheOrDefault(nil)
+
+	// during first response expand, refs are getting expanded,
+	// so the following expands cannot properly resolve them w/o the document.
+	// this happens in validator.Validate() when different validators try to expand the same mutable response.
+	require.NoError(t, ExpandResponseWithRoot(&resp, rootDoc, thisCache))
+
+	require.NoError(t, ExpandResponseWithRoot(&resp, rootDoc, thisCache))
 }
 
 func TestResolveParam(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	var spec Swagger
 	_ = json.Unmarshal(specDoc, &spec)
 
 	param := spec.Paths.Paths["/pets/{id}"].Get.Parameters[0]
 	par, err := ResolveParameter(spec, param.Ref)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
 	jazon, _ := json.MarshalIndent(par, "", " ")
 	assert.JSONEq(t, `{
       "name": "id",
@@ -440,9 +439,8 @@ func TestResolveParam(t *testing.T) {
 
 func TestResolveParamWithBase(t *testing.T) {
 	specDoc, err := jsonDoc(crossFileRefFixture)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	var spec Swagger
 	_ = json.Unmarshal(specDoc, &spec)
 
@@ -463,15 +461,14 @@ func TestResolveParamWithBase(t *testing.T) {
 func TestIssue3(t *testing.T) {
 	spec := new(Swagger)
 	specDoc, err := jsonDoc("fixtures/expansion/overflow.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	specPath, _ := absPath("fixtures/expansion/overflow.json")
 	opts := &ExpandOptions{
 		RelativeBase: specPath,
 	}
 
-	err = json.Unmarshal(specDoc, spec)
-	assert.NoError(t, err)
+	require.NoError(t, json.Unmarshal(specDoc, spec))
 
 	assert.NotPanics(t, func() {
 		err = ExpandSpec(spec, opts)
@@ -481,36 +478,35 @@ func TestIssue3(t *testing.T) {
 
 func TestParameterExpansion(t *testing.T) {
 	paramDoc, err := jsonDoc("fixtures/expansion/params.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	spec := new(Swagger)
-	err = json.Unmarshal(paramDoc, spec)
-	assert.NoError(t, err)
+	require.NoError(t, json.Unmarshal(paramDoc, spec))
 
 	basePath, err := absPath("fixtures/expansion/params.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	resolver, err := defaultSchemaLoader(spec, nil, nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	param := spec.Parameters["query"]
 	expected := spec.Parameters["tag"]
 
-	err = expandParameterOrResponse(&param, resolver, basePath)
-	assert.NoError(t, err)
+	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath))
+
 	assert.Equal(t, expected, param)
 
 	param = spec.Paths.Paths["/cars/{id}"].Parameters[0]
 	expected = spec.Parameters["id"]
 
-	err = expandParameterOrResponse(&param, resolver, basePath)
-	assert.NoError(t, err)
+	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath))
+
 	assert.Equal(t, expected, param)
 }
 
 func TestExportedParameterExpansion(t *testing.T) {
 	paramDoc, err := jsonDoc("fixtures/expansion/params.json")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	spec := new(Swagger)
 	err = json.Unmarshal(paramDoc, spec)
@@ -726,8 +722,7 @@ func expandThisSchemaOrDieTrying(t *testing.T, fixturePath string) string {
 	require.NoError(t, err)
 
 	require.NotPanics(t, func() {
-		err = ExpandSchemaWithBasePath(sch, nil, opts)
-		assert.NoError(t, err)
+		assert.NoError(t, ExpandSchemaWithBasePath(sch, nil, opts))
 	}, "Calling expand schema circular refs, should not panic!")
 
 	bbb, _ := json.MarshalIndent(sch, "", " ")
@@ -1281,7 +1276,7 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 		var tgt Schema
 		ref, err := NewRef(server.URL + "/refed.json#/definitions/pet")
 		if assert.NoError(t, err) {
-			resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), loadDoc: jsonDoc}
+			resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: &resolverContext{loadDoc: jsonDoc}}
 			if assert.NoError(t, resolver.Resolve(&ref, &tgt, "")) {
 				assert.Equal(t, []string{"id", "name"}, tgt.Required)
 			}
@@ -1826,18 +1821,27 @@ func Test_CircularID(t *testing.T) {
 	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
 
 	sch := new(Schema)
-	err := json.Unmarshal([]byte(jazon), sch)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal([]byte(jazon), sch))
 
 	require.NotPanics(t, func() {
-		err = ExpandSchemaWithBasePath(sch, nil, &ExpandOptions{})
-		assert.NoError(t, err)
+		assert.NoError(t, ExpandSchemaWithBasePath(sch, nil, &ExpandOptions{}))
 	})
 
 	fixturePath = "fixtures/more_circulars/with-id.json"
 	jazon = expandThisOrDieTrying(t, fixturePath)
-	// TODO(fred): assert this
-	t.Logf("%s", jazon)
+
+	// cannot guarantee that the circular will always hook on the same $ref
+	// but we can assert that thre is only one
+	m := rex.FindAllStringSubmatch(jazon, -1)
+	require.NotEmpty(t, m)
+
+	refs := make(map[string]struct{}, 5)
+	for _, matched := range m {
+		subMatch := matched[1]
+		refs[subMatch] = struct{}{}
+	}
+
+	require.Len(t, refs, 1)
 }
 
 // PetStoreJSONMessage json raw message for Petstore20
