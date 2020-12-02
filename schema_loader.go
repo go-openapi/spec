@@ -25,7 +25,14 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// PathLoader function to use when loading remote refs
+// PathLoader is a function to use when loading remote refs.
+//
+// This is a package level default. It may be overridden or bypassed by
+// specifying the loader in ExpandOptions.
+//
+// NOTE: if you are using the go-openapi/loads package, it will override
+// this value with its own default (a loader to retrieve YAML documents as
+// well as JSON ones).
 var PathLoader func(string) (json.RawMessage, error)
 
 func init() {
@@ -83,10 +90,11 @@ func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) (*schemaLoad
 
 	// shallow copy of resolver options to set a new RelativeBase when
 	// traversing multiple documents
-	newOptions := r.options
+	newOptions := *r.options
+	newOptions.PathLoader = r.loadDoc
 	newOptions.RelativeBase = rootURL.String()
 	debugLog("setting new root: %s", newOptions.RelativeBase)
-	return defaultSchemaLoader(root, newOptions, r.cache, r.context)
+	return defaultSchemaLoader(root, &newOptions, r.cache, r.context)
 }
 
 func (r *schemaLoader) updateBasePath(transitive *schemaLoader, basePath string) string {
@@ -163,7 +171,6 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 	if !fromCache {
 		b, err := r.loadDoc(normalized)
 		if err != nil {
-			debugLog("unable to load the document: %v", err)
 			return nil, url.URL{}, false, err
 		}
 
@@ -264,6 +271,15 @@ func defaultSchemaLoader(
 		context = newResolverContext(absBase)
 	}
 
+	// path loader may be overridden from option
+	var loader func(string) (json.RawMessage, error)
+	if expandOptions.PathLoader == nil {
+		loader = PathLoader
+	} else {
+		loader = expandOptions.PathLoader
+
+	}
+
 	return &schemaLoader{
 		root:    root,
 		options: expandOptions,
@@ -271,7 +287,7 @@ func defaultSchemaLoader(
 		context: context,
 		loadDoc: func(path string) (json.RawMessage, error) {
 			debugLog("fetching document at %q", path)
-			return PathLoader(path)
+			return loader(path)
 		},
 	}, nil
 }
