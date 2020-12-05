@@ -498,6 +498,7 @@ func TestParameterExpansion(t *testing.T) {
 
 	param = spec.Paths.Paths["/cars/{id}"].Parameters[0]
 	expected = spec.Parameters["id"]
+	expected.VendorExtensible = param.VendorExtensible
 
 	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath))
 
@@ -524,6 +525,7 @@ func TestExportedParameterExpansion(t *testing.T) {
 
 	param = spec.Paths.Paths["/cars/{id}"].Parameters[0]
 	expected = spec.Parameters["id"]
+	expected.VendorExtensible = param.VendorExtensible
 
 	err = ExpandParameter(&param, basePath)
 	assert.NoError(t, err)
