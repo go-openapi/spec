@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/url"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -45,6 +46,36 @@ func init() {
 	}
 }
 
+type refTracker struct {
+	Pointer string // pointer to the referrer of that $ref
+}
+
+type refTrackers []refTracker
+
+func (tr refTrackers) Len() int      { return len(tr) }
+func (tr refTrackers) Swap(i, j int) { tr[i], tr[j] = tr[j], tr[i] }
+func (tr refTrackers) Less(i, j int) bool {
+	// prefer to resolve on definitions than other pointers
+	defi := strings.HasPrefix(tr[i].Pointer, "/definitions")
+	defj := strings.HasPrefix(tr[j].Pointer, "/definitions")
+
+	switch {
+	case defi && !defj:
+		return true
+	case !defi && defj:
+		return false
+	default:
+		// prefer to resolve on shortest path
+		partsi := len(strings.Split(tr[i].Pointer, "/"))
+		partsj := len(strings.Split(tr[j].Pointer, "/"))
+		if partsi == partsj {
+			return tr[i].Pointer < tr[j].Pointer
+		}
+		// lexicographic order on pointers at the same depth
+		return partsi < partsj
+	}
+}
+
 // resolverContext allows to share a context during spec processing.
 // At the moment, it just holds the index of circular references found.
 type resolverContext struct {
@@ -55,6 +86,12 @@ type resolverContext struct {
 	circulars map[string]bool
 	basePath  string
 	loadDoc   func(string) (json.RawMessage, error)
+	// allRefs holds all pointers to referrer schemas which hold a $ref.
+	// This is used to resolve circular $ref declared outside the root document:
+	// in that case a pointer to some referrer in the root document is selected instead.
+	allRefs map[string]refTrackers
+	// rootID holds the ID of the current root schema. This is used to rebase $ref against ID.
+	rootID string
 }
 
 func newResolverContext(expandOptions *ExpandOptions) *resolverContext {
@@ -72,6 +109,7 @@ func newResolverContext(expandOptions *ExpandOptions) *resolverContext {
 		circulars: make(map[string]bool),
 		basePath:  absBase, // keep the root base path in context
 		loadDoc:   loader,
+		allRefs:   make(map[string]refTrackers, 50),
 	}
 }
 
@@ -88,7 +126,8 @@ func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) *schemaLoade
 	}
 
 	baseRef := MustCreateRef(basePath)
-	currentRef := normalizeFileRef(&ref, basePath)
+	currentRef := normalizeFileRef(ref, basePath)
+
 	if strings.HasPrefix(currentRef.String(), baseRef.String()) {
 		return r
 	}
@@ -96,6 +135,7 @@ func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) *schemaLoade
 	// set a new root against which to resolve
 	rootURL := currentRef.GetURL()
 	rootURL.Fragment = ""
+
 	root, _ := r.cache.Get(rootURL.String())
 
 	// shallow copy of resolver options to set a new RelativeBase when
@@ -114,13 +154,13 @@ func (r *schemaLoader) updateBasePath(transitive *schemaLoader, basePath string)
 	return basePath
 }
 
-func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string) error {
+func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath, pointer string) error {
 	tgt := reflect.ValueOf(target)
 	if tgt.Kind() != reflect.Ptr {
 		return ErrResolveRefNeedsAPointer
 	}
 
-	if ref.GetURL() == nil {
+	if ref == nil || ref.GetURL() == nil {
 		return nil
 	}
 
@@ -130,37 +170,49 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 		err  error
 	)
 
-	// Resolve against the root if it isn't nil, and if ref is pointing at the root, or has a fragment only which means
+	// resolve against the root if it isn't nil: if ref is pointing at the root, or has a fragment only which means
 	// it is pointing somewhere in the root.
 	root := r.root
-	if (ref.IsRoot() || ref.HasFragmentOnly) && root == nil && basePath != "" {
-		if baseRef, erb := NewRef(basePath); erb == nil {
-			root, _, _, _ = r.load(baseRef.GetURL())
+
+	if (ref.IsRoot() || ref.HasFragmentOnly) && root == nil {
+		if basePath != "" {
+			// this resolver already has a root set up
+			baseRef := MustCreateRef(basePath)
+			root, _ = r.load(baseRef.GetURL())
+		} else {
+			// resolve the root against the base path
+			baseRef := MustCreateRef(r.options.RelativeBase)
+			root, _ = r.load(baseRef.GetURL())
 		}
 	}
+
+	baseRef := normalizeFileRef(*ref, basePath)
+
+	// track the current referrer to this $ref (for future simplification of a cyclical ref)
+	r.context.allRefs[baseRef.String()] = append(r.context.allRefs[baseRef.String()], refTracker{Pointer: pointer})
 
 	if (ref.IsRoot() || ref.HasFragmentOnly) && root != nil {
 		data = root
 	} else {
-		baseRef := normalizeFileRef(ref, basePath)
-		data, _, _, err = r.load(baseRef.GetURL())
+		data, err = r.load(baseRef.GetURL())
 		if err != nil {
 			return err
 		}
 	}
 
 	res = data
-	if ref.String() != "" {
+	if ref.String() != "" || ref.IsRoot() {
 		res, _, err = ref.GetPointer().Get(data)
 		if err != nil {
 			return err
 		}
 	}
+
 	return swag.DynamicJSONToStruct(res, target)
 }
 
-func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error) {
-	debugLog("loading schema from url: %s", refURL)
+// load a document from an URL or from cache
+func (r *schemaLoader) load(refURL *url.URL) (interface{}, error) {
 	toFetch := *refURL
 	toFetch.Fragment = ""
 
@@ -169,7 +221,7 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 	if pth == rootBase {
 		pth, err = absPath(rootBase)
 		if err != nil {
-			return nil, url.URL{}, false, err
+			return nil, err
 		}
 	}
 	normalized := normalizeAbsPath(pth)
@@ -178,24 +230,26 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 	if !fromCache {
 		b, err := r.context.loadDoc(normalized)
 		if err != nil {
-			return nil, url.URL{}, false, fmt.Errorf("%s [%s]: %w", pth, normalized, err)
+			return nil, fmt.Errorf("%s [normalized: %s]: %w", pth, normalized, err)
 		}
 
 		var doc interface{}
 		if err := json.Unmarshal(b, &doc); err != nil {
-			return nil, url.URL{}, false, err
+			return nil, err
 		}
+
 		r.cache.Set(normalized, doc)
 
-		return doc, toFetch, fromCache, nil
+		return doc, nil
 	}
 
-	return data, toFetch, fromCache, nil
+	return data, nil
 }
 
 // isCircular detects cycles in sequences of $ref.
+//
 // It relies on a private context (which needs not be locked).
-func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...string) (foundCycle bool) {
+func (r *schemaLoader) isCircular(ref Ref, basePath string, parentRefs ...string) (foundCycle bool) {
 	normalizedRef := normalizePaths(ref.String(), basePath)
 	if _, ok := r.context.circulars[normalizedRef]; ok {
 		// circular $ref has been already detected in another explored cycle
@@ -209,6 +263,33 @@ func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...strin
 	return
 }
 
+func (r *schemaLoader) resolveCircularRef(ref Ref, basePath string) (result Ref) {
+	// ref and basePath must be normalized
+
+	result = r.denormalizeFileRef(ref, basePath)
+
+	if result.RemoteURI() == "" {
+		// circularity is already captured in the root document: simply rebase the ref
+		return
+	}
+
+	// case of circularity detected while walking through remote documents:
+	// find an earlier referrer to this resource and replace the $ref by a json pointer to it
+	referrers, ok := r.context.allRefs[ref.String()]
+	if !ok {
+		// guard against dev errors: a circular ref has necessarily been referred to at least once
+		panic(ErrInternalRef)
+	}
+	sort.Sort(referrers) // pick the preferred referrer known at the time the circular is found
+
+	return MustCreateRef("#" + referrers[0].Pointer)
+}
+
+func (r *schemaLoader) rebaseRef(ref Ref, basePath string) Ref {
+	// rebase $ref to the initial base path for the root document
+	return r.denormalizeFileRef(ref, basePath)
+}
+
 // Resolve resolves a reference against basePath and stores the result in target.
 //
 // Resolve is not in charge of following references: it only resolves ref by following its URL.
@@ -216,13 +297,14 @@ func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...strin
 // If the schema the ref is referring to holds nested refs, Resolve doesn't resolve them.
 //
 // If basePath is an empty string, ref is resolved against the root schema stored in the schemaLoader struct
-func (r *schemaLoader) Resolve(ref *Ref, target interface{}, basePath string) error {
-	return r.resolveRef(ref, target, basePath)
+func (r *schemaLoader) Resolve(ref *Ref, target interface{}, basePath, pointer string) error {
+	return r.resolveRef(ref, target, basePath, pointer)
 }
 
-func (r *schemaLoader) deref(input interface{}, parentRefs []string, basePath string) error {
+func (r *schemaLoader) deref(input interface{}, parentRefs []string, basePath, pointer string) error {
 	var ref *Ref
 	switch refable := input.(type) {
+	// all spec types which support $ref
 	case *Schema:
 		ref = &refable.Ref
 	case *Parameter:
@@ -236,28 +318,29 @@ func (r *schemaLoader) deref(input interface{}, parentRefs []string, basePath st
 	}
 
 	curRef := ref.String()
-	if curRef == "" {
+	if curRef == "" && !ref.IsRoot() {
 		return nil
 	}
 
-	normalizedRef := normalizeFileRef(ref, basePath)
+	normalizedRef := normalizeFileRef(*ref, basePath)
 	normalizedBasePath := normalizedRef.RemoteURI()
 
 	if r.isCircular(normalizedRef, basePath, parentRefs...) {
 		return nil
 	}
 
-	if err := r.resolveRef(ref, input, basePath); r.shouldStopOnError(err) {
+	if err := r.resolveRef(ref, input, basePath, pointer); r.shouldStopOnError(err) {
 		return err
 	}
 
-	if ref.String() == "" || ref.String() == curRef {
-		// done with rereferencing
+	if ref.String() == "" && !ref.IsRoot() || ref.String() == curRef {
+		// done with rereferencing: no more $ref or self-referencing $ref
 		return nil
 	}
 
+	// continue dereferencing down the rabbit hole
 	parentRefs = append(parentRefs, normalizedRef.String())
-	return r.deref(input, parentRefs, normalizedBasePath)
+	return r.deref(input, parentRefs, normalizedBasePath, pointer)
 }
 
 func (r *schemaLoader) shouldStopOnError(err error) bool {
@@ -272,8 +355,8 @@ func (r *schemaLoader) shouldStopOnError(err error) bool {
 	return false
 }
 
-func (r *schemaLoader) setSchemaID(target interface{}, id, basePath string) (string, string) {
-	debugLog("schema has ID: %s", id)
+func (r *schemaLoader) setSchemaID(target interface{}, id, basePath, pointer string) (string, string) {
+	// sets a schema ID for the current resolved target
 
 	// handling the case when id is a folder
 	// remember that basePath has to point to a file
@@ -285,13 +368,23 @@ func (r *schemaLoader) setSchemaID(target interface{}, id, basePath string) (str
 		refPath = id
 	}
 
+	if r.context.rootID == "" {
+		r.context.rootID = id
+	}
+
 	// updates the current base path
 	// * important: ID can be a relative path
 	// * registers target to be fetchable from the new base proposed by this id
 	newBasePath := normalizePaths(refPath, basePath)
 
 	// store found IDs for possible future reuse in $ref
-	r.cache.Set(newBasePath, target)
+	if _, found := r.cache.Get(newBasePath); !found {
+		// keep the original document: do not account for mutated content
+		r.cache.Set(newBasePath, target)
+	}
+
+	// track the referrer of this ID
+	r.context.allRefs[refPath] = append(r.context.allRefs[refPath], refTracker{Pointer: pointer})
 
 	return newBasePath, refPath
 }
@@ -308,6 +401,11 @@ func defaultSchemaLoader(
 
 	if context == nil {
 		context = newResolverContext(expandOptions)
+	}
+
+	if schema, ok := root.(*Schema); ok && schema.ID != "" {
+		// keep the ID of the root schema to rebase cyclical $ref to root
+		context.rootID = schema.ID
 	}
 
 	return &schemaLoader{

@@ -128,7 +128,7 @@ func TestResponseExpansion(t *testing.T) {
 
 	resp := spec.Responses["anotherPet"]
 	expected := spec.Responses["petResponse"]
-	require.NoError(t, expandParameterOrResponse(&expected, resolver, basePath))
+	require.NoError(t, expandParameterOrResponse(&expected, resolver, basePath, "/"))
 
 	jazon, err := json.MarshalIndent(expected, "", " ")
 	require.NoError(t, err)
@@ -155,13 +155,13 @@ func TestResponseExpansion(t *testing.T) {
          }
 			 }`, string(jazon))
 
-	require.NoError(t, expandParameterOrResponse(&resp, resolver, basePath))
+	require.NoError(t, expandParameterOrResponse(&resp, resolver, basePath, "/"))
 	assert.Equal(t, expected, resp)
 
 	resp2 := spec.Paths.Paths["/"].Get.Responses.Default
 	expected = spec.Responses["stringResponse"]
 
-	require.NoError(t, expandParameterOrResponse(resp2, resolver, basePath))
+	require.NoError(t, expandParameterOrResponse(resp2, resolver, basePath, "/"))
 	assert.Equal(t, expected, *resp2)
 
 	// cascading ref
@@ -174,7 +174,7 @@ func TestResponseExpansion(t *testing.T) {
 		"$ref": "#/responses/anotherPet"
   }`, string(jazon))
 
-	require.NoError(t, expandParameterOrResponse(&resp, resolver, basePath))
+	require.NoError(t, expandParameterOrResponse(&resp, resolver, basePath, "/"))
 	assert.Equal(t, expected, resp)
 }
 
@@ -256,14 +256,14 @@ func TestParameterExpansion(t *testing.T) {
 	param := spec.Parameters["query"]
 	expected := spec.Parameters["tag"]
 
-	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath))
+	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath, "/"))
 
 	assert.Equal(t, expected, param)
 
 	param = spec.Paths.Paths["/cars/{id}"].Parameters[0]
 	expected = spec.Parameters["id"]
 
-	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath))
+	require.NoError(t, expandParameterOrResponse(&param, resolver, basePath, "/"))
 
 	assert.Equal(t, expected, param)
 }
@@ -297,7 +297,9 @@ func Test_ExpandJSONSchemaDraft4(t *testing.T) {
 
 	// assert all $ref match
 	// "$ref": "http://json-schema.org/draft-04/something"
-	assertRefInJSONRegexp(t, jazon, "http://json-schema.org/draft-04/")
+	// "$ref": "" (from ID: "http://json-schema.org/draft-04/something", which is the root ID of this schema)
+	// but the ones redefined as an array of schema by the definition.
+	assertRefInJSONRegexp(t, jazon, "(^#?$)|(#/definitions/schemaArray)")
 }
 
 func Test_ExpandSwaggerSchema(t *testing.T) {
@@ -359,7 +361,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.NotEmpty(t, oldBrand.Items.Schema.Ref.String())
 	assert.NotEqual(t, spec.Definitions["brand"], oldBrand)
 
-	_, err = expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath)
+	_, err = expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath, "/definitions/car")
 	require.NoError(t, err)
 
 	newBrand := schema.Properties["brand"]
@@ -369,7 +371,7 @@ func TestItemsExpansion(t *testing.T) {
 	schema = spec.Definitions["truck"]
 	require.NotEmpty(t, schema.Items.Schema.Ref.String())
 
-	s, err := expandSchema(schema, []string{"#/definitions/truck"}, resolver, basePath)
+	s, err := expandSchema(schema, []string{"#/definitions/truck"}, resolver, basePath, "/definitions/truck")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -378,11 +380,11 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, spec.Definitions["car"], *schema.Items.Schema)
 
 	sch := new(Schema)
-	_, err = expandSchema(*sch, []string{""}, resolver, basePath)
+	_, err = expandSchema(*sch, []string{""}, resolver, basePath, "/")
 	require.NoError(t, err)
 
 	schema = spec.Definitions["batch"]
-	s, err = expandSchema(schema, []string{"#/definitions/batch"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/batch"}, resolver, basePath, "/definitions/batch")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -391,7 +393,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.Items.Schema.Items.Schema, spec.Definitions["brand"])
 
 	schema = spec.Definitions["batch2"]
-	s, err = expandSchema(schema, []string{"#/definitions/batch2"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/batch2"}, resolver, basePath, "/definitions/batch2")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -402,7 +404,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.Items.Schemas[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["allofBoth"]
-	s, err = expandSchema(schema, []string{"#/definitions/allofBoth"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/allofBoth"}, resolver, basePath, "/definitions/allofBoth")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -413,7 +415,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AllOf[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["anyofBoth"]
-	s, err = expandSchema(schema, []string{"#/definitions/anyofBoth"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/anyofBoth"}, resolver, basePath, "/definitions/anyofBoth")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -424,7 +426,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AnyOf[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["oneofBoth"]
-	s, err = expandSchema(schema, []string{"#/definitions/oneofBoth"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/oneofBoth"}, resolver, basePath, "/definitions/oneofBoth")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -435,7 +437,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.OneOf[1].Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["notSomething"]
-	s, err = expandSchema(schema, []string{"#/definitions/notSomething"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/notSomething"}, resolver, basePath, "/definitions/notSomething")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -444,7 +446,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.Not.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditional"]
-	s, err = expandSchema(schema, []string{"#/definitions/withAdditional"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditional"}, resolver, basePath, "/definitions/withAdditional")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -453,7 +455,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AdditionalProperties.Schema.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditionalItems"]
-	s, err = expandSchema(schema, []string{"#/definitions/withAdditionalItems"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditionalItems"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -462,7 +464,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AdditionalItems.Schema.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withPattern"]
-	s, err = expandSchema(schema, []string{"#/definitions/withPattern"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/withPattern"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -472,7 +474,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *prop.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["deps"]
-	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -482,7 +484,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *prop2.Schema.Items.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["defined"]
-	s, err = expandSchema(schema, []string{"#/definitions/defined"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/defined"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -509,7 +511,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.NotEmpty(t, oldBrand.Ref.String())
 	assert.NotEqual(t, spec.Definitions["brand"], oldBrand)
 
-	s, err := expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath)
+	s, err := expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -522,7 +524,7 @@ func TestSchemaExpansion(t *testing.T) {
 	schema = spec.Definitions["truck"]
 	assert.NotEmpty(t, schema.Ref.String())
 
-	s, err = expandSchema(schema, []string{"#/definitions/truck"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/truck"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -531,11 +533,11 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, spec.Definitions["car"], schema)
 
 	sch := new(Schema)
-	_, err = expandSchema(*sch, []string{""}, resolver, basePath)
+	_, err = expandSchema(*sch, []string{""}, resolver, basePath, "/")
 	require.NoError(t, err)
 
 	schema = spec.Definitions["batch"]
-	s, err = expandSchema(schema, []string{"#/definitions/batch"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/batch"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -544,7 +546,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, *schema.Items.Schema, spec.Definitions["brand"])
 
 	schema = spec.Definitions["batch2"]
-	s, err = expandSchema(schema, []string{"#/definitions/batch2"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/batch2"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -555,7 +557,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.Items.Schemas[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["allofBoth"]
-	s, err = expandSchema(schema, []string{"#/definitions/allofBoth"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/allofBoth"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -566,7 +568,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.AllOf[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["anyofBoth"]
-	s, err = expandSchema(schema, []string{"#/definitions/anyofBoth"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/anyofBoth"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -577,7 +579,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.AnyOf[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["oneofBoth"]
-	s, err = expandSchema(schema, []string{"#/definitions/oneofBoth"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/oneofBoth"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -588,7 +590,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, schema.OneOf[1], spec.Definitions["tag"])
 
 	schema = spec.Definitions["notSomething"]
-	s, err = expandSchema(schema, []string{"#/definitions/notSomething"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/notSomething"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -597,7 +599,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, *schema.Not, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditional"]
-	s, err = expandSchema(schema, []string{"#/definitions/withAdditional"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditional"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -606,7 +608,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AdditionalProperties.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withAdditionalItems"]
-	s, err = expandSchema(schema, []string{"#/definitions/withAdditionalItems"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/withAdditionalItems"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -615,7 +617,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, *schema.AdditionalItems.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["withPattern"]
-	s, err = expandSchema(schema, []string{"#/definitions/withPattern"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/withPattern"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -625,7 +627,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, prop, spec.Definitions["tag"])
 
 	schema = spec.Definitions["deps"]
-	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -635,7 +637,7 @@ func TestSchemaExpansion(t *testing.T) {
 	assert.Equal(t, *prop2.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["defined"]
-	s, err = expandSchema(schema, []string{"#/definitions/defined"}, resolver, basePath)
+	s, err = expandSchema(schema, []string{"#/definitions/defined"}, resolver, basePath, "/")
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -800,13 +802,14 @@ func TestExpandRemoteRef_WithNestedResolutionContext(t *testing.T) {
 }
 
 /*
-   This next test will have to wait until we do full $ID analysis for every subschema on every file that is referenced
-// For now, TestExpandRemoteRef_WithNestedResolutionContext replaces this next test
-func TestExpandRemoteRef_WithNestedResolutionContext_WithParentID(t *testing.T) {
- 	server := resolutionContextServer()
- 	defer server.Close()
+		This next test will have to wait until we do full $ID analysis for every subschema on every file that is referenced
+		For now, TestExpandRemoteRef_WithNestedResolutionContext replaces this next test
 
-	tgt := RefSchema(server.URL + "/resolution.json#/items/items")
+func TestExpandRemoteRef_WithNestedResolutionContext_WithParentID(t *testing.T) {
+	server := resolutionContextServer()
+	defer server.Close()
+
+	tgt := RefSchema(server.URL + "/resolution2.json#/items/items")
 	require.NoError(t, ExpandSchema(tgt, nil, nil))
 	bbb, _ := json.MarshalIndent(tgt, "", " ")
 	t.Logf("%s", string(bbb))
@@ -861,6 +864,7 @@ func TestExpandSchemaWithRoot(t *testing.T) {
 func expandRootWithID(t testing.TB, root *Swagger, testcase string) {
 	t.Logf("case: expanding $ref to schema without ID, with nested $ref with %s ID", testcase)
 	sch := RefSchema("#/definitions/newPet")
+
 	err := ExpandSchema(sch, root, nil)
 
 	if testcase == withSchemaID {

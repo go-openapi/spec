@@ -12,7 +12,7 @@ func resolveAnyWithBase(root interface{}, ref *Ref, result interface{}, options 
 		basePath, _ = absPath(options.RelativeBase)
 	}
 
-	if err := resolver.Resolve(ref, result, basePath); err != nil {
+	if err := resolver.Resolve(ref, result, basePath, "/"); err != nil {
 		return err
 	}
 
