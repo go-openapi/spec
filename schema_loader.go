@@ -106,16 +106,13 @@ func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) (*schemaLoad
 	// traversing multiple documents
 	newOptions := r.options
 	newOptions.RelativeBase = rootURL.String()
-	debugLog("setting new root: %s", newOptions.RelativeBase)
 	return defaultSchemaLoader(root, newOptions, r.cache, r.context)
 }
 
 func (r *schemaLoader) updateBasePath(transitive *schemaLoader, basePath string) string {
 	if transitive != r {
-		debugLog("got a new resolver")
 		if transitive.options != nil && transitive.options.RelativeBase != "" {
 			basePath, _ = absPath(transitive.options.RelativeBase)
-			debugLog("new basePath = %s", basePath)
 		}
 	}
 	return basePath
@@ -124,17 +121,19 @@ func (r *schemaLoader) updateBasePath(transitive *schemaLoader, basePath string)
 func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string) error {
 	tgt := reflect.ValueOf(target)
 	if tgt.Kind() != reflect.Ptr {
-		return fmt.Errorf("resolve ref: target needs to be a pointer")
+		return ErrResolveRefNeedsAPointer
 	}
 
-	refURL := ref.GetURL()
-	if refURL == nil {
+	if ref.GetURL() == nil {
 		return nil
 	}
 
-	var res interface{}
-	var data interface{}
-	var err error
+	var (
+		res  interface{}
+		data interface{}
+		err  error
+	)
+
 	// Resolve against the root if it isn't nil, and if ref is pointing at the root, or has a fragment only which means
 	// it is pointing somewhere in the root.
 	root := r.root
@@ -143,12 +142,11 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 			root, _, _, _ = r.load(baseRef.GetURL())
 		}
 	}
+
 	if (ref.IsRoot() || ref.HasFragmentOnly) && root != nil {
 		data = root
 	} else {
 		baseRef := normalizeFileRef(ref, basePath)
-		debugLog("current ref is: %s", ref.String())
-		debugLog("current ref normalized file: %s", baseRef.String())
 		data, _, _, err = r.load(baseRef.GetURL())
 		if err != nil {
 			return err
@@ -232,30 +230,32 @@ func (r *schemaLoader) deref(input interface{}, parentRefs []string, basePath st
 	case *PathItem:
 		ref = &refable.Ref
 	default:
-		return fmt.Errorf("deref: unsupported type %T", input)
+		return fmt.Errorf("unsupported type: %T: %w", input, ErrDerefUnsupportedType)
 	}
 
 	curRef := ref.String()
-	if curRef != "" {
-		normalizedRef := normalizeFileRef(ref, basePath)
-		normalizedBasePath := normalizedRef.RemoteURI()
-
-		if r.isCircular(normalizedRef, basePath, parentRefs...) {
-			return nil
-		}
-
-		if err := r.resolveRef(ref, input, basePath); r.shouldStopOnError(err) {
-			return err
-		}
-
-		// NOTE(fredbi): removed basePath check => needs more testing
-		if ref.String() != "" && ref.String() != curRef {
-			parentRefs = append(parentRefs, normalizedRef.String())
-			return r.deref(input, parentRefs, normalizedBasePath)
-		}
+	if curRef == "" {
+		return nil
 	}
 
-	return nil
+	normalizedRef := normalizeFileRef(ref, basePath)
+	normalizedBasePath := normalizedRef.RemoteURI()
+
+	if r.isCircular(normalizedRef, basePath, parentRefs...) {
+		return nil
+	}
+
+	if err := r.resolveRef(ref, input, basePath); r.shouldStopOnError(err) {
+		return err
+	}
+
+	if ref.String() == "" || ref.String() == curRef {
+		// done with rereferencing
+		return nil
+	}
+
+	parentRefs = append(parentRefs, normalizedRef.String())
+	return r.deref(input, parentRefs, normalizedBasePath)
 }
 
 func (r *schemaLoader) shouldStopOnError(err error) bool {
