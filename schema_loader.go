@@ -48,9 +48,8 @@ func init() {
 // resolverContext allows to share a context during spec processing.
 // At the moment, it just holds the index of circular references found.
 type resolverContext struct {
-	// circulars holds all visited circular references, which allows shortcuts.
-	// NOTE: this is not just a performance improvement: it is required to figure out
-	// circular references which participate several cycles.
+	// circulars holds all visited circular references, to shortcircuit $ref resolution.
+	//
 	// This structure is privately instantiated and needs not be locked against
 	// concurrent access, unless we chose to implement a parallel spec walking.
 	circulars map[string]bool
@@ -72,10 +71,7 @@ func newResolverContext(expandOptions *ExpandOptions) *resolverContext {
 	return &resolverContext{
 		circulars: make(map[string]bool),
 		basePath:  absBase, // keep the root base path in context
-		loadDoc: func(path string) (json.RawMessage, error) {
-			debugLog("fetching document at %q", path)
-			return loader(path)
-		},
+		loadDoc:   loader,
 	}
 }
 
@@ -86,18 +82,18 @@ type schemaLoader struct {
 	context *resolverContext
 }
 
-func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) (*schemaLoader, error) {
+func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) *schemaLoader {
 	if ref.IsRoot() || ref.HasFragmentOnly {
-		return r, nil
+		return r
 	}
 
-	baseRef, _ := NewRef(basePath)
+	baseRef := MustCreateRef(basePath)
 	currentRef := normalizeFileRef(&ref, basePath)
 	if strings.HasPrefix(currentRef.String(), baseRef.String()) {
-		return r, nil
+		return r
 	}
 
-	// Set a new root to resolve against
+	// set a new root against which to resolve
 	rootURL := currentRef.GetURL()
 	rootURL.Fragment = ""
 	root, _ := r.cache.Get(rootURL.String())
@@ -169,26 +165,29 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 	toFetch.Fragment = ""
 
 	var err error
-	path := toFetch.String()
-	if path == rootBase {
-		path, err = absPath(rootBase)
+	pth := toFetch.String()
+	if pth == rootBase {
+		pth, err = absPath(rootBase)
 		if err != nil {
 			return nil, url.URL{}, false, err
 		}
 	}
-	normalized := normalizeAbsPath(path)
+	normalized := normalizeAbsPath(pth)
 
 	data, fromCache := r.cache.Get(normalized)
 	if !fromCache {
 		b, err := r.context.loadDoc(normalized)
 		if err != nil {
-			return nil, url.URL{}, false, err
+			return nil, url.URL{}, false, fmt.Errorf("%s [%s]: %w", pth, normalized, err)
 		}
 
-		if err := json.Unmarshal(b, &data); err != nil {
+		var doc interface{}
+		if err := json.Unmarshal(b, &doc); err != nil {
 			return nil, url.URL{}, false, err
 		}
-		r.cache.Set(normalized, data)
+		r.cache.Set(normalized, doc)
+
+		return doc, toFetch, fromCache, nil
 	}
 
 	return data, toFetch, fromCache, nil
@@ -203,17 +202,20 @@ func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...strin
 		foundCycle = true
 		return
 	}
-	foundCycle = swag.ContainsStringsCI(parentRefs, normalizedRef)
+	foundCycle = swag.ContainsStringsCI(parentRefs, normalizedRef) // TODO(fred): normalize windows url and remove CI equality
 	if foundCycle {
 		r.context.circulars[normalizedRef] = true
 	}
 	return
 }
 
-// Resolve resolves a reference against basePath and stores the result in target
-// Resolve is not in charge of following references, it only resolves ref by following its URL
-// if the schema that ref is referring to has more refs in it. Resolve doesn't resolve them
-// if basePath is an empty string, ref is resolved against the root schema stored in the schemaLoader struct
+// Resolve resolves a reference against basePath and stores the result in target.
+//
+// Resolve is not in charge of following references: it only resolves ref by following its URL.
+//
+// If the schema the ref is referring to holds nested refs, Resolve doesn't resolve them.
+//
+// If basePath is an empty string, ref is resolved against the root schema stored in the schemaLoader struct
 func (r *schemaLoader) Resolve(ref *Ref, target interface{}, basePath string) error {
 	return r.resolveRef(ref, target, basePath)
 }
@@ -270,11 +272,35 @@ func (r *schemaLoader) shouldStopOnError(err error) bool {
 	return false
 }
 
+func (r *schemaLoader) setSchemaID(target interface{}, id, basePath string) (string, string) {
+	debugLog("schema has ID: %s", id)
+
+	// handling the case when id is a folder
+	// remember that basePath has to point to a file
+	var refPath string
+	if strings.HasSuffix(id, "/") {
+		// path.Clean here would not work correctly if there is a scheme (e.g. https://...)
+		refPath = fmt.Sprintf("%s%s", id, "placeholder.json")
+	} else {
+		refPath = id
+	}
+
+	// updates the current base path
+	// * important: ID can be a relative path
+	// * registers target to be fetchable from the new base proposed by this id
+	newBasePath := normalizePaths(refPath, basePath)
+
+	// store found IDs for possible future reuse in $ref
+	r.cache.Set(newBasePath, target)
+
+	return newBasePath, refPath
+}
+
 func defaultSchemaLoader(
 	root interface{},
 	expandOptions *ExpandOptions,
 	cache ResolutionCache,
-	context *resolverContext) (*schemaLoader, error) {
+	context *resolverContext) *schemaLoader {
 
 	if expandOptions == nil {
 		expandOptions = &ExpandOptions{}
@@ -289,5 +315,5 @@ func defaultSchemaLoader(
 		options: expandOptions,
 		cache:   cacheOrDefault(cache),
 		context: context,
-	}, nil
+	}
 }

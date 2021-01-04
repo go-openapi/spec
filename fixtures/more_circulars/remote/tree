@@ -8,7 +8,7 @@
        "type": "array",
          "items": {"$ref": "node"}
      }
-   },
+  },
   "definitions": {
     "node": {
        "id": "http://localhost:1234/node",

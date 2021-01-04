@@ -5,10 +5,7 @@ import (
 )
 
 func resolveAnyWithBase(root interface{}, ref *Ref, result interface{}, options *ExpandOptions) error {
-	resolver, err := defaultSchemaLoader(root, options, nil, nil)
-	if err != nil {
-		return err
-	}
+	resolver := defaultSchemaLoader(root, options, nil, nil)
 
 	basePath := ""
 	if options != nil && options.RelativeBase != "" {
@@ -104,7 +101,7 @@ func ResolvePathItemWithBase(root interface{}, ref Ref, options *ExpandOptions) 
 
 // ResolvePathItem resolves response a path item against a context root and base path
 //
-// @deprecated: use ResolvePathItemWithBase instead
+// Deprecated: use ResolvePathItemWithBase instead
 func ResolvePathItem(root interface{}, ref Ref, options *ExpandOptions) (*PathItem, error) {
 	return ResolvePathItemWithBase(root, ref, options)
 }
@@ -125,7 +122,7 @@ func ResolveItemsWithBase(root interface{}, ref Ref, options *ExpandOptions) (*I
 
 // ResolveItems resolves parameter items reference against a context root and base path.
 //
-// @deprecated: use ResolveItemsWithBase instead
+// Deprecated: use ResolveItemsWithBase instead
 func ResolveItems(root interface{}, ref Ref, options *ExpandOptions) (*Items, error) {
 	return ResolveItemsWithBase(root, ref, options)
 }
