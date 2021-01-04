@@ -145,13 +145,13 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 
 	var result0 Swagger
 	ref0, _ := NewRef(server.URL + "/refed.json#")
-	resolver0, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver0 := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver0.Resolve(&ref0, &result0, ""))
 	assertSpecs(t, result0, *rootDoc)
 
 	var result1 Swagger
 	ref1, _ := NewRef("./refed.json")
-	resolver1, _ := defaultSchemaLoader(rootDoc, &ExpandOptions{
+	resolver1 := defaultSchemaLoader(rootDoc, &ExpandOptions{
 		RelativeBase: specBase,
 	}, nil, nil)
 	require.NoError(t, resolver1.Resolve(&ref1, &result1, specBase))
@@ -172,7 +172,8 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 	ref, err := NewRef(server.URL + "/refed.json#/definitions/pet")
 	require.NoError(t, err)
 
-	resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: &resolverContext{loadDoc: jsonDoc}}
+	context := newResolverContext(&ExpandOptions{PathLoader: jsonDoc})
+	resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: context}
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
 	assert.Equal(t, []string{"id", "name"}, tgt.Required)
 }
@@ -191,7 +192,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 	ref, err := NewRef(server.URL + "/refed.json#/definitions/NotThere")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	assert.Error(t, resolver.Resolve(&ref, &tgt, ""))
 }
 
@@ -200,19 +201,18 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 // func TestResolveRemoteRef_WithNestedResolutionContextWithFragment_WithParentID(t *testing.T) {
 // 	server := resolutionContextServer()
 // 	defer server.Close()
-
+//
 // 	rootDoc := new(Swagger)
 // 	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
-// 	if assert.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc)) {
-// 		var tgt Schema
-// 		ref, err := NewRef(server.URL + "/resolution2.json#/items/items")
-// 		if assert.NoError(t, err) {
-// 			resolver, _ := defaultSchemaLoader(rootDoc, nil, nil,nil)
-// 			if assert.NoError(t, resolver.Resolve(&ref, &tgt, "")) {
-// 				assert.Equal(t, StringOrArray([]string{"file"}), tgt.Type)
-// 			}
-// 		}
-// 	}
+// 	require.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc))
+//
+//	var tgt Schema
+// 	ref, err := NewRef(server.URL + "/resolution2.json#/items/items")
+// 	require.NoError(t, err)
+//
+// 	resolver := defaultSchemaLoader(rootDoc, nil, nil,nil)
+// 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+// 	assert.Equal(t, StringOrArray([]string{"file"}), tgt.Type)
 // }
 
 func TestResolveRemoteRef_ToParameter(t *testing.T) {
@@ -229,7 +229,7 @@ func TestResolveRemoteRef_ToParameter(t *testing.T) {
 	ref, err := NewRef(server.URL + "/refed.json#/parameters/idParam")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
 
 	assert.Equal(t, "id", tgt.Name)
@@ -254,7 +254,7 @@ func TestResolveRemoteRef_ToPathItem(t *testing.T) {
 	ref, err := NewRef(server.URL + "/refed.json#/paths/" + jsonpointer.Escape("/pets/{id}"))
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
 	assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
 }
@@ -273,7 +273,7 @@ func TestResolveRemoteRef_ToResponse(t *testing.T) {
 	ref, err := NewRef(server.URL + "/refed.json#/responses/petResponse")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
 	assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
 }
@@ -284,7 +284,7 @@ func TestResolveLocalRef_SameRoot(t *testing.T) {
 
 	result := new(Swagger)
 	ref, _ := NewRef("#")
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, result, ""))
 	assert.Equal(t, rootDoc, result)
 }
@@ -297,7 +297,7 @@ func TestResolveLocalRef_FromFragment(t *testing.T) {
 	ref, err := NewRef("#/definitions/Category")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
 	assert.Equal(t, "Category", tgt.ID)
 }
@@ -310,7 +310,7 @@ func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 	ref, err := NewRef("#/definitions/NotThere")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.Error(t, resolver.Resolve(&ref, &tgt, ""))
 }
 
@@ -327,7 +327,7 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 	ref, err := NewRef("#/parameters/idParam")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
 
 	assert.Equal(t, "id", tgt.Name)
@@ -351,7 +351,7 @@ func TestResolveLocalRef_PathItem(t *testing.T) {
 	ref, err := NewRef("#/paths/" + jsonpointer.Escape("/pets/{id}"))
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
 	assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
 }
@@ -369,7 +369,7 @@ func TestResolveLocalRef_Response(t *testing.T) {
 	ref, err := NewRef("#/responses/petResponse")
 	require.NoError(t, err)
 
-	resolver, _ := defaultSchemaLoader(rootDoc, nil, nil, nil)
+	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
 	assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
 }

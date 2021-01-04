@@ -31,6 +31,8 @@
   "parameters": {
     "itemParameter": {
       "description": "Item",
+      "name": "bodyParam",
+      "in": "body",
       "schema": {
         "$ref": "item4.json#/item"
       }
@@ -42,7 +44,7 @@
         "operationId": "GetItem",
         "parameters": [
           {
-             "$ref": "#/parameters/itemParameter" 
+             "$ref": "#/parameters/itemParameter"
           }
         ],
         "responses": {
