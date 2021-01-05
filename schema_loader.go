@@ -86,10 +86,12 @@ type resolverContext struct {
 	circulars map[string]bool
 	basePath  string
 	loadDoc   func(string) (json.RawMessage, error)
+
 	// allRefs holds all pointers to referrer schemas which hold a $ref.
 	// This is used to resolve circular $ref declared outside the root document:
 	// in that case a pointer to some referrer in the root document is selected instead.
 	allRefs map[string]refTrackers
+
 	// rootID holds the ID of the current root schema. This is used to rebase $ref against ID.
 	rootID string
 }
@@ -106,10 +108,10 @@ func newResolverContext(expandOptions *ExpandOptions) *resolverContext {
 	}
 
 	return &resolverContext{
-		circulars: make(map[string]bool),
+		circulars: make(map[string]bool, 10),
 		basePath:  absBase, // keep the root base path in context
 		loadDoc:   loader,
-		allRefs:   make(map[string]refTrackers, 50),
+		allRefs:   make(map[string]refTrackers, 100),
 	}
 }
 
@@ -265,13 +267,25 @@ func (r *schemaLoader) isCircular(ref Ref, basePath string, parentRefs ...string
 
 func (r *schemaLoader) resolveCircularRef(ref Ref, basePath string) (result Ref) {
 	// ref and basePath must be normalized
+	debugLog("resolveCircular: %s, %s, %t", ref.String(), basePath, r.options.skipRebaseCirculars)
+	defer func() {
+		debugLog("result: %s", result.String())
+	}()
 
 	result = r.denormalizeFileRef(ref, basePath)
+	debugLog("denormalize result: %s, %s", result.String(), basePath)
 
-	if result.RemoteURI() == "" {
+	if r.options.skipRebaseCirculars || result.RemoteURI() == "" {
 		// circularity is already captured in the root document: simply rebase the ref
 		return
 	}
+
+	/*
+		// TODO(fred): this is contentious
+		if r.context.rootID != "" && strings.HasPrefix(result.RemoteURI(), r.context.rootID) {
+			return
+		}
+	*/
 
 	// case of circularity detected while walking through remote documents:
 	// find an earlier referrer to this resource and replace the $ref by a json pointer to it
@@ -282,7 +296,9 @@ func (r *schemaLoader) resolveCircularRef(ref Ref, basePath string) (result Ref)
 	}
 	sort.Sort(referrers) // pick the preferred referrer known at the time the circular is found
 
-	return MustCreateRef("#" + referrers[0].Pointer)
+	result = MustCreateRef("#" + referrers[0].Pointer)
+
+	return
 }
 
 func (r *schemaLoader) rebaseRef(ref Ref, basePath string) Ref {

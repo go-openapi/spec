@@ -42,14 +42,14 @@ var (
 	specs               = filepath.Join("fixtures", "specs")
 )
 
-func TestExpandsKnownRef(t *testing.T) {
+func TestExpand_KnownRef(t *testing.T) {
 	schema := RefProperty("http://json-schema.org/draft-04/schema#")
 	require.NoError(t, ExpandSchema(schema, nil, nil))
 
 	assert.Equal(t, "Core schema meta-schema", schema.Description)
 }
 
-func TestExpandResponseSchema(t *testing.T) {
+func TestExpand_ResponseSchema(t *testing.T) {
 	fp := "./fixtures/local_expansion/spec.json"
 	b, err := jsonDoc(fp)
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestExpandResponseSchema(t *testing.T) {
 	assert.Len(t, sch.Properties, 2)
 }
 
-func TestSpecExpansion(t *testing.T) {
+func TestExpand_Spec(t *testing.T) {
 	spec := new(Swagger)
 
 	require.NoError(t, ExpandSpec(spec, nil))
@@ -114,7 +114,7 @@ func TestSpecExpansion(t *testing.T) {
 	assert.Equal(t, errorModel, *pi.Delete.Responses.Default.Schema)
 }
 
-func TestResponseExpansion(t *testing.T) {
+func TestExpand_Response(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	require.NoError(t, err)
 
@@ -179,7 +179,7 @@ func TestResponseExpansion(t *testing.T) {
 }
 
 // test the exported version of ExpandResponse
-func TestExportedResponseExpansion(t *testing.T) {
+func TestExpand_ExportedResponse(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
 	require.NoError(t, err)
 
@@ -209,7 +209,7 @@ func TestExportedResponseExpansion(t *testing.T) {
 	assert.Equal(t, expected, resp)
 }
 
-func TestExpandResponseAndParamWithRoot(t *testing.T) {
+func TestExpand_ResponseAndParamWithRoot(t *testing.T) {
 	specDoc, err := jsonDoc("fixtures/bugs/1614/gitea.json")
 	require.NoError(t, err)
 
@@ -236,12 +236,13 @@ func TestExpandResponseAndParamWithRoot(t *testing.T) {
 	param := spec.Paths.Paths["/admin/users"].Post.Parameters[0]
 	require.NoError(t, ExpandParameterWithRoot(&param, spec, nil))
 
+	// not remaining $ref
 	jazon, _ = json.MarshalIndent(param, "", " ")
 	m = rex.FindAllStringSubmatch(string(jazon), -1)
 	require.Nil(t, m)
 }
 
-func TestParameterExpansion(t *testing.T) {
+func TestExpand_Parameter(t *testing.T) {
 	paramDoc, err := jsonDoc("fixtures/expansion/params.json")
 	require.NoError(t, err)
 
@@ -268,7 +269,7 @@ func TestParameterExpansion(t *testing.T) {
 	assert.Equal(t, expected, param)
 }
 
-func TestExportedParameterExpansion(t *testing.T) {
+func TestExpand_ExportedParameter(t *testing.T) {
 	paramDoc, err := jsonDoc("fixtures/expansion/params.json")
 	require.NoError(t, err)
 
@@ -291,26 +292,32 @@ func TestExportedParameterExpansion(t *testing.T) {
 	assert.Equal(t, expected, param)
 }
 
-func Test_ExpandJSONSchemaDraft4(t *testing.T) {
+func TestExpand_JSONSchemaDraft4(t *testing.T) {
 	fixturePath := filepath.Join("schemas", "jsonschema-draft-04.json")
-	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+	jazon, sch := expandThisSchemaOrDieTrying(t, fixturePath)
 
 	// assert all $ref match
 	// "$ref": "http://json-schema.org/draft-04/something"
 	// "$ref": "" (from ID: "http://json-schema.org/draft-04/something", which is the root ID of this schema)
 	// but the ones redefined as an array of schema by the definition.
 	assertRefInJSONRegexp(t, jazon, "(^#?$)|(#/definitions/schemaArray)")
+
+	// verify that all $ref resolve in the new root schema
+	assertRefExpand(t, jazon, sch)
 }
 
-func Test_ExpandSwaggerSchema(t *testing.T) {
+func TestExpand_SwaggerSchema(t *testing.T) {
 	fixturePath := filepath.Join("schemas", "v2", "schema.json")
-	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+	jazon, sch := expandThisSchemaOrDieTrying(t, fixturePath)
 	// assert all $ref match
 	// "$ref": "#/definitions/something"
 	assertRefInJSON(t, jazon, "#/definitions/")
+
+	// verify that all $ref resolve in the new root schema
+	assertRefExpand(t, jazon, sch)
 }
 
-func TestContinueOnErrorExpansion(t *testing.T) {
+func TestExpand_ContinueOnError(t *testing.T) {
 	defer log.SetOutput(os.Stdout)
 	log.SetOutput(ioutil.Discard)
 
@@ -344,7 +351,7 @@ func TestContinueOnErrorExpansion(t *testing.T) {
 	}, "Array of missing refs should not cause a panic, and continue to expand spec.")
 }
 
-func TestItemsExpansion(t *testing.T) {
+func TestExpand_Items(t *testing.T) {
 	carsDoc, err := jsonDoc("fixtures/expansion/schemas2.json")
 	require.NoError(t, err)
 
@@ -494,7 +501,7 @@ func TestItemsExpansion(t *testing.T) {
 	assert.Equal(t, *prop.Items.Schema, spec.Definitions["tag"])
 }
 
-func TestSchemaExpansion(t *testing.T) {
+func TestExpand_Schema(t *testing.T) {
 	carsDoc, err := jsonDoc("fixtures/expansion/schemas1.json")
 	require.NoError(t, err)
 
@@ -648,7 +655,7 @@ func TestSchemaExpansion(t *testing.T) {
 
 }
 
-func TestRelativeBaseURI(t *testing.T) {
+func TestExpandRemote_RelativeBaseURI(t *testing.T) {
 	server := httptest.NewServer(http.FileServer(http.Dir("fixtures/remote")))
 	defer server.Close()
 
@@ -781,7 +788,7 @@ func resolutionContextServer() *httptest.Server {
 	return server
 }
 
-func TestExpandRemoteRef_WithResolutionContext(t *testing.T) {
+func TestExpandRemote_RefWithResolutionContext(t *testing.T) {
 	server := resolutionContextServer()
 	defer server.Close()
 
@@ -818,7 +825,7 @@ func TestExpandRemoteRef_WithNestedResolutionContext_WithParentID(t *testing.T) 
 }
 */
 
-func TestExpandRemoteRef_WithNestedResolutionContextWithFragment(t *testing.T) {
+func TestExpandRemote_RefWithNestedResolutionContextWithFragment(t *testing.T) {
 	server := resolutionContextServer()
 	defer server.Close()
 
@@ -844,7 +851,7 @@ func TestExpandForTransitiveRefs(t *testing.T) {
 	require.NoError(t, ExpandSpec(spec, opts))
 }
 
-func TestExpandSchemaWithRoot(t *testing.T) {
+func TestExpand_SchemaWithRoot(t *testing.T) {
 	root := new(Swagger)
 	require.NoError(t, json.Unmarshal(PetStoreJSONMessage, root))
 
@@ -888,8 +895,8 @@ func expandRootWithID(t testing.TB, root *Swagger, testcase string) {
 	}
 }
 
-func TestExpandPathItem(t *testing.T) {
-	jazon := expandThisOrDieTrying(t, pathItemsFixture)
+func TestExpand_PathItem(t *testing.T) {
+	jazon, _ := expandThisOrDieTrying(t, pathItemsFixture)
 	assert.JSONEq(t, `{
          "swagger": "2.0",
          "info": {
@@ -919,8 +926,8 @@ func TestExpandPathItem(t *testing.T) {
 			 }`, jazon)
 }
 
-func TestExpandExtraItems(t *testing.T) {
-	jazon := expandThisOrDieTrying(t, extraRefFixture)
+func TestExpand_ExtraItems(t *testing.T) {
+	jazon, _ := expandThisOrDieTrying(t, extraRefFixture)
 	assert.JSONEq(t, `{
          "schemes": [
           "http"

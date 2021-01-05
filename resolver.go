@@ -1,10 +1,19 @@
 package spec
 
 import (
+	"fmt"
+
 	"github.com/go-openapi/swag"
 )
 
 func resolveAnyWithBase(root interface{}, ref *Ref, result interface{}, options *ExpandOptions) error {
+	if root != nil {
+		if options != nil {
+			options.skipRebaseCirculars = true
+		} else {
+			options = &ExpandOptions{skipRebaseCirculars: true}
+		}
+	}
 	resolver := defaultSchemaLoader(root, options, nil, nil)
 
 	basePath := ""
@@ -51,8 +60,23 @@ func ResolveRef(root interface{}, ref *Ref) (*Schema, error) {
 			return nil, err
 		}
 		return newSch, nil
+
+	// extra support for schema access through pointers:
+	// all spec structures that support a schema
+	case Parameter:
+		return sch.Schema, nil
+	case *Parameter:
+		return sch.Schema, nil
+	case Response:
+		return sch.Schema, nil
+	case *Response:
+		return sch.Schema, nil
+	case SchemaOrArray:
+		return sch.Schema, nil
+	case *SchemaOrArray:
+		return sch.Schema, nil
 	default:
-		return nil, ErrUnknownTypeForReference
+		return nil, fmt.Errorf("type: %T: %w", res, ErrUnknownTypeForReference)
 	}
 }
 

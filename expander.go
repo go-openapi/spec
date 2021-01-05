@@ -35,7 +35,7 @@ type ExpandOptions struct {
 	ContinueOnError bool
 	PathLoader      func(string) (json.RawMessage, error) `json:"-"`
 
-	AbsoluteCircularRef bool // AbsoluteCircularRef is now deprecated
+	skipRebaseCirculars bool
 }
 
 // ExpandSpec expands the references in a swagger spec
@@ -129,6 +129,8 @@ func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error
 		RelativeBase:    baseForRoot(root, cache),
 		SkipSchemas:     false,
 		ContinueOnError: false,
+
+		skipRebaseCirculars: true,
 	}
 
 	return ExpandSchemaWithBasePath(schema, cache, opts)
@@ -211,6 +213,8 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		// remove ID from the expanded spec: IDs are no more required in the expanded spec and
 		// remaining nested schema IDs would work against proper $ref resolution on the expanded spec
 		// (in the case of circular $ref built on top of ID-based $ref).
+		//
+		// TODO(fred): this is contentious
 		target.ID = ""
 	}
 
@@ -330,6 +334,8 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 func expandSchemaRef(target Schema, parentRefs []string, resolver *schemaLoader, basePath, pointer string) (*Schema, error) {
 	// if a Ref is found, all sibling fields are skipped
 	// Ref also changes the resolution scope of children expandSchema
+	bbb, _ := json.MarshalIndent(target, "", " ")
+	debugLog("expandSchemaRef: input: %s, basePath: %s", string(bbb), basePath)
 
 	// here the resolution scope is changed because a $ref was encountered
 	normalizedRef := normalizeFileRef(target.Ref, basePath)
@@ -419,13 +425,13 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath, pointer st
 	}
 
 	responses := op.Responses
-	if err := expandParameterOrResponse(responses.Default, resolver, basePath, path.Join(pointer, "default")); resolver.shouldStopOnError(err) {
+	if err := expandParameterOrResponse(responses.Default, resolver, basePath, path.Join(pointer, "responses", "default")); resolver.shouldStopOnError(err) {
 		return err
 	}
 
 	for code := range responses.StatusCodeResponses {
 		response := responses.StatusCodeResponses[code]
-		if err := expandParameterOrResponse(&response, resolver, basePath, path.Join(pointer, strconv.Itoa(code))); resolver.shouldStopOnError(err) {
+		if err := expandParameterOrResponse(&response, resolver, basePath, path.Join(pointer, "responses", strconv.Itoa(code))); resolver.shouldStopOnError(err) {
 			return err
 		}
 		responses.StatusCodeResponses[code] = response
@@ -446,6 +452,8 @@ func ExpandResponseWithRoot(response *Response, root interface{}, cache Resoluti
 		RelativeBase:    baseForRoot(root, cache),
 		SkipSchemas:     false,
 		ContinueOnError: false,
+
+		skipRebaseCirculars: true,
 	}
 	resolver := defaultSchemaLoader(root, opts, cache, nil)
 
@@ -478,6 +486,8 @@ func ExpandParameterWithRoot(parameter *Parameter, root interface{}, cache Resol
 		RelativeBase:    baseForRoot(root, cache),
 		SkipSchemas:     false,
 		ContinueOnError: false,
+
+		skipRebaseCirculars: true,
 	}
 	resolver := defaultSchemaLoader(root, opts, cache, nil)
 
@@ -543,7 +553,7 @@ func expandParameterOrResponse(input interface{}, resolver *schemaLoader, basePa
 	}
 
 	ref, sch, _ := getRefAndSchema(input)
-	if ref.String() != "" || ref.IsRoot() {
+	if ref.String() != "" {
 		transitiveResolver := resolver.transitiveResolver(basePath, *ref)
 		basePath = resolver.updateBasePath(transitiveResolver, basePath)
 		resolver = transitiveResolver

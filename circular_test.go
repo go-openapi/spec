@@ -17,11 +17,14 @@ import (
 )
 
 func TestExpandCircular_Issue3(t *testing.T) {
-	jazon := expandThisOrDieTrying(t, "fixtures/expansion/overflow.json")
+	jazon, root := expandThisOrDieTrying(t, "fixtures/expansion/overflow.json")
 	require.NotEmpty(t, jazon)
 
 	// all $ref are in the root document
 	assertRefInJSON(t, jazon, "#/definitions/")
+
+	// verify that all $ref resolve in the new root schema
+	assertRefExpand(t, jazon, root)
 }
 
 func TestExpandCircular_RefExpansion(t *testing.T) {
@@ -45,7 +48,7 @@ func TestExpandCircular_RefExpansion(t *testing.T) {
 
 func TestExpandCircular_Minimal(t *testing.T) {
 	fixturePath := filepath.Join("fixtures", "expansion", "circular-minimal.json")
-	jazon := expandThisOrDieTrying(t, fixturePath)
+	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
 	assert.NotContainsf(t, jazon, "circular-minimal.json#/",
@@ -60,22 +63,28 @@ func TestExpandCircular_Minimal(t *testing.T) {
 		This may result in different, functionally correct expanded specs (e.g. with same validations)
 	*/
 	assertRefInJSON(t, jazon, "#/definitions/node") // NOTE: we are not sure which node definition is used
+
+	// verify that all $ref resolve in the new root schema
+	assertRefExpand(t, jazon, root)
 }
 
 func TestExpandCircular_Spec2Expansion(t *testing.T) {
 	// assert stripped $ref in result
 
 	fixturePath := "fixtures/expansion/circularSpec2.json"
-	jazon := expandThisOrDieTrying(t, fixturePath)
+	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	assert.NotEmpty(t, jazon)
 
 	assert.NotContainsf(t, jazon, "circularSpec.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
 	assertRefInJSON(t, jazon, "#/definitions/")
+
+	// verify that all $ref resolve in the new root schema
+	assertRefExpand(t, jazon, root)
 }
 
-func TestExpandCircular_MoreCircular(t *testing.T) {
+func TestExpandCircular_Specs(t *testing.T) {
 	// Additional testcase for circular $ref (from go-openapi/validate):
 	// - $ref with file = current file
 	// - circular is located in remote file
@@ -85,46 +94,72 @@ func TestExpandCircular_MoreCircular(t *testing.T) {
 	// - with circular in a schema in  #/responses
 	// - with circular in a schema in  #/parameters
 
-	fixturePath := "fixtures/more_circulars/spec.json"
-	jazon := expandThisOrDieTrying(t, fixturePath)
-	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "#/responses/itemResponse/schema")
+	for _, toPin := range []struct{ Title, Path, ExpectedRefs, NotExpected string }{
+		{
+			Path:         "fixtures/more_circulars/spec.json",
+			ExpectedRefs: "^#/responses/itemResponse/schema",
+		},
+		{
+			Path:         "fixtures/more_circulars/spec2.json",
+			ExpectedRefs: "^#/responses/itemResponse/schema",
+		},
+		{
+			Path:         "fixtures/more_circulars/spec3.json",
+			ExpectedRefs: "^#/definitions/myItems",
+		},
+		{
+			Path:         "fixtures/more_circulars/spec4.json",
+			ExpectedRefs: "^#/parameters/itemParameter/schema",
+		},
+		{
+			Title:        "issue #957",
+			Path:         "fixtures/bugs/957/fixture-957.json",
+			ExpectedRefs: "^#/definitions/",
+			NotExpected:  "fixture-957.json#/",
+		},
+		{
+			Title:        "additional testcase for circular $ref (from bitbucket api)",
+			Path:         "fixtures/more_circulars/bitbucket.json",
+			ExpectedRefs: "^#/definitions/",
+		},
+		{
+			Title:        "issue #415",
+			Path:         "fixtures/expansion/clickmeter.json",
+			ExpectedRefs: "^#/definitions/",
+		},
+		{
+			Title:        "circular spec expansion",
+			Path:         "fixtures/expansion/circularSpec.json",
+			ExpectedRefs: "^#/definitions/Book",
+		},
+	} {
+		fixture := toPin
+		title := fixture.Title
+		if title == "" {
+			title = filepath.Base(fixture.Path)
+		}
+		pth := filepath.FromSlash(fixture.Path)
 
-	fixturePath = "fixtures/more_circulars/spec2.json"
-	jazon = expandThisOrDieTrying(t, fixturePath)
-	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "#/responses/itemResponse/schema")
+		t.Run(title, func(t *testing.T) {
+			t.Parallel()
 
-	fixturePath = "fixtures/more_circulars/spec3.json"
-	jazon = expandThisOrDieTrying(t, fixturePath)
-	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "#/definitions/myItems")
+			jazon, root := expandThisOrDieTrying(t, pth)
+			require.NotEmpty(t, jazon)
+			t.Logf("%s: expanded ok", fixture.Title)
 
-	fixturePath = "fixtures/more_circulars/spec4.json"
-	jazon = expandThisOrDieTrying(t, fixturePath)
-	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "#/parameters/itemParameter/schema")
-}
+			if fixture.NotExpected != "" {
+				require.NotContainsf(t, jazon, fixture.NotExpected, "expected expanded spec not to contain %q", fixture.NotExpected)
+			}
+			t.Logf("%s: nothing unexpected ok", fixture.Title)
 
-func TestExpandCircular_Issue957(t *testing.T) {
-	fixturePath := "fixtures/bugs/957/fixture-957.json"
-	jazon := expandThisOrDieTrying(t, fixturePath)
-	require.NotEmpty(t, jazon)
+			assertRefInJSONRegexp(t, jazon, fixture.ExpectedRefs)
+			t.Logf("%s:$ref paths ok", fixture.Title)
 
-	require.NotContainsf(t, jazon, "fixture-957.json#/",
-		"expected %s to be expanded with stripped circular $ref", fixturePath)
-
-	assertRefInJSON(t, jazon, "#/definitions/")
-}
-
-func TestExpandCircular_Bitbucket(t *testing.T) {
-	// Additional testcase for circular $ref (from bitbucket api)
-
-	fixturePath := "fixtures/more_circulars/bitbucket.json"
-	jazon := expandThisOrDieTrying(t, fixturePath)
-	require.NotEmpty(t, jazon)
-
-	assertRefInJSON(t, jazon, "#/definitions/")
+			// verify that all $ref resolve in the new root schema
+			assertRefExpand(t, jazon, root)
+			t.Logf("%s: $ref resolved & expanded ok", fixture.Title)
+		})
+	}
 }
 
 func TestExpandCircular_ResponseWithRoot(t *testing.T) {
@@ -151,20 +186,6 @@ func TestExpandCircular_ResponseWithRoot(t *testing.T) {
 	require.NoError(t, ExpandResponseWithRoot(&resp, rootDoc, thisCache))
 }
 
-func TestExpandCircular_Issue415(t *testing.T) {
-	jazon := expandThisOrDieTrying(t, "fixtures/expansion/clickmeter.json")
-	require.NotEmpty(t, jazon)
-
-	assertRefInJSON(t, jazon, "#/definitions/")
-}
-
-func TestExpandCircular_SpecExpansion(t *testing.T) {
-	jazon := expandThisOrDieTrying(t, "fixtures/expansion/circularSpec.json")
-	require.NotEmpty(t, jazon)
-
-	assertRefInJSON(t, jazon, "#/definitions/Book")
-}
-
 func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	go func() {
 		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("fixtures/more_circulars/remote")))
@@ -176,13 +197,12 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 
 	t.Run("CircularID", func(t *testing.T) {
 		fixturePath := "http://localhost:1234/tree"
-		jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+		jazon, sch := expandThisSchemaOrDieTrying(t, fixturePath)
 
 		// all $ref are now in the single root
 		assertRefInJSONRegexp(t, jazon, "(^#/definitions/node$)|(^#?$)") // root $ref should be '#' or ""
 
-		sch := new(Schema)
-		require.NoError(t, json.Unmarshal([]byte(jazon), sch))
+		assertRefExpand(t, jazon, sch)
 
 		// expand already expanded: this is not an idempotent operation: circular $ref
 		// are expanded again until a (deeper) cycle is detected
@@ -196,9 +216,12 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	})
 
 	t.Run("withID", func(t *testing.T) {
+		t.SkipNow()
+
 		// This test exhibits a broken feature when using nested schema ID
 		const fixturePath = "fixtures/more_circulars/with-id.json"
-		jazon := expandThisOrDieTrying(t, fixturePath)
+		jazon, _ := expandThisOrDieTrying(t, fixturePath) // TODO(fred)
+		t.Log(jazon)
 
 		// TODO(fred): the $ref expanded as: "$ref": "" is incorrect.
 		assertRefInJSONRegexp(t, jazon, "(^#/definitions/)|(^#?$)")
@@ -243,17 +266,29 @@ func TestSortRefTracker(t *testing.T) {
 	}, tracked)
 }
 
-func TestRemoteExpandAzure(t *testing.T) {
+func TestCircular_RemoteExpandAzure(t *testing.T) {
 	// local copy of : https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/network/resource-manager/Microsoft.Network/stable/2020-04-01/publicIpAddress.json
 	server := httptest.NewServer(http.FileServer(http.Dir("fixtures/azure")))
 	defer server.Close()
 
-	jazon := expandThisOrDieTrying(t, server.URL+"/publicIpAddress.json")
+	jazon, sch := expandThisOrDieTrying(t, server.URL+"/publicIpAddress.json")
+	t.Logf("%s: expanded ok", t.Name())
 
-	assertRefInJSONRegexp(t, jazon, `^(#/definitions/)|(#/paths/.+/get/default/schema/properties/error)|(\./examples/)`)
+	// check a pointer with escaped path
+	pth1, err := ResolvePathItem(sch, MustCreateRef("#/paths/~1subscriptions~1%7BsubscriptionId%7D~1providers~1Microsoft.Network~1publicIPAddresses"), nil)
+	require.NoError(t, err)
+	require.NotNil(t, pth1)
+
+	// check expected remaining $ref
+	assertRefInJSONRegexp(t, jazon, `^(#/definitions/)|(#/paths/.+/get/responses/default/schema/properties/error)|(\./examples/)`)
+	t.Logf("%s: $ref matched ok", t.Name())
+
+	// check all $ref resolve in the expanded root
+	// (filter out the remaining $ref in x-ms-example extensions, which are not expanded)
+	assertRefResolve(t, jazon, `\./example`, sch)
 }
 
-func TestDocRef(t *testing.T) {
+func TestCircular_RootDocRef(t *testing.T) {
 	doc := []byte(`{
         "description": "root pointer ref",
         "schema": {

@@ -32,7 +32,7 @@ func docAndOpts(t testing.TB, fixturePath string) ([]byte, *ExpandOptions) {
 	}
 }
 
-func expandThisSchemaOrDieTrying(t testing.TB, fixturePath string) string {
+func expandThisSchemaOrDieTrying(t testing.TB, fixturePath string) (string, *Schema) {
 	doc, opts := docAndOpts(t, fixturePath)
 
 	sch := new(Schema)
@@ -45,10 +45,10 @@ func expandThisSchemaOrDieTrying(t testing.TB, fixturePath string) string {
 	bbb, err := json.MarshalIndent(sch, "", " ")
 	require.NoError(t, err)
 
-	return string(bbb)
+	return string(bbb), sch
 }
 
-func expandThisOrDieTrying(t testing.TB, fixturePath string) string {
+func expandThisOrDieTrying(t testing.TB, fixturePath string) (string, *Swagger) {
 	doc, opts := docAndOpts(t, fixturePath)
 
 	spec := new(Swagger)
@@ -61,7 +61,7 @@ func expandThisOrDieTrying(t testing.TB, fixturePath string) string {
 	bbb, err := json.MarshalIndent(spec, "", " ")
 	require.NoError(t, err)
 
-	return string(bbb)
+	return string(bbb), spec
 }
 
 func assertRefInJSON(t testing.TB, jazon, prefix string) {
@@ -88,5 +88,45 @@ func assertRefInJSONRegexp(t testing.TB, jazon, match string) {
 		subMatch := matched[1]
 		assert.True(t, refMatch.MatchString(subMatch),
 			"expected $ref to match %q, got: %s", match, matched[0])
+	}
+}
+
+func assertRefExpand(t *testing.T, jazon string, root interface{}) {
+	assertRefWithFunc(t, jazon, "", func(t *testing.T, match string) {
+		ref := RefSchema(match)
+		require.NoError(t, ExpandSchema(ref, root, nil))
+	})
+}
+
+func assertRefResolve(t *testing.T, jazon, exclude string, root interface{}) {
+	assertRefWithFunc(t, jazon, exclude, func(t *testing.T, match string) {
+		ref := MustCreateRef(match)
+		sch, err := ResolveRef(root, &ref)
+		require.NoErrorf(t, err, `%v: for "$ref": %q`, err, match)
+		require.NotNil(t, sch)
+	})
+}
+
+func assertRefWithFunc(t *testing.T, jazon, exclude string, asserter func(t *testing.T, match string)) {
+	filterRex := regexp.MustCompile(exclude)
+	m := rex.FindAllStringSubmatch(jazon, -1)
+	require.NotNil(t, m)
+
+	allRefs := make(map[string]struct{}, len(m))
+	for _, matched := range m {
+		subMatch := matched[1]
+		if exclude != "" && filterRex.MatchString(subMatch) {
+			continue
+		}
+		_, ok := allRefs[subMatch]
+		if ok {
+			continue
+		}
+		allRefs[subMatch] = struct{}{}
+
+		t.Run(t.Name(), func(t *testing.T) {
+			t.Parallel()
+			asserter(t, subMatch)
+		})
 	}
 }

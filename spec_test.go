@@ -56,7 +56,7 @@ func loadOrFail(t *testing.T, path string) *spec.Swagger {
 }
 
 // Test unitary fixture for dev and bug fixing
-func Test_Issue1429(t *testing.T) {
+func TestSpec_Issue1429(t *testing.T) {
 	path := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
 
 	// load and full expand
@@ -151,7 +151,7 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 	}
 }
 
-func Test_MoreLocalExpansion(t *testing.T) {
+func TestSpec_MoreLocalExpansion(t *testing.T) {
 	path := filepath.Join("fixtures", "local_expansion", "spec2.yaml")
 
 	// load and full expand
@@ -164,7 +164,7 @@ func Test_MoreLocalExpansion(t *testing.T) {
 	assert.NotContains(t, jazon, `"$ref"`)
 }
 
-func Test_Issue69(t *testing.T) {
+func TestSpec_Issue69(t *testing.T) {
 	// this checks expansion for the dapperbox spec (circular ref issues)
 
 	path := filepath.Join("fixtures", "bugs", "69", "dapperbox.json")
@@ -189,7 +189,7 @@ func Test_Issue69(t *testing.T) {
 	}
 }
 
-func Test_Issue1621(t *testing.T) {
+func TestSpec_Issue1621(t *testing.T) {
 	path := filepath.Join("fixtures", "bugs", "1621", "fixture-1621.yaml")
 
 	// expand with relative path
@@ -205,7 +205,7 @@ func Test_Issue1621(t *testing.T) {
 	assert.Nil(t, m)
 }
 
-func Test_Issue1614(t *testing.T) {
+func TestSpec_Issue1614(t *testing.T) {
 
 	path := filepath.Join("fixtures", "bugs", "1614", "gitea.json")
 
@@ -229,7 +229,7 @@ func Test_Issue1614(t *testing.T) {
 	}
 }
 
-func Test_Issue2113(t *testing.T) {
+func TestSpec_Issue2113(t *testing.T) {
 	// this checks expansion with nested specs
 	path := filepath.Join("fixtures", "bugs", "2113", "base.yaml")
 
@@ -268,7 +268,7 @@ func Test_Issue2113(t *testing.T) {
 	}
 }
 
-func Test_Issue2113_External(t *testing.T) {
+func TestSpec_Issue2113_External(t *testing.T) {
 	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
 	// Provides more ground for testing with schemas nested in $refs
 
@@ -303,7 +303,7 @@ func Test_Issue2113_External(t *testing.T) {
 	require.Empty(t, m)
 }
 
-func Test_Issue2113_SkipSchema(t *testing.T) {
+func TestSpec_Issue2113_SkipSchema(t *testing.T) {
 	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
 	// Provides more ground for testing with schemas nested in $refs
 
@@ -338,7 +338,7 @@ func Test_Issue2113_SkipSchema(t *testing.T) {
 	require.Empty(t, m)
 }
 
-func Test_PointersLoop(t *testing.T) {
+func TestSpec_PointersLoop(t *testing.T) {
 	// this a spec that cannot be flattened (self-referencing pointer).
 	// however, it should be expanded without errors
 
@@ -368,7 +368,7 @@ func Test_PointersLoop(t *testing.T) {
 	require.Len(t, refs, 1)
 }
 
-func Test_Issue102(t *testing.T) {
+func TestSpec_Issue102(t *testing.T) {
 	// go-openapi/validate/issues#102
 	path := filepath.Join("fixtures", "bugs", "102", "fixture-102.json")
 	sp := loadOrFail(t, path)
@@ -425,5 +425,27 @@ func Test_Issue102(t *testing.T) {
 	for _, matched := range m {
 		subMatch := matched[1]
 		assert.Equal(t, "#/definitions/Error", subMatch)
+	}
+}
+
+func TestSpec_RecursiveResponse(t *testing.T) {
+	pth := filepath.Join("fixtures", "recursive_expansion", "spec.yaml")
+
+	sp := loadOrFail(t, pth)
+
+	spec.Debug = true
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: pth, SkipSchemas: false, PathLoader: testLoader}))
+
+	jazon, err := json.MarshalIndent(sp, " ", "")
+	require.NoError(t, err)
+
+	m := rex.FindAllStringSubmatch(string(jazon), -1)
+	for _, matched := range m {
+		subMatch := matched[1]
+		require.Contains(t, subMatch, "#/responses/")
+
+		// check that all remaining $ref expand against the new root
+		ref := spec.RefSchema(subMatch)
+		require.NoError(t, spec.ExpandSchema(ref, sp, nil))
 	}
 }

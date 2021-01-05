@@ -146,15 +146,34 @@ func (r *schemaLoader) denormalizeFileRef(ref Ref, relativeBase string) Ref {
 	rootIDURL, _ := url.Parse(rootID)
 	rootIDURL.Fragment = ""
 
-	if isAbs(relativeBaseURL) {
+	// the resulting ref is in the expanded spec: return a local ref
+	if rebased, ok := rebase(str, originalRelativeBaseURL.String()); ok {
+		return MustCreateRef(rebased)
+	}
 
+	if isAbs(relativeBaseURL) {
 		// this should work for absolute URI (e.g. http://...): we have an exact match, just trim prefix
-		if rebased, ok := rebase(str, originalRelativeBaseURL.String()); ok {
-			return MustCreateRef(rebased)
-		}
+		/*
+			if rebased, ok := rebase(str, relativeBase); ok {
+				return MustCreateRef(rebased)
+			}
+
+			if r.options.skipRebaseCirculars {
+				// when we don't want to rebase circular $ref's the hunt stops here
+				return ref
+			}
+		*/
 
 		// when absolute but in some root identified by an ID
 		if rebased, ok := rebase(str, rootIDURL.String()); ok {
+			if rebased == "" {
+				return MustCreateRef(rootIDURL.String())
+			}
+			return MustCreateRef(rebased)
+		}
+
+		// this should work for absolute URI (e.g. http://...): we have an exact match, just trim prefix
+		if rebased, ok := rebase(str, originalRelativeBaseURL.String()); ok {
 			return MustCreateRef(rebased)
 		}
 
@@ -163,10 +182,6 @@ func (r *schemaLoader) denormalizeFileRef(ref Ref, relativeBase string) Ref {
 	}
 
 	// for relative file URIs:
-	// the resulting ref is in the expanded spec: return a local ref
-	if rebased, ok := rebase(str, originalRelativeBaseURL.String()); ok {
-		return MustCreateRef(rebased)
-	}
 
 	// check if we may set a relative path, considering the original base path for this spec.
 	// Example:
