@@ -407,16 +407,14 @@ func (r *schemaLoader) setSchemaID(target interface{}, id, basePath, pointer str
 
 func defaultSchemaLoader(
 	root interface{},
-	expandOptions *ExpandOptions,
+	options *ExpandOptions,
 	cache ResolutionCache,
 	context *resolverContext) *schemaLoader {
 
-	if expandOptions == nil {
-		expandOptions = &ExpandOptions{}
-	}
+	options = optionsOrDefault(options)
 
 	if context == nil {
-		context = newResolverContext(expandOptions)
+		context = newResolverContext(options)
 	}
 
 	if schema, ok := root.(*Schema); ok && schema.ID != "" {
@@ -426,7 +424,7 @@ func defaultSchemaLoader(
 
 	return &schemaLoader{
 		root:    root,
-		options: expandOptions,
+		options: options,
 		cache:   cacheOrDefault(cache),
 		context: context,
 	}

@@ -38,13 +38,22 @@ type ExpandOptions struct {
 	skipRebaseCirculars bool
 }
 
+func optionsOrDefault(opts *ExpandOptions) *ExpandOptions {
+	if opts != nil {
+		return opts
+	}
+	return &ExpandOptions{}
+}
+
 // ExpandSpec expands the references in a swagger spec
 func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	resolver := defaultSchemaLoader(spec, options, nil, nil)
 
+	options = optionsOrDefault(options)
+
 	// getting the base path of the spec to adjust all subsequent reference resolutions
-	specBasePath := ""
-	if options != nil && options.RelativeBase != "" {
+	var specBasePath string
+	if options.RelativeBase != "" {
 		specBasePath, _ = absPath(options.RelativeBase)
 	}
 
@@ -120,6 +129,7 @@ func baseForRoot(root interface{}, cache ResolutionCache) string {
 // Setting the cache is optional and this parameter may safely be left to nil.
 func ExpandSchema(schema *Schema, root interface{}, cache ResolutionCache) error {
 	cache = cacheOrDefault(cache)
+
 	if root == nil {
 		root = schema
 	}
@@ -145,6 +155,7 @@ func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *Expan
 	}
 
 	cache = cacheOrDefault(cache)
+	opts = optionsOrDefault(opts)
 
 	var basePath string
 	if opts.RelativeBase != "" {

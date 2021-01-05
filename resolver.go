@@ -7,18 +7,19 @@ import (
 )
 
 func resolveAnyWithBase(root interface{}, ref *Ref, result interface{}, options *ExpandOptions) error {
+	options = optionsOrDefault(options)
+
 	if root != nil {
-		if options != nil {
-			options.skipRebaseCirculars = true
-		} else {
-			options = &ExpandOptions{skipRebaseCirculars: true}
-		}
+		options.skipRebaseCirculars = true
 	}
+
 	resolver := defaultSchemaLoader(root, options, nil, nil)
 
-	basePath := ""
-	if options != nil && options.RelativeBase != "" {
+	var basePath string
+	if options.RelativeBase != "" {
 		basePath, _ = absPath(options.RelativeBase)
+	} else {
+		basePath = baseForRoot(root, resolver.cache)
 	}
 
 	if err := resolver.Resolve(ref, result, basePath, "/"); err != nil {
