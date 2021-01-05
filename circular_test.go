@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"testing"
 	"time"
 
@@ -16,7 +20,8 @@ func TestExpandCircular_Issue3(t *testing.T) {
 	jazon := expandThisOrDieTrying(t, "fixtures/expansion/overflow.json")
 	require.NotEmpty(t, jazon)
 
-	// TODO: assert $ref
+	// all $ref are in the root document
+	assertRefInJSON(t, jazon, "#/definitions/")
 }
 
 func TestExpandCircular_RefExpansion(t *testing.T) {
@@ -33,47 +38,41 @@ func TestExpandCircular_RefExpansion(t *testing.T) {
 	schema := spec.Definitions["car"]
 
 	assert.NotPanics(t, func() {
-		_, err := expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath)
+		_, err := expandSchema(schema, []string{"#/definitions/car"}, resolver, basePath, "/definitions/car")
 		require.NoError(t, err)
 	}, "Calling expand schema with circular refs, should not panic!")
 }
 
-func TestExpandCircular_Spec2Expansion(t *testing.T) {
-	// TODO: assert repeatable results (see commented section below)
-
+func TestExpandCircular_Minimal(t *testing.T) {
 	fixturePath := filepath.Join("fixtures", "expansion", "circular-minimal.json")
 	jazon := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
-	// assert stripped $ref in result
 	assert.NotContainsf(t, jazon, "circular-minimal.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
-	fixturePath = "fixtures/expansion/circularSpec2.json"
-	jazon = expandThisOrDieTrying(t, fixturePath)
-	assert.NotEmpty(t, jazon)
-
-	assert.NotContainsf(t, jazon, "circularSpec.json#/",
-		"expected %s to be expanded with stripped circular $ref", fixturePath)
-
 	/*
-
-		At the moment, the result of expanding circular references is not stable,
+		At the moment, the result of expanding circular references is not stable (issue #93),
 		when several cycles have intersections:
 		the spec structure is randomly walked through and mutating as expansion is carried out.
 		detected cycles in $ref are not necessarily the shortest matches.
 
 		This may result in different, functionally correct expanded specs (e.g. with same validations)
-
-			for i := 0; i < 1; i++ {
-				bbb := expandThisOrDieTrying(t, fixturePath)
-				t.Log(bbb)
-				if !assert.JSONEqf(t, jazon, bbb, "on iteration %d, we should have stable expanded spec", i) {
-					t.FailNow()
-					return
-				}
-			}
 	*/
+	assertRefInJSON(t, jazon, "#/definitions/node") // NOTE: we are not sure which node definition is used
+}
+
+func TestExpandCircular_Spec2Expansion(t *testing.T) {
+	// assert stripped $ref in result
+
+	fixturePath := "fixtures/expansion/circularSpec2.json"
+	jazon := expandThisOrDieTrying(t, fixturePath)
+	assert.NotEmpty(t, jazon)
+
+	assert.NotContainsf(t, jazon, "circularSpec.json#/",
+		"expected %s to be expanded with stripped circular $ref", fixturePath)
+
+	assertRefInJSON(t, jazon, "#/definitions/")
 }
 
 func TestExpandCircular_MoreCircular(t *testing.T) {
@@ -89,22 +88,22 @@ func TestExpandCircular_MoreCircular(t *testing.T) {
 	fixturePath := "fixtures/more_circulars/spec.json"
 	jazon := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "item.json#/item")
+	assertRefInJSON(t, jazon, "#/responses/itemResponse/schema")
 
 	fixturePath = "fixtures/more_circulars/spec2.json"
 	jazon = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "item2.json#/item")
+	assertRefInJSON(t, jazon, "#/responses/itemResponse/schema")
 
 	fixturePath = "fixtures/more_circulars/spec3.json"
 	jazon = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "item.json#/item")
+	assertRefInJSON(t, jazon, "#/definitions/myItems")
 
 	fixturePath = "fixtures/more_circulars/spec4.json"
 	jazon = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
-	assertRefInJSON(t, jazon, "item4.json#/item")
+	assertRefInJSON(t, jazon, "#/parameters/itemParameter/schema")
 }
 
 func TestExpandCircular_Issue957(t *testing.T) {
@@ -175,30 +174,137 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	}()
 	time.Sleep(100 * time.Millisecond)
 
-	fixturePath := "http://localhost:1234/tree"
-	jazon := expandThisSchemaOrDieTrying(t, fixturePath)
+	t.Run("CircularID", func(t *testing.T) {
+		fixturePath := "http://localhost:1234/tree"
+		jazon := expandThisSchemaOrDieTrying(t, fixturePath)
 
-	sch := new(Schema)
-	require.NoError(t, json.Unmarshal([]byte(jazon), sch))
+		// all $ref are now in the single root
+		assertRefInJSONRegexp(t, jazon, "(^#/definitions/node$)|(^#?$)") // root $ref should be '#' or ""
 
-	require.NotPanics(t, func() {
-		assert.NoError(t, ExpandSchemaWithBasePath(sch, nil, &ExpandOptions{}))
+		sch := new(Schema)
+		require.NoError(t, json.Unmarshal([]byte(jazon), sch))
+
+		// expand already expanded: this is not an idempotent operation: circular $ref
+		// are expanded again until a (deeper) cycle is detected
+		require.NoError(t, ExpandSchema(sch, nil, nil))
+
+		// expand already expanded
+		require.NoError(t, ExpandSchema(sch, nil, nil))
+
+		// Empty base path fails:
+		require.Error(t, ExpandSchemaWithBasePath(sch, nil, &ExpandOptions{}))
 	})
 
-	fixturePath = "fixtures/more_circulars/with-id.json"
-	jazon = expandThisOrDieTrying(t, fixturePath)
+	t.Run("withID", func(t *testing.T) {
+		// This test exhibits a broken feature when using nested schema ID
+		const fixturePath = "fixtures/more_circulars/with-id.json"
+		jazon := expandThisOrDieTrying(t, fixturePath)
 
-	// cannot guarantee that the circular will always hook on the same $ref
-	// but we can assert that there is only one
-	m := rex.FindAllStringSubmatch(jazon, -1)
-	require.NotEmpty(t, m)
+		// TODO(fred): the $ref expanded as: "$ref": "" is incorrect.
+		assertRefInJSONRegexp(t, jazon, "(^#/definitions/)|(^#?$)")
 
-	refs := make(map[string]struct{}, 5)
-	for _, matched := range m {
-		subMatch := matched[1]
-		refs[subMatch] = struct{}{}
+		// cannot guarantee that the circular will always hook on the same $ref
+		// but we can assert that thre is only one
+		//
+		// TODO(fred): the expansion is incorrect (it was already, with an undetected empty $ref)
+		// At the moment there is one single non-empty $ref (which is correct)
+		// and one empty $ref (which is invalid)
+		nonEmptyRef := regexp.MustCompile(`"\$ref":\s*"(.+)"`)
+		m := nonEmptyRef.FindAllStringSubmatch(jazon, -1)
+		require.NotEmpty(t, m)
+
+		refs := make(map[string]struct{}, 2)
+		for _, matched := range m {
+			subMatch := matched[1]
+			refs[subMatch] = struct{}{}
+		}
+
+		require.Len(t, refs, 1)
+	})
+}
+
+func TestSortRefTracker(t *testing.T) {
+	tracked := refTrackers{
+		refTracker{Pointer: "/c/d/e"},
+		refTracker{Pointer: "/definitions/x"},
+		refTracker{Pointer: "/a/b/c/d"},
+		refTracker{Pointer: "/b"},
+		refTracker{Pointer: "/z"},
+		refTracker{Pointer: "/definitions/a"},
 	}
+	sort.Sort(tracked)
+	require.EqualValues(t, refTrackers{
+		refTracker{Pointer: "/definitions/a"},
+		refTracker{Pointer: "/definitions/x"},
+		refTracker{Pointer: "/b"},
+		refTracker{Pointer: "/z"},
+		refTracker{Pointer: "/c/d/e"},
+		refTracker{Pointer: "/a/b/c/d"},
+	}, tracked)
+}
 
-	// TODO(fred): the expansion is incorrect (it was already, with an undetected empty $ref)
-	// require.Len(t, refs, 1)
+func TestRemoteExpandAzure(t *testing.T) {
+	// local copy of : https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/network/resource-manager/Microsoft.Network/stable/2020-04-01/publicIpAddress.json
+	server := httptest.NewServer(http.FileServer(http.Dir("fixtures/azure")))
+	defer server.Close()
+
+	jazon := expandThisOrDieTrying(t, server.URL+"/publicIpAddress.json")
+
+	assertRefInJSONRegexp(t, jazon, `^(#/definitions/)|(#/paths/.+/get/default/schema/properties/error)|(\./examples/)`)
+}
+
+func TestDocRef(t *testing.T) {
+	doc := []byte(`{
+        "description": "root pointer ref",
+        "schema": {
+            "properties": {
+                "foo": {"$ref": "#"}
+            },
+            "additionalProperties": false
+					}
+				}`)
+	var schema Schema
+
+	require.NoError(t, json.Unmarshal(doc, &schema))
+
+	// expand from root
+	require.NoError(t, ExpandSchema(&schema, &schema, nil))
+
+	jazon, err := json.MarshalIndent(schema, "", " ")
+	require.NoError(t, err)
+
+	assertRefInJSONRegexp(t, string(jazon), `(^#$)|(^$)`)
+
+	// expand from self
+	require.NoError(t, ExpandSchema(&schema, nil, nil))
+
+	jazon, err = json.MarshalIndent(schema, "", " ")
+	require.NoError(t, err)
+
+	assertRefInJSONRegexp(t, string(jazon), `(^#$)|(^$)`)
+
+	// expand from file
+	temp, err := ioutil.TempFile(".", "test_doc_ref*.json")
+	require.NoError(t, err)
+
+	file := temp.Name()
+	defer func() {
+		_ = os.Remove(file)
+	}()
+	_, err = temp.Write(doc)
+	require.NoError(t, err)
+	require.NoError(t, temp.Close())
+
+	require.NoError(t, ExpandSchemaWithBasePath(&schema, nil, &ExpandOptions{RelativeBase: file}))
+
+	jazon, err = json.MarshalIndent(schema, "", " ")
+	require.NoError(t, err)
+
+	assertRefInJSONRegexp(t, string(jazon), `(^#$)|(^$)`)
+
+	ref := RefSchema("#")
+	require.NoError(t, ExpandSchema(ref, &schema, nil))
+	jazon, err = json.MarshalIndent(ref, "", " ")
+	require.NoError(t, err)
+	assertRefInJSONRegexp(t, string(jazon), `(^#$)|(^$)`)
 }

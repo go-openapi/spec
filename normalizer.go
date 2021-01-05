@@ -38,10 +38,12 @@ func normalizeAbsPath(path string) string {
 }
 
 // base or refPath could be a file path or a URL
-// given a base absolute path and a ref path, return the absolute path of refPath
-// 1) if refPath is absolute, return it
-// 2) if refPath is relative, join it with basePath keeping the scheme, hosts, and ports if exists
-// base could be a directory or a full file path
+// given a base absolute path and a ref path, return the absolute path of refPath.
+//
+//   1) if refPath is absolute, return it
+//   2) if refPath is relative, join it with basePath keeping the scheme, hosts, and ports if exists
+//
+// base could be a directory or a full file path.
 func normalizePaths(refPath, base string) string {
 	refURL, _ := url.Parse(refPath)
 	if path.IsAbs(refURL.Path) || filepath.IsAbs(refPath) {
@@ -75,8 +77,9 @@ func normalizePaths(refPath, base string) string {
 }
 
 // isRoot is a temporary hack to discern windows file ref for ref.IsRoot().
+//
 // TODO: a more thorough change is needed to handle windows file refs.
-func isRoot(ref *Ref) bool {
+func isRoot(ref Ref) bool {
 	if runtime.GOOS != windowsOS {
 		return ref.IsRoot()
 	}
@@ -84,6 +87,7 @@ func isRoot(ref *Ref) bool {
 }
 
 // isAbs is a temporary hack to discern windows file ref for url IsAbs().
+//
 // TODO: a more thorough change is needed to handle windows file refs.
 func isAbs(u *url.URL) bool {
 	if runtime.GOOS != windowsOS {
@@ -96,40 +100,72 @@ func isAbs(u *url.URL) bool {
 	return u.IsAbs()
 }
 
+func rebase(str, prefix string) (string, bool) {
+	if !strings.HasPrefix(str, prefix) {
+		return "", false
+	}
+
+	rebased := strings.TrimPrefix(str, prefix)
+
+	if rebased == "" { // exact match: points to its own root document
+		return "#", true
+	}
+
+	if strings.HasPrefix(rebased, "/") {
+		return "#" + rebased, true
+	}
+
+	return rebased, true
+}
+
 // denormalizePaths returns to simplest notation on file $ref,
 // i.e. strips the absolute path and sets a path relative to the base path.
 //
 // This is currently used when we rewrite ref after a circular ref has been detected
-func denormalizeFileRef(ref *Ref, relativeBase, originalRelativeBase string) *Ref {
-	debugLog("denormalizeFileRef for: %s (relative: %s, original: %s)", ref.String(),
-		relativeBase, originalRelativeBase)
+func (r *schemaLoader) denormalizeFileRef(ref Ref, relativeBase string) Ref {
+	originalRelativeBase := r.context.basePath
+	rootID := r.context.rootID
 
-	// log.Printf("denormalize: %s, IsRoot: %t,HasFragmentOnly: %t, HasFullURL: %t", ref.String(), ref.IsRoot(), ref.HasFragmentOnly, ref.HasFullURL)
-	if ref.String() == "" || isRoot(ref) || ref.HasFragmentOnly {
+	str := ref.String()
+
+	debugLog("denormalize: %s, IsRoot: %t,HasFragmentOnly: %t, HasFullURL: %t [relative: %s, original: %s, rootID: %s]",
+		str, ref.IsRoot(), ref.HasFragmentOnly, ref.HasFullURL, relativeBase, originalRelativeBase, rootID)
+
+	if str == "" || isRoot(ref) || ref.HasFragmentOnly {
+		// nothing to be done
 		return ref
 	}
-	// strip relativeBase from URI
+
+	// strip fragments from URI
 	relativeBaseURL, _ := url.Parse(relativeBase)
 	relativeBaseURL.Fragment = ""
 
-	if isAbs(relativeBaseURL) && strings.HasPrefix(ref.String(), relativeBase) {
-		// this should work for absolute URI (e.g. http://...): we have an exact match, just trim prefix
-		r, _ := NewRef(strings.TrimPrefix(ref.String(), relativeBase))
-		return &r
-	}
+	originalRelativeBaseURL, _ := url.Parse(originalRelativeBase)
+	originalRelativeBaseURL.Fragment = ""
+
+	rootIDURL, _ := url.Parse(rootID)
+	rootIDURL.Fragment = ""
 
 	if isAbs(relativeBaseURL) {
+
+		// this should work for absolute URI (e.g. http://...): we have an exact match, just trim prefix
+		if rebased, ok := rebase(str, originalRelativeBaseURL.String()); ok {
+			return MustCreateRef(rebased)
+		}
+
+		// when absolute but in some root identified by an ID
+		if rebased, ok := rebase(str, rootIDURL.String()); ok {
+			return MustCreateRef(rebased)
+		}
+
 		// other absolute URL get unchanged (i.e. with a non-empty scheme)
 		return ref
 	}
 
 	// for relative file URIs:
-	originalRelativeBaseURL, _ := url.Parse(originalRelativeBase)
-	originalRelativeBaseURL.Fragment = ""
-	if strings.HasPrefix(ref.String(), originalRelativeBaseURL.String()) {
-		// the resulting ref is in the expanded spec: return a local ref
-		r, _ := NewRef(strings.TrimPrefix(ref.String(), originalRelativeBaseURL.String()))
-		return &r
+	// the resulting ref is in the expanded spec: return a local ref
+	if rebased, ok := rebase(str, originalRelativeBaseURL.String()); ok {
+		return MustCreateRef(rebased)
 	}
 
 	// check if we may set a relative path, considering the original base path for this spec.
@@ -137,7 +173,7 @@ func denormalizeFileRef(ref *Ref, relativeBase, originalRelativeBase string) *Re
 	//   spec is located at /mypath/spec.json
 	//   my normalized ref points to: /mypath/item.json#/target
 	//   expected result: item.json#/target
-	parts := strings.Split(ref.String(), "#")
+	parts := strings.Split(str, "#")
 	relativePath, err := filepath.Rel(filepath.Dir(originalRelativeBaseURL.String()), parts[0])
 	if err != nil {
 		// there is no common ancestor (e.g. different drives on windows)
@@ -147,21 +183,19 @@ func denormalizeFileRef(ref *Ref, relativeBase, originalRelativeBase string) *Re
 	if len(parts) == 2 {
 		relativePath += "#" + parts[1]
 	}
-	r, _ := NewRef(relativePath)
-	return &r
+
+	return MustCreateRef(relativePath)
 }
 
 // relativeBase could be an ABSOLUTE file path or an ABSOLUTE URL
-func normalizeFileRef(ref *Ref, relativeBase string) *Ref {
+func normalizeFileRef(ref Ref, relativeBase string) Ref {
 	// This is important for when the reference is pointing to the root schema
 	if ref.String() == "" {
-		r, _ := NewRef(relativeBase)
-		return &r
+		return MustCreateRef(relativeBase)
 	}
 
 	s := normalizePaths(ref.String(), relativeBase)
-	r, _ := NewRef(s)
-	return &r
+	return MustCreateRef(s)
 }
 
 // absPath returns the absolute path of a file

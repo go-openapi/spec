@@ -16,7 +16,6 @@ package spec_test
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -225,26 +224,6 @@ func Test_Issue1614(t *testing.T) {
 		for _, matched := range m {
 			subMatch := matched[1]
 			assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
-				"expected $ref to be inlined, got: %s", matched[0])
-		}
-	}
-
-	// now with option CircularRefAbsolute
-	sp = loadOrFail(t, path)
-	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, AbsoluteCircularRef: true, PathLoader: testLoader})
-	require.NoError(t, err)
-
-	// asserts all $ref expanded
-	jazon, _ = json.MarshalIndent(sp, "", " ")
-
-	// assert all $ref maches  "$ref": "{file path}#/definitions/something"
-	refPath, _ := os.Getwd()
-	refPath = filepath.Join(refPath, path)
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	if assert.NotNil(t, m) {
-		for _, matched := range m {
-			subMatch := matched[1]
-			assert.True(t, strings.HasPrefix(subMatch, refPath+"#/definitions/"),
 				"expected $ref to be inlined, got: %s", matched[0])
 		}
 	}

@@ -146,7 +146,7 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 	var result0 Swagger
 	ref0, _ := NewRef(server.URL + "/refed.json#")
 	resolver0 := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver0.Resolve(&ref0, &result0, ""))
+	require.NoError(t, resolver0.Resolve(&ref0, &result0, "", ""))
 	assertSpecs(t, result0, *rootDoc)
 
 	var result1 Swagger
@@ -154,7 +154,7 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 	resolver1 := defaultSchemaLoader(rootDoc, &ExpandOptions{
 		RelativeBase: specBase,
 	}, nil, nil)
-	require.NoError(t, resolver1.Resolve(&ref1, &result1, specBase))
+	require.NoError(t, resolver1.Resolve(&ref1, &result1, specBase, ""))
 	assertSpecs(t, result1, *rootDoc)
 }
 
@@ -174,7 +174,7 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 
 	context := newResolverContext(&ExpandOptions{PathLoader: jsonDoc})
 	resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: context}
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, "", ""))
 	assert.Equal(t, []string{"id", "name"}, tgt.Required)
 }
 
@@ -193,7 +193,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	assert.Error(t, resolver.Resolve(&ref, &tgt, ""))
+	assert.Error(t, resolver.Resolve(&ref, &tgt, "", ""))
 }
 
 /* This next test will have to wait until we do full $ID analysis for every subschema on every file that is referenced */
@@ -230,7 +230,7 @@ func TestResolveRemoteRef_ToParameter(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, "", ""))
 
 	assert.Equal(t, "id", tgt.Name)
 	assert.Equal(t, "path", tgt.In)
@@ -255,7 +255,7 @@ func TestResolveRemoteRef_ToPathItem(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, "", ""))
 	assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
 }
 
@@ -274,7 +274,7 @@ func TestResolveRemoteRef_ToResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, "", ""))
 	assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
 }
 
@@ -285,7 +285,7 @@ func TestResolveLocalRef_SameRoot(t *testing.T) {
 	result := new(Swagger)
 	ref, _ := NewRef("#")
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, result, ""))
+	require.NoError(t, resolver.Resolve(&ref, result, "", ""))
 	assert.Equal(t, rootDoc, result)
 }
 
@@ -298,7 +298,7 @@ func TestResolveLocalRef_FromFragment(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, "", ""))
 	assert.Equal(t, "Category", tgt.ID)
 }
 
@@ -311,7 +311,7 @@ func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.Error(t, resolver.Resolve(&ref, &tgt, ""))
+	require.Error(t, resolver.Resolve(&ref, &tgt, "", ""))
 }
 
 func TestResolveLocalRef_Parameter(t *testing.T) {
@@ -328,7 +328,7 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath, ""))
 
 	assert.Equal(t, "id", tgt.Name)
 	assert.Equal(t, "path", tgt.In)
@@ -352,7 +352,7 @@ func TestResolveLocalRef_PathItem(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath, ""))
 	assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
 }
 
@@ -370,7 +370,7 @@ func TestResolveLocalRef_Response(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath, ""))
 	assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
 }
 

@@ -15,4 +15,7 @@ var (
 
 	// ErrExpandUnsupportedType indicates that $ref expansion is attempted on some invalid type
 	ErrExpandUnsupportedType = errors.New("expand: unsupported type. Input should be of type *Parameter or *Response")
+
+	// ErrInternalRef indicates an internal error with $ref track. Signal this as a bug.
+	ErrInternalRef = errors.New("circular $ref: expected circular to be found in tracker")
 )
