@@ -214,19 +214,25 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	// A schema ID is encountered: rebase and track new parent
 	// change the base path of resolution when an ID is encountered
 	// otherwise the basePath should inherit the parent's
-	if target.ID != "" {
+	if target.ID != "" && target.ID != resolver.context.rootID {
 		var parent string
 		basePath, parent = resolver.setSchemaID(target, target.ID, basePath, pointer)
 
+		transitiveResolver := resolver.transitiveResolver(basePath, MustCreateRef(target.ID))
+
+		basePath = resolver.updateBasePath(transitiveResolver, basePath)
+
 		// add normalized ID to the list of parents, in order to detect cycles
 		parentRefs = append(parentRefs, parent)
+
+		return expandSchema(target, parentRefs, transitiveResolver, basePath, pointer)
 
 		// remove ID from the expanded spec: IDs are no more required in the expanded spec and
 		// remaining nested schema IDs would work against proper $ref resolution on the expanded spec
 		// (in the case of circular $ref built on top of ID-based $ref).
 		//
 		// TODO(fred): this is contentious
-		target.ID = ""
+		//target.ID = ""
 	}
 
 	for k := range target.Definitions {

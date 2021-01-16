@@ -384,9 +384,9 @@ func (r *schemaLoader) setSchemaID(target interface{}, id, basePath, pointer str
 		refPath = id
 	}
 
-	if r.context.rootID == "" {
-		r.context.rootID = id
-	}
+	//if r.context.rootID == "" {
+	r.context.rootID = id
+	//}
 
 	// updates the current base path
 	// * important: ID can be a relative path

@@ -433,11 +433,11 @@ func TestSpec_RecursiveResponse(t *testing.T) {
 
 	sp := loadOrFail(t, pth)
 
-	spec.Debug = true
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: pth, SkipSchemas: false, PathLoader: testLoader}))
 
-	jazon, err := json.MarshalIndent(sp, " ", "")
+	jazon, err := json.MarshalIndent(sp, "", " ")
 	require.NoError(t, err)
+	t.Log(string(jazon))
 
 	m := rex.FindAllStringSubmatch(string(jazon), -1)
 	for _, matched := range m {
@@ -448,4 +448,5 @@ func TestSpec_RecursiveResponse(t *testing.T) {
 		ref := spec.RefSchema(subMatch)
 		require.NoError(t, spec.ExpandSchema(ref, sp, nil))
 	}
+
 }

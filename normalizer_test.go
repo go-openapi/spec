@@ -82,3 +82,7 @@ func TestNormalizePaths(t *testing.T) {
 		assert.Equal(t, tcase.expOutput, out)
 	}
 }
+
+func TestDeNormalizePaths(t *testing.T) {
+	//r := defaultSchemaLoader()
+}
