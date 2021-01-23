@@ -33,16 +33,13 @@ import (
 // NOTE: if you are using the go-openapi/loads package, it will override
 // this value with its own default (a loader to retrieve YAML documents as
 // well as JSON ones).
-var PathLoader func(string) (json.RawMessage, error)
-
-func init() {
-	PathLoader = func(path string) (json.RawMessage, error) {
-		data, err := swag.LoadFromFileOrHTTP(path)
-		if err != nil {
-			return nil, err
-		}
-		return json.RawMessage(data), nil
+var PathLoader = func(pth string) (json.RawMessage, error) {
+	log.Printf("DEBUG(spec): default spec loader for json: %q", pth)
+	data, err := swag.LoadFromFileOrHTTP(pth)
+	if err != nil {
+		return nil, err
 	}
+	return json.RawMessage(data), nil
 }
 
 // resolverContext allows to share a context during spec processing.
