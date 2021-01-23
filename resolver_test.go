@@ -41,7 +41,7 @@ func TestResolveRef(t *testing.T) {
 }
 
 func TestResolveResponse(t *testing.T) {
-	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
+	specDoc, err := jsonDoc(filepath.Join("fixtures", "expansion", "all-the-things.json"))
 	require.NoError(t, err)
 
 	spec := new(Swagger)
@@ -53,12 +53,11 @@ func TestResolveResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	// resolve resolves the ref, but dos not expand
-	jazon, err := json.MarshalIndent(resp2, "", " ")
-	require.NoError(t, err)
+	jazon := asJSON(t, resp2)
 
 	assert.JSONEq(t, `{
          "$ref": "#/responses/petResponse"
-        }`, string(jazon))
+        }`, jazon)
 }
 
 func TestResolveResponseWithBase(t *testing.T) {
@@ -74,16 +73,15 @@ func TestResolveResponseWithBase(t *testing.T) {
 	require.NoError(t, err)
 
 	// resolve resolves the ref, but dos not expand
-	jazon, err := json.MarshalIndent(resp2, "", " ")
-	require.NoError(t, err)
+	jazon := asJSON(t, resp2)
 
 	assert.JSONEq(t, `{
          "$ref": "#/responses/petResponse"
-        }`, string(jazon))
+        }`, jazon)
 }
 
 func TestResolveParam(t *testing.T) {
-	specDoc, err := jsonDoc("fixtures/expansion/all-the-things.json")
+	specDoc, err := jsonDoc(filepath.Join("fixtures", "expansion", "all-the-things.json"))
 	require.NoError(t, err)
 
 	var spec Swagger
@@ -93,8 +91,7 @@ func TestResolveParam(t *testing.T) {
 	par, err := ResolveParameter(spec, param.Ref)
 	require.NoError(t, err)
 
-	jazon, err := json.MarshalIndent(par, "", " ")
-	require.NoError(t, err)
+	jazon := asJSON(t, par)
 
 	assert.JSONEq(t, `{
       "name": "id",
@@ -103,7 +100,7 @@ func TestResolveParam(t *testing.T) {
       "required": true,
       "type": "integer",
       "format": "int64"
-      }`, string(jazon))
+      }`, jazon)
 }
 
 func TestResolveParamWithBase(t *testing.T) {
@@ -117,8 +114,7 @@ func TestResolveParamWithBase(t *testing.T) {
 	par, err := ResolveParameterWithBase(spec, param.Ref, &ExpandOptions{RelativeBase: crossFileRefFixture})
 	require.NoError(t, err)
 
-	jazon, err := json.MarshalIndent(par, "", " ")
-	require.NoError(t, err)
+	jazon := asJSON(t, par)
 
 	assert.JSONEq(t, `{
 "description":"ID of pet to fetch",
@@ -127,7 +123,7 @@ func TestResolveParamWithBase(t *testing.T) {
 "name":"id",
 "required":true,
 "type":"integer"
-}`, string(jazon))
+}`, jazon)
 }
 
 func TestResolveRemoteRef_RootSame(t *testing.T) {
@@ -138,10 +134,10 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 	rootDoc := new(Swagger)
 	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, rootDoc))
 
 	// the filename doesn't matter because ref will eventually point to refed.json
-	specBase, _ := absPath(filepath.Join(specs, "anyotherfile.json"))
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+	specBase := normalizeBase(filepath.Join(specs, "anyotherfile.json"))
 
 	var result0 Swagger
 	ref0, _ := NewRef(server.URL + "/refed.json#")
@@ -319,8 +315,7 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 
-	basePath, err := absPath(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
+	basePath := filepath.Join(specs, "refed.json")
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
 	var tgt Parameter
@@ -343,8 +338,7 @@ func TestResolveLocalRef_PathItem(t *testing.T) {
 	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 
-	basePath, err := absPath(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
+	basePath := filepath.Join(specs, "refed.json")
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
 	var tgt PathItem
@@ -361,8 +355,7 @@ func TestResolveLocalRef_Response(t *testing.T) {
 	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 
-	basePath, err := absPath(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
+	basePath := filepath.Join(specs, "refed.json")
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
 	var tgt Response
@@ -381,16 +374,12 @@ func TestResolvePathItem(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal(specDoc, spec))
 
-	specPath, err := absPath(pathItemsFixture)
-	require.NoError(t, err)
-
 	// Resolve use case
 	pth := spec.Paths.Paths["/todos"]
-	pathItem, err := ResolvePathItem(spec, pth.Ref, &ExpandOptions{RelativeBase: specPath})
+	pathItem, err := ResolvePathItem(spec, pth.Ref, &ExpandOptions{RelativeBase: pathItemsFixture})
 	require.NoError(t, err)
 
-	jazon, err := json.MarshalIndent(pathItem, "", " ")
-	require.NoError(t, err)
+	jazon := asJSON(t, pathItem)
 
 	assert.JSONEq(t, `{
          "get": {
@@ -409,7 +398,7 @@ func TestResolvePathItem(t *testing.T) {
            }
           }
          }
-			 }`, string(jazon))
+			 }`, jazon)
 }
 
 func TestResolveExtraItem(t *testing.T) {
@@ -420,32 +409,27 @@ func TestResolveExtraItem(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal(specDoc, spec))
 
-	specPath, err := absPath(extraRefFixture)
-	require.NoError(t, err)
-
 	// Resolve param Items use case: here we explicitly resolve the unsuppord case
 	parm := spec.Paths.Paths["/employees"].Get.Parameters[0]
-	parmItem, err := ResolveItems(spec, parm.Items.Ref, &ExpandOptions{RelativeBase: specPath})
+	parmItem, err := ResolveItems(spec, parm.Items.Ref, &ExpandOptions{RelativeBase: extraRefFixture})
 	require.NoError(t, err)
 
-	jazon, err := json.MarshalIndent(parmItem, "", " ")
-	require.NoError(t, err)
+	jazon := asJSON(t, parmItem)
 
 	assert.JSONEq(t, `{
          "type": "integer",
          "format": "int32"
-			 }`, string(jazon))
+			 }`, jazon)
 
 	// Resolve header Items use case: here we explicitly resolve the unsuppord case
 	hdr := spec.Paths.Paths["/employees"].Get.Responses.StatusCodeResponses[200].Headers["X-header"]
-	hdrItem, err := ResolveItems(spec, hdr.Items.Ref, &ExpandOptions{RelativeBase: specPath})
+	hdrItem, err := ResolveItems(spec, hdr.Items.Ref, &ExpandOptions{RelativeBase: extraRefFixture})
 	require.NoError(t, err)
 
-	jazon, err = json.MarshalIndent(hdrItem, "", " ")
-	require.NoError(t, err)
+	jazon = asJSON(t, hdrItem)
 
 	assert.JSONEq(t, `{
          "type": "string",
          "format": "uuid"
-			 }`, string(jazon))
+			 }`, jazon)
 }

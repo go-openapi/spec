@@ -18,6 +18,9 @@
     "circularC": {
       "$ref": "../all-the-things.json#/responses/circularA"
     },
+    "backRef": {
+      "$ref": "../all-the-things.json#/responses/petResponse"
+    },
     "anotherPet": {
       "$ref": "#/responses/petResponse"
     }
