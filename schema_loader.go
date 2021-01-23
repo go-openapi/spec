@@ -34,7 +34,6 @@ import (
 // this value with its own default (a loader to retrieve YAML documents as
 // well as JSON ones).
 var PathLoader = func(pth string) (json.RawMessage, error) {
-	log.Printf("DEBUG(spec): default spec loader for json: %q", pth)
 	data, err := swag.LoadFromFileOrHTTP(pth)
 	if err != nil {
 		return nil, err
