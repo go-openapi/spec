@@ -15,49 +15,17 @@
 package spec_test
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/go-openapi/spec"
-	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// mimics what the go-openapi/load does
-var (
-	rex        = regexp.MustCompile(`"\$ref":\s*"(.+)"`)
-	testLoader func(string) (json.RawMessage, error)
-)
-
-func init() {
-	testLoader = func(path string) (json.RawMessage, error) {
-		if swag.YAMLMatcher(path) {
-			return swag.YAMLDoc(path)
-		}
-		data, err := swag.LoadFromFileOrHTTP(path)
-		if err != nil {
-			return nil, err
-		}
-		return json.RawMessage(data), nil
-	}
-}
-
-func loadOrFail(t *testing.T, path string) *spec.Swagger {
-	raw, err := testLoader(path)
-	require.NoErrorf(t, err, "can't load fixture %s: %v", path, err)
-	swspec := new(spec.Swagger)
-	err = json.Unmarshal(raw, swspec)
-	require.NoError(t, err)
-	return swspec
-}
-
 // Test unitary fixture for dev and bug fixing
-func Test_Issue1429(t *testing.T) {
+func TestSpec_Issue1429(t *testing.T) {
 	path := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
 
 	// load and full expand
@@ -71,7 +39,7 @@ func Test_Issue1429(t *testing.T) {
 	assertPaths1429(t, sp)
 
 	for _, def := range sp.Definitions {
-		assert.Equal(t, "", def.Ref.String())
+		assert.Empty(t, def.Ref)
 	}
 
 	// reload and SkipSchemas: true
@@ -85,7 +53,7 @@ func Test_Issue1429(t *testing.T) {
 	assertPaths1429SkipSchema(t, sp)
 
 	for _, def := range sp.Definitions {
-		assert.Contains(t, def.Ref.String(), "responses.yaml#/")
+		assert.Contains(t, def.Ref.String(), "responses.yaml#/definitions/")
 	}
 }
 
@@ -152,20 +120,18 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 	}
 }
 
-func Test_MoreLocalExpansion(t *testing.T) {
+func TestSpec_MoreLocalExpansion(t *testing.T) {
 	path := filepath.Join("fixtures", "local_expansion", "spec2.yaml")
 
 	// load and full expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
-	require.NoError(t, err)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
-	// asserts all $ref expanded
-	jazon, _ := json.MarshalIndent(sp, "", " ")
-	assert.NotContains(t, jazon, `"$ref"`)
+	// asserts all $ref are expanded
+	assert.NotContains(t, asJSON(t, sp), `"$ref"`)
 }
 
-func Test_Issue69(t *testing.T) {
+func TestSpec_Issue69(t *testing.T) {
 	// this checks expansion for the dapperbox spec (circular ref issues)
 
 	path := filepath.Join("fixtures", "bugs", "69", "dapperbox.json")
@@ -173,24 +139,21 @@ func Test_Issue69(t *testing.T) {
 	// expand with relative path
 	// load and expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
-	require.NoError(t, err)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	// asserts all $ref expanded
-	jazon, _ := json.MarshalIndent(sp, "", " ")
+	jazon := asJSON(t, sp)
+
+	// circular $ref are not expanded: however, they point to the expanded root document
 
 	// assert all $ref match  "$ref": "#/definitions/something"
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	if assert.NotNil(t, m) {
-		for _, matched := range m {
-			subMatch := matched[1]
-			assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
-				"expected $ref to be inlined, got: %s", matched[0])
-		}
-	}
+	assertRefInJSON(t, jazon, "#/definitions")
+
+	// assert all $ref expand correctly against the spec
+	assertRefExpand(t, jazon, "", sp)
 }
 
-func Test_Issue1621(t *testing.T) {
+func TestSpec_Issue1621(t *testing.T) {
 	path := filepath.Join("fixtures", "bugs", "1621", "fixture-1621.yaml")
 
 	// expand with relative path
@@ -201,56 +164,49 @@ func Test_Issue1621(t *testing.T) {
 	require.NoError(t, err)
 
 	// asserts all $ref expanded
-	jazon, _ := json.MarshalIndent(sp, "", " ")
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	assert.Nil(t, m)
+	jazon := asJSON(t, sp)
+
+	assertNoRef(t, jazon)
 }
 
-func Test_Issue1614(t *testing.T) {
-
+func TestSpec_Issue1614(t *testing.T) {
 	path := filepath.Join("fixtures", "bugs", "1614", "gitea.json")
 
 	// expand with relative path
 	// load and expand
 	sp := loadOrFail(t, path)
-	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
-	require.NoError(t, err)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	// asserts all $ref expanded
-	jazon, _ := json.MarshalIndent(sp, "", " ")
+	jazon := asJSON(t, sp)
 
-	// assert all $ref maches  "$ref": "#/definitions/something"
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	if assert.NotNil(t, m) {
-		for _, matched := range m {
-			subMatch := matched[1]
-			assert.True(t, strings.HasPrefix(subMatch, "#/definitions/"),
-				"expected $ref to be inlined, got: %s", matched[0])
-		}
-	}
+	// assert all $ref match  "$ref": "#/definitions/something"
+	assertRefInJSON(t, jazon, "#/definitions")
 
-	// now with option CircularRefAbsolute
+	// assert all $ref expand correctly against the spec
+	assertRefExpand(t, jazon, "", sp)
+
+	// now with option CircularRefAbsolute: circular $ref are not denormalized and are kept absolute.
+	// This option is essentially for debugging purpose.
 	sp = loadOrFail(t, path)
-	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, AbsoluteCircularRef: true, PathLoader: testLoader})
-	require.NoError(t, err)
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{
+		RelativeBase:        path,
+		SkipSchemas:         false,
+		AbsoluteCircularRef: true,
+		PathLoader:          testLoader,
+	}))
 
 	// asserts all $ref expanded
-	jazon, _ = json.MarshalIndent(sp, "", " ")
+	jazon = asJSON(t, sp)
 
-	// assert all $ref maches  "$ref": "{file path}#/definitions/something"
-	refPath, _ := os.Getwd()
-	refPath = filepath.Join(refPath, path)
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	if assert.NotNil(t, m) {
-		for _, matched := range m {
-			subMatch := matched[1]
-			assert.True(t, strings.HasPrefix(subMatch, refPath+"#/definitions/"),
-				"expected $ref to be inlined, got: %s", matched[0])
-		}
-	}
+	// assert all $ref match  "$ref": "file://{file}#/definitions/something"
+	assertRefInJSONRegexp(t, jazon, `file://.*/gitea.json#/definitions/`)
+
+	// assert all $ref expand correctly against the spec
+	assertRefExpand(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path})
 }
 
-func Test_Issue2113(t *testing.T) {
+func TestSpec_Issue2113(t *testing.T) {
 	// this checks expansion with nested specs
 	path := filepath.Join("fixtures", "bugs", "2113", "base.yaml")
 
@@ -258,39 +214,32 @@ func Test_Issue2113(t *testing.T) {
 	sp := loadOrFail(t, path)
 	err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 	require.NoError(t, err)
+
 	// asserts all $ref expanded
-	jazon, _ := json.MarshalIndent(sp, "", " ")
+	jazon := asJSON(t, sp)
 
 	// assert all $ref match have been expanded
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	assert.Emptyf(t, m, "expected all $ref to be expanded")
+	assertNoRef(t, jazon)
 
 	// now trying with SkipSchemas
 	sp = loadOrFail(t, path)
 	err = spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader})
 	require.NoError(t, err)
 
-	jazon, _ = json.MarshalIndent(sp, "", " ")
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	require.NotEmpty(t, m)
-	for _, matched := range m {
-		subMatch := matched[1]
-		switch {
-		case strings.Contains(subMatch, "dummy"):
-			assert.True(t, strings.HasPrefix(subMatch, "schemas/dummy/dummy.yaml"),
-				"expected $ref to be rebased to new relative base, got: %s", matched[0])
-		case strings.Contains(subMatch, "example"):
-			assert.True(t, strings.HasPrefix(subMatch, "schemas/example/example.yaml"),
-				"expected $ref to be rebased to new relative base, got: %s", matched[0])
-		default:
-			t.Fail()
-			t.Logf("unexpected $ref after skip-schemas expansion: %s", subMatch)
-		}
-	}
+	jazon = asJSON(t, sp)
+
+	// assert all $ref match
+	assertRefInJSONRegexp(t, jazon, `^(schemas/dummy/dummy.yaml)|(schemas/example/example.yaml)`)
+
+	// assert all $ref resolve correctly against the spec
+	assertRefResolve(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
+
+	// assert all $ref expand correctly against the spec
+	assertRefExpand(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
 }
 
-func Test_Issue2113_External(t *testing.T) {
-	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
+func TestSpec_Issue2113_External(t *testing.T) {
+	// Exercises the SkipSchema mode (used by spec flattening in go-openapi/analysis).
 	// Provides more ground for testing with schemas nested in $refs
 
 	// this checks expansion with nested specs
@@ -301,30 +250,31 @@ func Test_Issue2113_External(t *testing.T) {
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}))
 
 	// asserts all $ref are expanded as expected
-	jazon, _ := json.MarshalIndent(sp, "", " ")
+	jazon := asJSON(t, sp)
 
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	require.NotEmpty(t, m)
-	for _, matched := range m {
-		subMatch := matched[1]
-		require.Truef(t,
-			strings.HasPrefix(subMatch, "external/definitions.yml#/definitions") ||
-				strings.HasPrefix(subMatch, "external/errors.yml#/error") ||
-				strings.HasPrefix(subMatch, "external/nestedParams.yml#/bodyParam"),
-			"$ref %q did not match expectation", subMatch,
-		)
-	}
+	assertRefInJSONRegexp(t, jazon, `^(external/definitions.yml#/definitions)|(external/errors.yml#/error)|(external/nestedParams.yml#/bodyParam)`)
+
+	// assert all $ref resolve correctly against the spec
+	assertRefResolve(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
+
+	// assert all $ref in jazon expand correctly against the spec
+	assertRefExpand(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
+
+	// expansion can be iterated again, including schemas
+	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
+
+	jazon = asJSON(t, sp)
+	assertNoRef(t, jazon)
 
 	// load and expand everything
 	sp = loadOrFail(t, path)
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
-	jazon, _ = json.MarshalIndent(sp, "", " ")
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	require.Empty(t, m)
+	jazon = asJSON(t, sp)
+	assertNoRef(t, jazon)
 }
 
-func Test_Issue2113_SkipSchema(t *testing.T) {
+func TestSpec_Issue2113_SkipSchema(t *testing.T) {
 	// Exercises the SkipSchema mode from spec flattening in go-openapi/analysis
 	// Provides more ground for testing with schemas nested in $refs
 
@@ -335,31 +285,25 @@ func Test_Issue2113_SkipSchema(t *testing.T) {
 	sp := loadOrFail(t, path)
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}))
 
+	jazon := asJSON(t, sp)
+
 	// asserts all $ref are expanded as expected
-	jazon, err := json.MarshalIndent(sp, "", " ")
-	require.NoError(t, err)
+	assertRefInJSONRegexp(t, jazon, `^(external/definitions.yml#/definitions)|(#/definitions/namedAgain)|(external/errors.yml#/error)`)
 
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	require.NotEmpty(t, m)
-	for _, matched := range m {
-		subMatch := matched[1]
-		require.Truef(t,
-			strings.HasPrefix(subMatch, "external/definitions.yml#/") ||
-				strings.HasPrefix(subMatch, "#/definitions/namedAgain") ||
-				strings.HasPrefix(subMatch, "external/errors.yml#/error"),
-			"$ref %q did not match expectation", subMatch,
-		)
-	}
+	// assert all $ref resolve correctly against the spec
+	assertRefResolve(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
 
+	assertRefExpand(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
+
+	// load and expand, including schemas
 	sp = loadOrFail(t, path)
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
-	jazon, _ = json.MarshalIndent(sp, "", " ")
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	require.Empty(t, m)
+	jazon = asJSON(t, sp)
+	assertNoRef(t, jazon)
 }
 
-func Test_PointersLoop(t *testing.T) {
+func TestSpec_PointersLoop(t *testing.T) {
 	// this a spec that cannot be flattened (self-referencing pointer).
 	// however, it should be expanded without errors
 
@@ -370,14 +314,18 @@ func Test_PointersLoop(t *testing.T) {
 	sp := loadOrFail(t, path)
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}))
 
+	jazon := asJSON(t, sp)
+	assertRefExpand(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
+
 	sp = loadOrFail(t, path)
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	// cannot guarantee which ref will be kept, but only one remains: expand reduces all $ref down
 	// to the last self-referencing one (the one picked changes from one run to another, depending
 	// on where during the walk the cycle is detected).
-	jazon, _ := json.MarshalIndent(sp, "", " ")
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
+	jazon = asJSON(t, sp)
+
+	m := rex.FindAllStringSubmatch(jazon, -1)
 	require.NotEmpty(t, m)
 
 	refs := make(map[string]struct{}, 5)
@@ -385,66 +333,41 @@ func Test_PointersLoop(t *testing.T) {
 		subMatch := matched[1]
 		refs[subMatch] = struct{}{}
 	}
-
 	require.Len(t, refs, 1)
+
+	assertRefExpand(t, jazon, "", sp, &spec.ExpandOptions{RelativeBase: path, PathLoader: testLoader})
 }
 
-func Test_Issue102(t *testing.T) {
+func TestSpec_Issue102(t *testing.T) {
 	// go-openapi/validate/issues#102
 	path := filepath.Join("fixtures", "bugs", "102", "fixture-102.json")
 	sp := loadOrFail(t, path)
 
 	require.NoError(t, spec.ExpandSpec(sp, nil))
 
-	jazon, err := json.MarshalIndent(sp, " ", "")
-	require.NoError(t, err)
-
-	m := rex.FindAllStringSubmatch(string(jazon), -1)
-	require.NotEmpty(t, m)
-
-	for _, matched := range m {
-		subMatch := matched[1]
-		assert.Equal(t, "#/definitions/Error", subMatch)
-	}
+	jazon := asJSON(t, sp)
+	assertRefInJSONRegexp(t, jazon, `^#/definitions/Error$`)
 
 	sp = loadOrFail(t, path)
 	sch := spec.RefSchema("#/definitions/Error")
 	require.NoError(t, spec.ExpandSchema(sch, sp, nil))
 
-	jazon, err = json.MarshalIndent(sch, " ", "")
-	require.NoError(t, err)
-
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	for _, matched := range m {
-		subMatch := matched[1]
-		assert.Equal(t, "#/definitions/Error", subMatch)
-	}
+	jazon = asJSON(t, sch)
+	assertRefInJSONRegexp(t, jazon, "^#/definitions/Error$")
 
 	sp = loadOrFail(t, path)
 	sch = spec.RefSchema("#/definitions/Error")
 	resp := spec.NewResponse().WithDescription("ok").WithSchema(sch)
 	require.NoError(t, spec.ExpandResponseWithRoot(resp, sp, nil))
 
-	jazon, err = json.MarshalIndent(resp, " ", "")
-	require.NoError(t, err)
-
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	for _, matched := range m {
-		subMatch := matched[1]
-		assert.Equal(t, "#/definitions/Error", subMatch)
-	}
+	jazon = asJSON(t, resp)
+	assertRefInJSONRegexp(t, jazon, "^#/definitions/Error$")
 
 	sp = loadOrFail(t, path)
 	sch = spec.RefSchema("#/definitions/Error")
 	param := spec.BodyParam("error", sch)
 	require.NoError(t, spec.ExpandParameterWithRoot(param, sp, nil))
 
-	jazon, err = json.MarshalIndent(resp, " ", "")
-	require.NoError(t, err)
-
-	m = rex.FindAllStringSubmatch(string(jazon), -1)
-	for _, matched := range m {
-		subMatch := matched[1]
-		assert.Equal(t, "#/definitions/Error", subMatch)
-	}
+	jazon = asJSON(t, resp)
+	assertRefInJSONRegexp(t, jazon, "^#/definitions/Error$")
 }
