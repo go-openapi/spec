@@ -54,6 +54,9 @@
     },
     "circularA": {
       "$ref": "pet/pet.json#/responses/circularB"
+    },
+    "backRef": {
+      "$ref": "pet/pet.json#/responses/backRef"
     }
   },
   "paths": {
