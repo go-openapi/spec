@@ -37,8 +37,8 @@ func BasicAuth() *SecurityScheme {
 }
 
 // APIKeyAuth creates an api key auth security scheme
-func APIKeyAuth(fieldName, valueSource string) *SecurityScheme {
-	return &SecurityScheme{SecuritySchemeProps: SecuritySchemeProps{Type: apiKey, Name: fieldName, In: valueSource}}
+func APIKeyAuth(fieldName, valueSource, fieldDescription string) *SecurityScheme {
+	return &SecurityScheme{SecuritySchemeProps: SecuritySchemeProps{Type: apiKey, Name: fieldName, In: valueSource, Description: fieldDescription}}
 }
 
 // OAuth2Implicit creates an implicit flow oauth2 security scheme
