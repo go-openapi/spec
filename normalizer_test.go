@@ -14,6 +14,24 @@ import (
 
 const windowsOS = "windows"
 
+// only used for windows
+var currentDriveLetter = getCurrentDrive()
+
+// get the current drive letter in lowercase on windows that the test is running
+func getCurrentDrive() string {
+	if runtime.GOOS != windowsOS {
+		return ""
+	}
+	p, err := filepath.Abs("/")
+	if err != nil {
+		panic(err)
+	}
+	if len(p) == 0 {
+		panic("current windows drive letter is empty")
+	}
+	return strings.ToLower(string(p[0]))
+}
+
 func TestNormalizer_NormalizeURI(t *testing.T) {
 	type testNormalizePathsTestCases []struct {
 		refPath    string
@@ -299,7 +317,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		{
 			// path clean
 			Base:     "///folder//subfolder///file.json/",
-			Expected: "file:///c:/folder/subfolder/file.json",
+			Expected: "file:///" + currentDriveLetter + ":/folder/subfolder/file.json",
 			Windows:  true,
 		},
 		{
@@ -326,7 +344,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		{
 			// handling dots (3/6): valid, cleaned to /c:/ on windows
 			Base:     "/..",
-			Expected: "file:///c:",
+			Expected: "file:///" + currentDriveLetter + ":",
 			Windows:  true,
 		},
 		{
@@ -359,7 +377,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		// windows-only cases
 		{
 			Base:     "/base/sub/file.json",
-			Expected: "file:///c:/base/sub/file.json", // on windows, filepath.Abs("/a/b") prepends the "c:" drive
+			Expected: "file:///" + currentDriveLetter + ":/base/sub/file.json", // on windows, filepath.Abs("/a/b") prepends the "c:" drive
 			Windows:  true,
 		},
 		{
