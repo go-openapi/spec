@@ -71,7 +71,7 @@ func assertRefInJSONRegexp(t testing.TB, jazon, match string) {
 // assertRefExpand ensures that all $ref in some json doc expand properly against a root document.
 //
 // "exclude" is a regexp pattern to ignore certain $ref (e.g. some specs may embed $ref that are not processed, such as extensions).
-func assertRefExpand(t *testing.T, jazon, exclude string, root interface{}, opts ...*spec.ExpandOptions) {
+func assertRefExpand(t *testing.T, jazon, _ string, root interface{}, opts ...*spec.ExpandOptions) {
 	if len(opts) > 0 {
 		assertRefWithFunc(t, "expand-with-base", jazon, "", func(t *testing.T, match string) {
 			ref := spec.RefSchema(match)

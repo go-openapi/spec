@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const infoJSON = `{
@@ -57,25 +58,19 @@ var info = Info{
 
 func TestIntegrationInfo_Serialize(t *testing.T) {
 	b, err := json.MarshalIndent(info, "", "\t")
-	if assert.NoError(t, err) {
-		assert.Equal(t, infoJSON, string(b))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, infoJSON, string(b))
 }
 
 func TestIntegrationInfo_Deserialize(t *testing.T) {
 	actual := Info{}
-	err := json.Unmarshal([]byte(infoJSON), &actual)
-	if assert.NoError(t, err) {
-		assert.EqualValues(t, info, actual)
-	}
+	require.NoError(t, json.Unmarshal([]byte(infoJSON), &actual))
+	assert.EqualValues(t, info, actual)
 }
 
 func TestInfoGobEncoding(t *testing.T) {
 	var src, dst Info
-	if assert.NoError(t, json.Unmarshal([]byte(infoJSON), &src)) {
-		assert.EqualValues(t, src, info)
-	} else {
-		t.FailNow()
-	}
+	require.NoError(t, json.Unmarshal([]byte(infoJSON), &src))
+	assert.EqualValues(t, src, info)
 	doTestAnyGobEncoding(t, &src, &dst)
 }

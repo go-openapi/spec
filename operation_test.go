@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var operation = Operation{
@@ -82,30 +83,28 @@ func TestSuccessResponse(t *testing.T) {
 	resp, n, f := ope.SuccessResponse()
 	assert.Nil(t, resp)
 	assert.Equal(t, 0, n)
-	assert.Equal(t, false, f)
+	assert.False(t, f)
 
 	resp, n, f = operation.SuccessResponse()
-	if assert.NotNil(t, resp) {
-		assert.Equal(t, "void response", resp.Description)
-	}
-	assert.Equal(t, 0, n)
-	assert.Equal(t, false, f)
+	require.NotNil(t, resp)
+	assert.Equal(t, "void response", resp.Description)
 
-	err := json.Unmarshal([]byte(operationJSON), ope)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	assert.Equal(t, 0, n)
+	assert.False(t, f)
+
+	require.NoError(t, json.Unmarshal([]byte(operationJSON), ope))
+
 	ope = ope.RespondsWith(301, &Response{
 		ResponseProps: ResponseProps{
 			Description: "failure",
 		},
 	})
 	resp, n, f = ope.SuccessResponse()
-	if assert.NotNil(t, resp) {
-		assert.Equal(t, "void response", resp.Description)
-	}
+	require.NotNil(t, resp)
+	assert.Equal(t, "void response", resp.Description)
+
 	assert.Equal(t, 0, n)
-	assert.Equal(t, false, f)
+	assert.False(t, f)
 
 	ope = ope.RespondsWith(200, &Response{
 		ResponseProps: ResponseProps{
@@ -114,11 +113,11 @@ func TestSuccessResponse(t *testing.T) {
 	})
 
 	resp, n, f = ope.SuccessResponse()
-	if assert.NotNil(t, resp) {
-		assert.Equal(t, "success", resp.Description)
-	}
+	require.NotNil(t, resp)
+	assert.Equal(t, "success", resp.Description)
+
 	assert.Equal(t, 200, n)
-	assert.Equal(t, true, f)
+	assert.True(t, f)
 }
 
 func TestOperationBuilder(t *testing.T) {
@@ -146,7 +145,9 @@ func TestOperationBuilder(t *testing.T) {
 		WithSummary("my summary").
 		WithExternalDocs("some doc", "https://www.example.com")
 
-	jazon, _ := json.MarshalIndent(ope, "", " ")
+	jazon, err := json.MarshalIndent(ope, "", " ")
+	require.NoError(t, err)
+
 	assert.JSONEq(t, `{
 		     "operationId": "operationID",
 				 "description": "test operation",
@@ -201,8 +202,11 @@ func TestOperationBuilder(t *testing.T) {
 
 	// check token lookup
 	token, err := ope.JSONLookup("responses")
-	assert.NoError(t, err)
-	jazon, _ = json.MarshalIndent(token, "", " ")
+	require.NoError(t, err)
+
+	jazon, err = json.MarshalIndent(token, "", " ")
+	require.NoError(t, err)
+
 	assert.JSONEq(t, `{
          "200": {
           "description": "success"
@@ -219,7 +223,9 @@ func TestOperationBuilder(t *testing.T) {
 		RemoveParam("fakeParam", "query").
 		Undeprecate().
 		WithExternalDocs("", "")
-	jazon, _ = json.MarshalIndent(ope, "", " ")
+	jazon, err = json.MarshalIndent(ope, "", " ")
+	require.NoError(t, err)
+
 	assert.JSONEq(t, `{
          "security": [
           {
@@ -252,9 +258,8 @@ func TestOperationBuilder(t *testing.T) {
 
 func TestIntegrationOperation(t *testing.T) {
 	var actual Operation
-	if assert.NoError(t, json.Unmarshal([]byte(operationJSON), &actual)) {
-		assert.EqualValues(t, actual, operation)
-	}
+	require.NoError(t, json.Unmarshal([]byte(operationJSON), &actual))
+	assert.EqualValues(t, actual, operation)
 
 	assertParsesJSON(t, operationJSON, operation)
 }
@@ -263,21 +268,19 @@ func TestSecurityProperty(t *testing.T) {
 	// Ensure we omit security key when unset
 	securityNotSet := OperationProps{}
 	jsonResult, err := json.Marshal(securityNotSet)
-	if assert.NoError(t, err) {
-		assert.NotContains(t, string(jsonResult), "security", "security key should be omitted when unset")
-	}
+	require.NoError(t, err)
+	assert.NotContains(t, string(jsonResult), "security", "security key should be omitted when unset")
 
 	// Ensure we preserve the security key when it contains an empty (zero length) slice
 	securityContainsEmptyArray := OperationProps{
 		Security: []map[string][]string{},
 	}
 	jsonResult, err = json.Marshal(securityContainsEmptyArray)
-	if assert.NoError(t, err) {
-		var props OperationProps
-		if assert.NoError(t, json.Unmarshal(jsonResult, &props)) {
-			assert.Equal(t, securityContainsEmptyArray, props)
-		}
-	}
+	require.NoError(t, err)
+
+	var props OperationProps
+	require.NoError(t, json.Unmarshal(jsonResult, &props))
+	assert.Equal(t, securityContainsEmptyArray, props)
 }
 
 func TestOperationGobEncoding(t *testing.T) {
@@ -346,10 +349,7 @@ func TestOperationGobEncoding(t *testing.T) {
 
 func doTestOperationGobEncoding(t *testing.T, fixture string) {
 	var src, dst Operation
-
-	if !assert.NoError(t, json.Unmarshal([]byte(fixture), &src)) {
-		t.FailNow()
-	}
+	require.NoError(t, json.Unmarshal([]byte(fixture), &src))
 
 	doTestAnyGobEncoding(t, &src, &dst)
 }
@@ -359,18 +359,12 @@ func doTestAnyGobEncoding(t *testing.T, src, dst interface{}) {
 
 	var b bytes.Buffer
 	err := gob.NewEncoder(&b).Encode(src)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	err = gob.NewDecoder(&b).Decode(dst)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	jazon, err := json.MarshalIndent(dst, "", " ")
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	assert.JSONEq(t, string(expectedJSON), string(jazon))
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var items = Items{
@@ -74,9 +75,8 @@ const itemsJSON = `{
 
 func TestIntegrationItems(t *testing.T) {
 	var actual Items
-	if assert.NoError(t, json.Unmarshal([]byte(itemsJSON), &actual)) {
-		assert.EqualValues(t, actual, items)
-	}
+	require.NoError(t, json.Unmarshal([]byte(itemsJSON), &actual))
+	assert.EqualValues(t, actual, items)
 
 	assertParsesJSON(t, itemsJSON, items)
 }
@@ -152,38 +152,38 @@ func TestItemsBuilder(t *testing.T) {
 
 func TestJSONLookupItems(t *testing.T) {
 	res, err := items.JSONLookup("$ref")
-	if !assert.NoError(t, err) {
-		t.FailNow()
-		return
-	}
-	if assert.IsType(t, &Ref{}, res) {
-		ref := res.(*Ref)
-		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, &Ref{}, res)
+
+	var ok bool
+	ref, ok := res.(*Ref)
+	require.True(t, ok)
+	assert.EqualValues(t, MustCreateRef("Dog"), *ref)
 
 	var max *float64
 	res, err = items.JSONLookup("maximum")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, max, res) {
-		t.FailNow()
-		return
-	}
-	max = res.(*float64)
-	assert.Equal(t, float64(100), *max)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, max, res)
+
+	max, ok = res.(*float64)
+	require.True(t, ok)
+	assert.InDelta(t, float64(100), *max, epsilon)
 
 	var f string
 	res, err = items.JSONLookup("collectionFormat")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, f, res) {
-		t.FailNow()
-		return
-	}
-	f = res.(string)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, f, res)
+
+	f, ok = res.(string)
+	require.True(t, ok)
 	assert.Equal(t, "csv", f)
 
 	res, err = items.JSONLookup("unknown")
-	if !assert.Error(t, err) || !assert.Nil(t, res) {
-		t.FailNow()
-		return
-	}
+	require.Error(t, err)
+	require.Nil(t, res)
 }
 
 func TestItemsWithValidation(t *testing.T) {

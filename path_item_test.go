@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var pathItem = PathItem{
@@ -73,9 +74,8 @@ const pathItemJSON = `{
 
 func TestIntegrationPathItem(t *testing.T) {
 	var actual PathItem
-	if assert.NoError(t, json.Unmarshal([]byte(pathItemJSON), &actual)) {
-		assert.EqualValues(t, actual, pathItem)
-	}
+	require.NoError(t, json.Unmarshal([]byte(pathItemJSON), &actual))
+	assert.EqualValues(t, actual, pathItem)
 
 	assertParsesJSON(t, pathItemJSON, pathItem)
 }

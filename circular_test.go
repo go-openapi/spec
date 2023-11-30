@@ -219,7 +219,7 @@ func TestExpandCircular_SpecExpansion(t *testing.T) {
 
 func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	go func() {
-		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("fixtures/more_circulars/remote")))
+		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("fixtures/more_circulars/remote"))) //#nosec
 		if err != nil {
 			panic(err.Error())
 		}
@@ -232,7 +232,7 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	assertRefResolve(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
 	assertRefExpand(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
 
-	assert.NoError(t, ExpandSchemaWithBasePath(root, nil, &ExpandOptions{}))
+	require.NoError(t, ExpandSchemaWithBasePath(root, nil, &ExpandOptions{}))
 
 	jazon = asJSON(t, root)
 

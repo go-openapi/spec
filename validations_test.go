@@ -75,7 +75,6 @@ func TestValidations(t *testing.T) {
 	expectedSV.PatternProperties = nil
 	expectedSV.MinProperties = nil
 	expectedSV.MaxProperties = nil
-	val = mkVal()
 
 	val = mkVal()
 	cv.SetValidations(val)

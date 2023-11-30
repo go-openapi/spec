@@ -353,7 +353,7 @@ func TestExpand_ContinueOnError(t *testing.T) {
 
 	// missing $ref in spec
 	missingRefDoc, err := jsonDoc(specPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	testCase := struct {
 		Input    *Swagger `json:"input"`
@@ -367,7 +367,7 @@ func TestExpand_ContinueOnError(t *testing.T) {
 	}
 	require.NoError(t, ExpandSpec(testCase.Input, opts))
 
-	assert.Equal(t, testCase.Input, testCase.Expected, "Should continue expanding spec when a definition can't be found.")
+	assert.Equal(t, testCase.Expected, testCase.Input, "Should continue expanding spec when a definition can't be found.")
 
 	// missing $ref in items
 	doc, err := jsonDoc("fixtures/expansion/missingItemRef.json")
@@ -791,7 +791,7 @@ func resolutionContextServer() *httptest.Server {
 			ctnt["id"] = servedAt
 
 			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			bb, _ := json.Marshal(ctnt)
 			_, _ = rw.Write(bb)
 			return
@@ -803,7 +803,6 @@ func resolutionContextServer() *httptest.Server {
 			ctnt["id"] = servedAt
 
 			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(200)
 			bb, _ := json.Marshal(ctnt)
 			_, _ = rw.Write(bb)
 			return
@@ -811,7 +810,6 @@ func resolutionContextServer() *httptest.Server {
 
 		if req.URL.Path == "/boolProp.json" {
 			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(200)
 			b, _ := json.Marshal(map[string]interface{}{
 				"type": "boolean",
 			})
@@ -821,7 +819,6 @@ func resolutionContextServer() *httptest.Server {
 
 		if req.URL.Path == "/deeper/stringProp.json" {
 			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(200)
 			b, _ := json.Marshal(map[string]interface{}{
 				"type": "string",
 			})
@@ -831,7 +828,6 @@ func resolutionContextServer() *httptest.Server {
 
 		if req.URL.Path == "/deeper/arrayProp.json" {
 			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(200)
 			b, _ := json.Marshal(map[string]interface{}{
 				"type": "array",
 				"items": map[string]interface{}{

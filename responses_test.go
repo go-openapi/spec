@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var responses = Responses{
@@ -59,54 +60,48 @@ const responsesJSON = `{
 
 func TestIntegrationResponses(t *testing.T) {
 	var actual Responses
-	if assert.NoError(t, json.Unmarshal([]byte(responsesJSON), &actual)) {
-		assert.EqualValues(t, actual, responses)
-	}
+	require.NoError(t, json.Unmarshal([]byte(responsesJSON), &actual))
+	assert.EqualValues(t, actual, responses)
 
 	assertParsesJSON(t, responsesJSON, responses)
 }
 
 func TestJSONLookupResponses(t *testing.T) {
 	resp200, ok := responses.StatusCodeResponses[200]
-	if !assert.True(t, ok) {
-		t.FailNow()
-		return
-	}
+	require.True(t, ok)
 
 	res, err := resp200.JSONLookup("$ref")
-	if !assert.NoError(t, err) {
-		t.FailNow()
-		return
-	}
-	if assert.IsType(t, &Ref{}, res) {
-		ref := res.(*Ref)
-		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, &Ref{}, res)
+
+	ref, ok := res.(*Ref)
+	require.True(t, ok)
+	assert.EqualValues(t, MustCreateRef("Dog"), *ref)
 
 	var def string
 	res, err = resp200.JSONLookup("description")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, def, res) {
-		t.FailNow()
-		return
-	}
-	def = res.(string)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, def, res)
+
+	def, ok = res.(string)
+	require.True(t, ok)
 	assert.Equal(t, "Dog exists", def)
 
 	var x *interface{}
 	res, err = responses.JSONLookup("x-go-name")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, x, res) {
-		t.FailNow()
-		return
-	}
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, x, res)
 
-	x = res.(*interface{})
+	x, ok = res.(*interface{})
+	require.True(t, ok)
 	assert.EqualValues(t, "PutDogExists", *x)
 
 	res, err = responses.JSONLookup("unknown")
-	if !assert.Error(t, err) || !assert.Nil(t, res) {
-		t.FailNow()
-		return
-	}
+	require.Error(t, err)
+	require.Nil(t, res)
 }
 
 func TestResponsesBuild(t *testing.T) {

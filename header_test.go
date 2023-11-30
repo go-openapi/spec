@@ -20,7 +20,10 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+const epsilon = 1e-9
 
 func float64Ptr(f float64) *float64 {
 	return &f
@@ -83,9 +86,8 @@ const headerJSON = `{
 
 func TestIntegrationHeader(t *testing.T) {
 	var actual Header
-	if assert.NoError(t, json.Unmarshal([]byte(headerJSON), &actual)) {
-		assert.EqualValues(t, actual, header)
-	}
+	require.NoError(t, json.Unmarshal([]byte(headerJSON), &actual))
+	assert.EqualValues(t, actual, header)
 
 	assertParsesJSON(t, headerJSON, header)
 }
@@ -93,37 +95,38 @@ func TestIntegrationHeader(t *testing.T) {
 func TestJSONLookupHeader(t *testing.T) {
 	var def string
 	res, err := header.JSONLookup("default")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, def, res) {
-		t.FailNow()
-		return
-	}
-	def = res.(string)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, def, res)
+
+	var ok bool
+	def, ok = res.(string)
+	require.True(t, ok)
 	assert.Equal(t, "8", def)
 
 	var x *interface{}
 	res, err = header.JSONLookup("x-framework")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, x, res) {
-		t.FailNow()
-		return
-	}
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, x, res)
 
-	x = res.(*interface{})
+	x, ok = res.(*interface{})
+	require.True(t, ok)
 	assert.EqualValues(t, "swagger-go", *x)
 
 	res, err = header.JSONLookup("unknown")
-	if !assert.Error(t, err) || !assert.Nil(t, res) {
-		t.FailNow()
-		return
-	}
+	require.Error(t, err)
+	require.Nil(t, res)
 
 	var max *float64
 	res, err = header.JSONLookup("maximum")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, max, res) {
-		t.FailNow()
-		return
-	}
-	max = res.(*float64)
-	assert.Equal(t, float64(100), *max)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, max, res)
+
+	max, ok = res.(*float64)
+	require.True(t, ok)
+	assert.InDelta(t, float64(100), *max, epsilon)
 }
 
 func TestResponseHeaueder(t *testing.T) {

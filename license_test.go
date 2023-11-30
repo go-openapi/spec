@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var license = License{
@@ -36,13 +37,11 @@ func TestIntegrationLicense(t *testing.T) {
 	// const licenseYAML = "name: the name\nurl: the url\n"
 
 	b, err := json.MarshalIndent(license, "", "\t")
-	if assert.NoError(t, err) {
-		assert.Equal(t, licenseJSON, string(b))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, licenseJSON, string(b))
 
 	actual := License{}
 	err = json.Unmarshal([]byte(licenseJSON), &actual)
-	if assert.NoError(t, err) {
-		assert.EqualValues(t, license, actual)
-	}
+	require.NoError(t, err)
+	assert.EqualValues(t, license, actual)
 }

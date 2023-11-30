@@ -189,7 +189,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 	require.NoError(t, err)
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	assert.Error(t, resolver.Resolve(&ref, &tgt, ""))
+	require.Error(t, resolver.Resolve(&ref, &tgt, ""))
 }
 
 /* This next test will have to wait until we do full $ID analysis for every subschema on every file that is referenced */
