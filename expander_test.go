@@ -1098,6 +1098,53 @@ func TestExpand_ExtraItems(t *testing.T) {
 			 }`, jazon)
 }
 
+func TestExpand_Issue145(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	pseudoRoot := normalizeBase(filepath.Join(cwd, rootBase))
+
+	// assert the internal behavior of baseForRoot()
+	t.Run("with nil root, empty cache", func(t *testing.T) {
+		cache := defaultResolutionCache()
+		require.Equal(t, pseudoRoot, baseForRoot(nil, cache))
+
+		t.Run("empty root is cached", func(t *testing.T) {
+			value, ok := cache.Get(pseudoRoot)
+			require.True(t, ok) // found in cache
+			asMap, ok := value.(map[string]interface{})
+			require.True(t, ok)
+			require.Empty(t, asMap)
+		})
+	})
+
+	t.Run("with non-nil root, empty cache", func(t *testing.T) {
+		cache := defaultResolutionCache()
+		require.Equal(t, pseudoRoot, baseForRoot(map[string]interface{}{"key": "arbitrary"}, cache))
+
+		t.Run("non-empty root is cached", func(t *testing.T) {
+			value, ok := cache.Get(pseudoRoot)
+			require.True(t, ok) // found in cache
+			asMap, ok := value.(map[string]interface{})
+			require.True(t, ok)
+			require.Contains(t, asMap, "key")
+			require.Equal(t, "arbitrary", asMap["key"])
+		})
+
+		t.Run("with nil root, non-empty cache", func(t *testing.T) {
+			require.Equal(t, pseudoRoot, baseForRoot(nil, cache))
+
+			t.Run("non-empty root is kept", func(t *testing.T) {
+				value, ok := cache.Get(pseudoRoot)
+				require.True(t, ok) // found in cache
+				asMap, ok := value.(map[string]interface{})
+				require.True(t, ok)
+				require.Contains(t, asMap, "key")
+				require.Equal(t, "arbitrary", asMap["key"])
+			})
+		})
+	})
+}
+
 // PetStore20 json doc for swagger 2.0 pet store
 const PetStore20 = `{
   "swagger": "2.0",
