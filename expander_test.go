@@ -42,6 +42,37 @@ var (
 	specs               = filepath.Join("fixtures", "specs")
 )
 
+func TestExpand_Issue148(t *testing.T) {
+	fp := filepath.Join("fixtures", "bugs", "schema-148.json")
+	b, err := jsonDoc(fp)
+	require.NoError(t, err)
+
+	assertAdditionalProps := func(sp Swagger) func(*testing.T) {
+		return func(t *testing.T) {
+			require.Len(t, sp.Definitions, 2)
+
+			require.Contains(t, sp.Definitions, "empty")
+			empty := sp.Definitions["empty"]
+			require.NotNil(t, empty.AdditionalProperties)
+			require.NotNil(t, empty.AdditionalProperties.Schema)
+			require.True(t, empty.AdditionalProperties.Allows)
+
+			require.Contains(t, sp.Definitions, "false")
+			additionalIsFalse := sp.Definitions["false"]
+			require.NotNil(t, additionalIsFalse.AdditionalProperties)
+			require.Nil(t, additionalIsFalse.AdditionalProperties.Schema)
+			require.False(t, additionalIsFalse.AdditionalProperties.Allows)
+		}
+	}
+
+	var sp Swagger
+	require.NoError(t, json.Unmarshal(b, &sp))
+	t.Run("check additional properties", assertAdditionalProps(sp))
+
+	require.NoError(t, ExpandSpec(&sp, nil))
+	t.Run("check additional properties after expansion", assertAdditionalProps(sp))
+}
+
 func TestExpand_KnownRef(t *testing.T) {
 	// json schema draft 4 meta schema is embedded by default: it resolves without setup
 	schema := RefProperty("http://json-schema.org/draft-04/schema#")
