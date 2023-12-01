@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var response = Response{
@@ -45,48 +46,46 @@ const responseJSON = `{
 
 func TestIntegrationResponse(t *testing.T) {
 	var actual Response
-	if assert.NoError(t, json.Unmarshal([]byte(responseJSON), &actual)) {
-		assert.EqualValues(t, actual, response)
-	}
+	require.NoError(t, json.Unmarshal([]byte(responseJSON), &actual))
+	assert.EqualValues(t, actual, response)
 
 	assertParsesJSON(t, responseJSON, response)
 }
 
 func TestJSONLookupResponse(t *testing.T) {
 	res, err := response.JSONLookup("$ref")
-	if !assert.NoError(t, err) {
-		t.FailNow()
-		return
-	}
-	if assert.IsType(t, &Ref{}, res) {
-		ref := res.(*Ref)
-		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, &Ref{}, res)
+
+	var ok bool
+	ref, ok := res.(*Ref)
+	require.True(t, ok)
+	assert.EqualValues(t, MustCreateRef("Dog"), *ref)
 
 	var def string
 	res, err = response.JSONLookup("description")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, def, res) {
-		t.FailNow()
-		return
-	}
-	def = res.(string)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, def, res)
+
+	def, ok = res.(string)
+	require.True(t, ok)
 	assert.Equal(t, "Dog exists", def)
 
 	var x *interface{}
 	res, err = response.JSONLookup("x-go-name")
-	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, x, res) {
-		t.FailNow()
-		return
-	}
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.IsType(t, x, res)
 
-	x = res.(*interface{})
+	x, ok = res.(*interface{})
+	require.True(t, ok)
 	assert.EqualValues(t, "PutDogExists", *x)
 
 	res, err = response.JSONLookup("unknown")
-	if !assert.Error(t, err) || !assert.Nil(t, res) {
-		t.FailNow()
-		return
-	}
+	require.Error(t, err)
+	require.Nil(t, res)
 }
 
 func TestResponseBuild(t *testing.T) {
@@ -95,7 +94,9 @@ func TestResponseBuild(t *testing.T) {
 		WithSchema(new(Schema).Typed("object", "")).
 		AddHeader("x-header", ResponseHeader().Typed("string", "")).
 		AddExample("application/json", `{"key":"value"}`)
-	jazon, _ := json.MarshalIndent(resp, "", " ")
+	jazon, err := json.MarshalIndent(resp, "", " ")
+	require.NoError(t, err)
+
 	assert.JSONEq(t, `{
          "description": "some response",
          "schema": {

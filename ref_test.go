@@ -21,27 +21,24 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // pin pointing go-swagger/go-swagger#1816 issue with cloning ref's
 func TestCloneRef(t *testing.T) {
 	var b bytes.Buffer
 	src := MustCreateRef("#/definitions/test")
-	err := gob.NewEncoder(&b).Encode(&src)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t,
+		gob.NewEncoder(&b).Encode(&src),
+	)
 
 	var dst Ref
-	err = gob.NewDecoder(&b).Decode(&dst)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t,
+		gob.NewDecoder(&b).Decode(&dst),
+	)
 
 	jazon, err := json.Marshal(dst)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, `{"$ref":"#/definitions/test"}`, string(jazon))
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var parameter = Parameter{
@@ -92,9 +93,8 @@ var parameterJSON = `{
 
 func TestIntegrationParameter(t *testing.T) {
 	var actual Parameter
-	if assert.NoError(t, json.Unmarshal([]byte(parameterJSON), &actual)) {
-		assert.EqualValues(t, actual, parameter)
-	}
+	require.NoError(t, json.Unmarshal([]byte(parameterJSON), &actual))
+	assert.EqualValues(t, actual, parameter)
 
 	assertParsesJSON(t, parameterJSON, parameter)
 }
@@ -158,9 +158,7 @@ func TestParameterSerialization(t *testing.T) {
 
 func TestParameterGobEncoding(t *testing.T) {
 	var src, dst Parameter
-	if !assert.NoError(t, json.Unmarshal([]byte(parameterJSON), &src)) {
-		t.FailNow()
-	}
+	require.NoError(t, json.Unmarshal([]byte(parameterJSON), &src))
 	doTestAnyGobEncoding(t, &src, &dst)
 }
 

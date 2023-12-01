@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var paths = Paths{
@@ -34,9 +35,8 @@ const pathsJSON = `{"x-framework":"go-swagger","/":{"$ref":"cats"}}`
 
 func TestIntegrationPaths(t *testing.T) {
 	var actual Paths
-	if assert.NoError(t, json.Unmarshal([]byte(pathsJSON), &actual)) {
-		assert.EqualValues(t, actual, paths)
-	}
+	require.NoError(t, json.Unmarshal([]byte(pathsJSON), &actual))
+	assert.EqualValues(t, actual, paths)
 
 	assertParsesJSON(t, pathsJSON, paths)
 

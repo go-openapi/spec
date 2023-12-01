@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const contactInfoJSON = `{
@@ -36,13 +37,11 @@ var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
 
 func TestIntegrationContactInfo(t *testing.T) {
 	b, err := json.MarshalIndent(contactInfo, "", "\t")
-	if assert.NoError(t, err) {
-		assert.Equal(t, contactInfoJSON, string(b))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, contactInfoJSON, string(b))
 
 	actual := ContactInfo{}
 	err = json.Unmarshal([]byte(contactInfoJSON), &actual)
-	if assert.NoError(t, err) {
-		assert.EqualValues(t, contactInfo, actual)
-	}
+	require.NoError(t, err)
+	assert.EqualValues(t, contactInfo, actual)
 }

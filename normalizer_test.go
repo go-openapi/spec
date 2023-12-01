@@ -245,6 +245,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		cwd = "/" + strings.ToLower(filepath.ToSlash(cwd))
 	}
+	const fileScheme = "file:///"
 
 	for _, toPin := range []struct {
 		Base, Expected string
@@ -317,7 +318,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		{
 			// path clean
 			Base:     "///folder//subfolder///file.json/",
-			Expected: "file:///" + currentDriveLetter + ":/folder/subfolder/file.json",
+			Expected: fileScheme + currentDriveLetter + ":/folder/subfolder/file.json",
 			Windows:  true,
 		},
 		{
@@ -344,18 +345,18 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		{
 			// handling dots (3/6): valid, cleaned to /c:/ on windows
 			Base:     "/..",
-			Expected: "file:///" + currentDriveLetter + ":",
+			Expected: fileScheme + currentDriveLetter + ":",
 			Windows:  true,
 		},
 		{
 			// handling dots (4/6): dodgy specification - resolved to /
 			Base:     `file:/.`,
-			Expected: "file:///",
+			Expected: fileScheme,
 		},
 		{
 			// handling dots (5/6): dodgy specification - resolved to /
 			Base:     `file:/..`,
-			Expected: "file:///",
+			Expected: fileScheme,
 		},
 		{
 			// handling dots (6/6)
@@ -377,7 +378,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		// windows-only cases
 		{
 			Base:     "/base/sub/file.json",
-			Expected: "file:///" + currentDriveLetter + ":/base/sub/file.json", // on windows, filepath.Abs("/a/b") prepends the "c:" drive
+			Expected: fileScheme + currentDriveLetter + ":/base/sub/file.json", // on windows, filepath.Abs("/a/b") prepends the "c:" drive
 			Windows:  true,
 		},
 		{

@@ -19,14 +19,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestXmlObject_Serialize(t *testing.T) {
 	obj1 := XMLObject{}
 	actual, err := json.Marshal(obj1)
-	if assert.NoError(t, err) {
-		assert.Equal(t, "{}", string(actual))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "{}", string(actual))
 
 	obj2 := XMLObject{
 		Name:      "the name",
@@ -37,24 +37,22 @@ func TestXmlObject_Serialize(t *testing.T) {
 	}
 
 	actual, err = json.Marshal(obj2)
-	if assert.NoError(t, err) {
-		var ad map[string]interface{}
-		if assert.NoError(t, json.Unmarshal(actual, &ad)) {
-			assert.Equal(t, obj2.Name, ad["name"])
-			assert.Equal(t, obj2.Namespace, ad["namespace"])
-			assert.Equal(t, obj2.Prefix, ad["prefix"])
-			assert.True(t, ad["attribute"].(bool))
-			assert.True(t, ad["wrapped"].(bool))
-		}
-	}
+	require.NoError(t, err)
+
+	var ad map[string]interface{}
+	require.NoError(t, json.Unmarshal(actual, &ad))
+	assert.Equal(t, obj2.Name, ad["name"])
+	assert.Equal(t, obj2.Namespace, ad["namespace"])
+	assert.Equal(t, obj2.Prefix, ad["prefix"])
+	assert.True(t, ad["attribute"].(bool))
+	assert.True(t, ad["wrapped"].(bool))
 }
 
 func TestXmlObject_Deserialize(t *testing.T) {
 	expected := XMLObject{}
 	actual := XMLObject{}
-	if assert.NoError(t, json.Unmarshal([]byte("{}"), &actual)) {
-		assert.Equal(t, expected, actual)
-	}
+	require.NoError(t, json.Unmarshal([]byte("{}"), &actual))
+	assert.Equal(t, expected, actual)
 
 	completed := `{"name":"the name","namespace":"the namespace","prefix":"the prefix","attribute":true,"wrapped":true}`
 	expected = XMLObject{
@@ -64,8 +62,8 @@ func TestXmlObject_Deserialize(t *testing.T) {
 		Attribute: true,
 		Wrapped:   true,
 	}
+
 	actual = XMLObject{}
-	if assert.NoError(t, json.Unmarshal([]byte(completed), &actual)) {
-		assert.Equal(t, expected, actual)
-	}
+	require.NoError(t, json.Unmarshal([]byte(completed), &actual))
+	assert.Equal(t, expected, actual)
 }

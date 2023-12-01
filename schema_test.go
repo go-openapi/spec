@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var schema = Schema{
@@ -153,56 +154,56 @@ func TestSchema(t *testing.T) {
 	expected := map[string]interface{}{}
 	_ = json.Unmarshal([]byte(schemaJSON), &expected)
 	b, err := json.Marshal(schema)
-	if assert.NoError(t, err) {
-		var actual map[string]interface{}
-		_ = json.Unmarshal(b, &actual)
-		assert.Equal(t, expected, actual)
-	}
+	require.NoError(t, err)
+
+	var actual map[string]interface{}
+	require.NoError(t, json.Unmarshal(b, &actual))
+	assert.Equal(t, expected, actual)
 
 	actual2 := Schema{}
-	if assert.NoError(t, json.Unmarshal([]byte(schemaJSON), &actual2)) {
-		assert.Equal(t, schema.Ref, actual2.Ref)
-		assert.Equal(t, schema.Description, actual2.Description)
-		assert.Equal(t, schema.Maximum, actual2.Maximum)
-		assert.Equal(t, schema.Minimum, actual2.Minimum)
-		assert.Equal(t, schema.ExclusiveMinimum, actual2.ExclusiveMinimum)
-		assert.Equal(t, schema.ExclusiveMaximum, actual2.ExclusiveMaximum)
-		assert.Equal(t, schema.MaxLength, actual2.MaxLength)
-		assert.Equal(t, schema.MinLength, actual2.MinLength)
-		assert.Equal(t, schema.Pattern, actual2.Pattern)
-		assert.Equal(t, schema.MaxItems, actual2.MaxItems)
-		assert.Equal(t, schema.MinItems, actual2.MinItems)
-		assert.True(t, actual2.UniqueItems)
-		assert.Equal(t, schema.MultipleOf, actual2.MultipleOf)
-		assert.Equal(t, schema.Enum, actual2.Enum)
-		assert.Equal(t, schema.Type, actual2.Type)
-		assert.Equal(t, schema.Format, actual2.Format)
-		assert.Equal(t, schema.Title, actual2.Title)
-		assert.Equal(t, schema.MaxProperties, actual2.MaxProperties)
-		assert.Equal(t, schema.MinProperties, actual2.MinProperties)
-		assert.Equal(t, schema.Required, actual2.Required)
-		assert.Equal(t, schema.Items, actual2.Items)
-		assert.Equal(t, schema.AllOf, actual2.AllOf)
-		assert.Equal(t, schema.Properties, actual2.Properties)
-		assert.Equal(t, schema.Discriminator, actual2.Discriminator)
-		assert.Equal(t, schema.ReadOnly, actual2.ReadOnly)
-		assert.Equal(t, schema.XML, actual2.XML)
-		assert.Equal(t, schema.ExternalDocs, actual2.ExternalDocs)
-		assert.Equal(t, schema.AdditionalProperties, actual2.AdditionalProperties)
-		assert.Equal(t, schema.Extensions, actual2.Extensions)
-		examples := actual2.Example.([]interface{})
-		expEx := schema.Example.([]interface{})
-		ex1 := examples[0].(map[string]interface{})
-		ex2 := examples[1].(map[string]interface{})
-		exp1 := expEx[0].(map[string]interface{})
-		exp2 := expEx[1].(map[string]interface{})
+	require.NoError(t, json.Unmarshal([]byte(schemaJSON), &actual2))
 
-		assert.EqualValues(t, exp1["id"], ex1["id"])
-		assert.Equal(t, exp1["name"], ex1["name"])
-		assert.EqualValues(t, exp2["id"], ex2["id"])
-		assert.Equal(t, exp2["name"], ex2["name"])
-	}
+	assert.Equal(t, schema.Ref, actual2.Ref)
+	assert.Equal(t, schema.Description, actual2.Description)
+	assert.Equal(t, schema.Maximum, actual2.Maximum)
+	assert.Equal(t, schema.Minimum, actual2.Minimum)
+	assert.Equal(t, schema.ExclusiveMinimum, actual2.ExclusiveMinimum)
+	assert.Equal(t, schema.ExclusiveMaximum, actual2.ExclusiveMaximum)
+	assert.Equal(t, schema.MaxLength, actual2.MaxLength)
+	assert.Equal(t, schema.MinLength, actual2.MinLength)
+	assert.Equal(t, schema.Pattern, actual2.Pattern)
+	assert.Equal(t, schema.MaxItems, actual2.MaxItems)
+	assert.Equal(t, schema.MinItems, actual2.MinItems)
+	assert.True(t, actual2.UniqueItems)
+	assert.Equal(t, schema.MultipleOf, actual2.MultipleOf)
+	assert.Equal(t, schema.Enum, actual2.Enum)
+	assert.Equal(t, schema.Type, actual2.Type)
+	assert.Equal(t, schema.Format, actual2.Format)
+	assert.Equal(t, schema.Title, actual2.Title)
+	assert.Equal(t, schema.MaxProperties, actual2.MaxProperties)
+	assert.Equal(t, schema.MinProperties, actual2.MinProperties)
+	assert.Equal(t, schema.Required, actual2.Required)
+	assert.Equal(t, schema.Items, actual2.Items)
+	assert.Equal(t, schema.AllOf, actual2.AllOf)
+	assert.Equal(t, schema.Properties, actual2.Properties)
+	assert.Equal(t, schema.Discriminator, actual2.Discriminator)
+	assert.Equal(t, schema.ReadOnly, actual2.ReadOnly)
+	assert.Equal(t, schema.XML, actual2.XML)
+	assert.Equal(t, schema.ExternalDocs, actual2.ExternalDocs)
+	assert.Equal(t, schema.AdditionalProperties, actual2.AdditionalProperties)
+	assert.Equal(t, schema.Extensions, actual2.Extensions)
 
+	examples := actual2.Example.([]interface{})
+	expEx := schema.Example.([]interface{})
+	ex1 := examples[0].(map[string]interface{})
+	ex2 := examples[1].(map[string]interface{})
+	exp1 := expEx[0].(map[string]interface{})
+	exp2 := expEx[1].(map[string]interface{})
+
+	assert.EqualValues(t, exp1["id"], ex1["id"])
+	assert.Equal(t, exp1["name"], ex1["name"])
+	assert.EqualValues(t, exp2["id"], ex2["id"])
+	assert.Equal(t, exp2["name"], ex2["name"])
 }
 
 func BenchmarkSchemaUnmarshal(b *testing.B) {
