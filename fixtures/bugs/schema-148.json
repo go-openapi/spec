@@ -1,0 +1,10 @@
+{
+    "definitions": {
+        "empty": {
+            "additionalProperties": {}
+        },
+        "false": {
+            "additionalProperties": false
+        }
+    }
+}
