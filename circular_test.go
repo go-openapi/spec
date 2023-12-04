@@ -2,9 +2,9 @@ package spec
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -175,7 +175,7 @@ func TestExpandCircular_Bitbucket(t *testing.T) {
 
 func TestExpandCircular_ResponseWithRoot(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join("fixtures", "more_circulars", "resp.json"))
+	b, err := os.ReadFile(filepath.Join("fixtures", "more_circulars", "resp.json"))
 	require.NoError(t, err)
 
 	require.NoError(t, json.Unmarshal(b, rootDoc))

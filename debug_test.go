@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
@@ -28,7 +27,7 @@ var (
 )
 
 func TestDebug(t *testing.T) {
-	tmpFile, _ := ioutil.TempFile("", "debug-test")
+	tmpFile, _ := os.CreateTemp("", "debug-test")
 	tmpName := tmpFile.Name()
 	defer func() {
 		Debug = false
