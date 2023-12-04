@@ -219,6 +219,30 @@ func TestNormalizer_NormalizeURI(t *testing.T) {
 				base:      `https://example.com//base/Spec.json`,
 				expOutput: `https://example.com/base/Resources.yaml#/definitions/Pets`,
 			},
+			{
+				// escaped characters in base (1)
+				refPath:   `Resources.yaml#/definitions/Pets`,
+				base:      `https://example.com/base (x86)/Spec.json`,
+				expOutput: `https://example.com/base%20%28x86%29/Resources.yaml#/definitions/Pets`,
+			},
+			{
+				// escaped characters in base (2)
+				refPath:   `Resources.yaml#/definitions/Pets`,
+				base:      `https://example.com/base [x86]/Spec.json`,
+				expOutput: `https://example.com/base%20%5Bx86%5D/Resources.yaml#/definitions/Pets`,
+			},
+			{
+				// escaped characters in joined fragment
+				refPath:   `Resources.yaml#/definitions (x86)/Pets`,
+				base:      `https://example.com/base/Spec.json`,
+				expOutput: `https://example.com/base/Resources.yaml#/definitions%20(x86)/Pets`,
+			},
+			{
+				// escaped characters in joined path
+				refPath:   `Resources [x86].yaml#/definitions/Pets`,
+				base:      `https://example.com/base/Spec.json`,
+				expOutput: `https://example.com/base/Resources%20%5Bx86%5D.yaml#/definitions/Pets`,
+			},
 		}
 	}()
 
@@ -422,6 +446,11 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 			Base:     `file://E:\Base\sub\File.json`,
 			Expected: "file:///e:/base/sub/file.json",
 			Windows:  true,
+		},
+		{
+			// escaped characters in base (1)
+			Base:     `file:///c:/base (x86)/spec.json`,
+			Expected: `file:///c:/base%20%28x86%29/spec.json`,
 		},
 	} {
 		testCase := toPin
