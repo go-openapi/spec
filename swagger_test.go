@@ -5,11 +5,39 @@ package spec
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
 )
+
+//nolint:gochecknoglobals // it's okay to have embedded test fixtures as globals
+var (
+	specJSON        []byte
+	minimalJSONSpec []byte
+	miniJSONSpec    []byte
+)
+
+func init() { //nolint:gochecknoinits // it's okay to load embedded fixtures in init().
+	// load embedded fixtures
+
+	var err error
+	specJSON, err = fixtureAssets.ReadFile("fixtures/specs/spec.json")
+	if err != nil {
+		panic(fmt.Sprintf("could not find fixture: %v", err))
+	}
+
+	minimalJSONSpec, err = fixtureAssets.ReadFile("fixtures/specs/minimal_spec.json")
+	if err != nil {
+		panic(fmt.Sprintf("could not find fixture: %v", err))
+	}
+
+	miniJSONSpec, err = fixtureAssets.ReadFile("fixtures/specs/mini_spec.json")
+	if err != nil {
+		panic(fmt.Sprintf("could not find fixture: %v", err))
+	}
+}
 
 var spec = Swagger{
 	SwaggerProps: SwaggerProps{
@@ -47,54 +75,6 @@ var spec = Swagger{
 		"x-schemes":        []any{"unix", "amqp"},
 	}},
 }
-
-const specJSON = `{
-	"id": "http://localhost:3849/api-docs",
-	"consumes": ["application/json", "application/x-yaml"],
-	"produces": ["application/json"],
-	"schemes": ["http", "https"],
-	"swagger": "2.0",
-	"info": {
-		"contact": {
-			"name": "wordnik api team",
-			"url": "http://developer.wordnik.com"
-		},
-		"description": "A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0` +
-	` specification",
-		"license": {
-			"name": "Creative Commons 4.0 International",
-			"url": "http://creativecommons.org/licenses/by/4.0/"
-		},
-		"termsOfService": "http://helloreverb.com/terms/",
-		"title": "Swagger Sample API",
-		"version": "1.0.9-abcd",
-		"x-framework": "go-swagger"
-	},
-	"host": "some.api.out.there",
-	"basePath": "/",
-	"paths": {"x-framework":"go-swagger","/":{"$ref":"cats"}},
-	"definitions": { "Category": { "type": "string"} },
-	"parameters": {
-		"categoryParam": {
-			"name": "category",
-			"in": "query",
-			"type": "string"
-		}
-	},
-	"responses": { "EmptyAnswer": { "description": "no data to return for this operation" } },
-	"securityDefinitions": {
-		"internalApiKey": {
-			"type": "apiKey",
-			"in": "header",
-			"name": "api_key"
-		}
-	},
-	"security": [{"internalApiKey":[]}],
-	"tags": [{"name":"pets"}],
-	"externalDocs": {"description":"the name","url":"the url"},
-	"x-some-extension": "vendor",
-	"x-schemes": ["unix","amqp"]
-}`
 
 // func verifySpecSerialize(specJSON []byte, spec Swagger) {
 // 	expected := map[string]interface{}{}
@@ -227,7 +207,7 @@ func assertSpecJSON(t testing.TB, specJSON []byte) bool {
 
 func TestSwaggerSpec_Serialize(t *testing.T) {
 	expected := make(map[string]any)
-	_ = json.Unmarshal([]byte(specJSON), &expected)
+	_ = json.Unmarshal(specJSON, &expected)
 	b, err := json.MarshalIndent(spec, "", "  ")
 	require.NoError(t, err)
 	var actual map[string]any
@@ -237,13 +217,13 @@ func TestSwaggerSpec_Serialize(t *testing.T) {
 
 func TestSwaggerSpec_Deserialize(t *testing.T) {
 	var actual Swagger
-	require.NoError(t, json.Unmarshal([]byte(specJSON), &actual))
+	require.NoError(t, json.Unmarshal(specJSON, &actual))
 	assert.Equal(t, actual, spec)
 }
 
 func TestVendorExtensionStringSlice(t *testing.T) {
 	var actual Swagger
-	require.NoError(t, json.Unmarshal([]byte(specJSON), &actual))
+	require.NoError(t, json.Unmarshal(specJSON, &actual))
 	schemes, ok := actual.Extensions.GetStringSlice("x-schemes")
 	require.True(t, ok)
 	assert.Equal(t, []string{"unix", "amqp"}, schemes)
@@ -267,27 +247,8 @@ func TestVendorExtensionStringSlice(t *testing.T) {
 }
 
 func TestOptionalSwaggerProps_Serialize(t *testing.T) {
-	minimalJSONSpec := []byte(`{
-	"swagger": "2.0",
-	"info": {
-		"version": "0.0.0",
-		"title": "Simple API"
-	},
-	"paths": {
-		"/": {
-			"get": {
-				"responses": {
-					"200": {
-						"description": "OK"
-					}
-				}
-			}
-		}
-	}
-}`)
-
 	var minimalSpec Swagger
-	err := json.Unmarshal(minimalJSONSpec, &minimalSpec)
+	err := json.Unmarshal(miniJSONSpec, &minimalSpec)
 	require.NoError(t, err)
 	bytes, err := json.Marshal(&minimalSpec)
 	require.NoError(t, err)
@@ -309,51 +270,6 @@ func TestOptionalSwaggerProps_Serialize(t *testing.T) {
 	assert.NotContains(t, ms, "externalDocs")
 }
 
-var minimalJSONSpec = []byte(`{
-		"swagger": "2.0",
-		"info": {
-			"version": "0.0.0",
-			"title": "Simple API"
-		},
-		"securityDefinitions": {
-			"basic": {
-				"type": "basic"
-			},
-			"apiKey": {
-				"type": "apiKey",
-				"in": "header",
-				"name": "X-API-KEY"
-			},
-			"queryKey": {
-				"type": "apiKey",
-				"in": "query",
-				"name": "api_key"
-			}
-		},
-		"paths": {
-			"/": {
-				"get": {
-					"security": [
-						{
-							"apiKey": [],
-							"basic": []
-						},
-						{},
-						{
-							"queryKey": [],
-							"basic": []
-						}
-					],
-					"responses": {
-						"200": {
-							"description": "OK"
-						}
-					}
-				}
-			}
-		}
-	}`)
-
 func TestSecurityRequirements(t *testing.T) {
 	var minimalSpec Swagger
 	require.NoError(t, json.Unmarshal(minimalJSONSpec, &minimalSpec))
@@ -370,12 +286,14 @@ func TestSecurityRequirements(t *testing.T) {
 func TestSwaggerGobEncoding(t *testing.T) {
 	doTestSwaggerGobEncoding(t, specJSON)
 
-	doTestSwaggerGobEncoding(t, string(minimalJSONSpec))
+	doTestSwaggerGobEncoding(t, minimalJSONSpec)
 }
 
-func doTestSwaggerGobEncoding(t *testing.T, fixture string) {
+func doTestSwaggerGobEncoding(t *testing.T, fixture []byte) {
+	t.Helper()
+
 	var src, dst Swagger
-	require.NoError(t, json.Unmarshal([]byte(fixture), &src))
+	require.NoError(t, json.Unmarshal(fixture, &src))
 
 	doTestAnyGobEncoding(t, &src, &dst)
 }
