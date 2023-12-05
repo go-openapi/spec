@@ -2,9 +2,9 @@ package spec
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -132,7 +132,7 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
@@ -160,7 +160,7 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
@@ -180,7 +180,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
@@ -199,7 +199,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 // 	defer server.Close()
 //
 // 	rootDoc := new(Swagger)
-// 	b, err := ioutil.ReadFile("fixtures/specs/refed.json")
+// 	b, err := os.ReadFile("fixtures/specs/refed.json")
 // 	require.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc))
 //
 //	var tgt Schema
@@ -217,7 +217,7 @@ func TestResolveRemoteRef_ToParameter(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
@@ -242,7 +242,7 @@ func TestResolveRemoteRef_ToPathItem(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
@@ -261,7 +261,7 @@ func TestResolveRemoteRef_ToResponse(t *testing.T) {
 	defer server.Close()
 
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(b, rootDoc))
 
@@ -312,7 +312,7 @@ func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 
 func TestResolveLocalRef_Parameter(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 
 	basePath := filepath.Join(specs, "refed.json")
@@ -335,7 +335,7 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 
 func TestResolveLocalRef_PathItem(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 
 	basePath := filepath.Join(specs, "refed.json")
@@ -352,7 +352,7 @@ func TestResolveLocalRef_PathItem(t *testing.T) {
 
 func TestResolveLocalRef_Response(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := ioutil.ReadFile(filepath.Join(specs, "refed.json"))
+	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
 	require.NoError(t, err)
 
 	basePath := filepath.Join(specs, "refed.json")

@@ -16,7 +16,7 @@ package spec
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -380,7 +380,7 @@ func TestExpand_ContinueOnError(t *testing.T) {
 	specPath := filepath.Join("fixtures", "expansion", "missingRef.json")
 
 	defer log.SetOutput(os.Stdout)
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 
 	// missing $ref in spec
 	missingRefDoc, err := jsonDoc(specPath)
@@ -816,7 +816,7 @@ func resolutionContextServer() *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/resolution.json" {
 
-			b, _ := ioutil.ReadFile(filepath.Join(specs, "resolution.json"))
+			b, _ := os.ReadFile(filepath.Join(specs, "resolution.json"))
 			var ctnt map[string]interface{}
 			_ = json.Unmarshal(b, &ctnt)
 			ctnt["id"] = servedAt
@@ -828,7 +828,7 @@ func resolutionContextServer() *httptest.Server {
 			return
 		}
 		if req.URL.Path == "/resolution2.json" {
-			b, _ := ioutil.ReadFile(filepath.Join(specs, "resolution2.json"))
+			b, _ := os.ReadFile(filepath.Join(specs, "resolution2.json"))
 			var ctnt map[string]interface{}
 			_ = json.Unmarshal(b, &ctnt)
 			ctnt["id"] = servedAt
@@ -936,7 +936,7 @@ func TestExpand_RemoteRefWithNestedResolutionContextWithFragment(t *testing.T) {
 func TestExpand_TransitiveRefs(t *testing.T) {
 	basePath := filepath.Join(specs, "todos.json")
 
-	rawSpec, err := ioutil.ReadFile(basePath)
+	rawSpec, err := os.ReadFile(basePath)
 	require.NoError(t, err)
 
 	var spec *Swagger
