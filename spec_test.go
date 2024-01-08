@@ -37,7 +37,7 @@ func TestSpec_Issue2743(t *testing.T) {
 		t.Run("all $ref do not resolve when expanding again", func(t *testing.T) {
 			err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
 			require.Error(t, err)
-			require.ErrorContains(t, err, "swagger/paths/swagger/user/index.yml: no such file or directory")
+			require.ErrorContains(t, err, filepath.FromSlash("swagger/paths/swagger/user/index.yml"))
 		})
 	})
 
