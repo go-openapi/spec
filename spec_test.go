@@ -25,6 +25,38 @@ import (
 )
 
 // Test unitary fixture for dev and bug fixing
+
+func TestSpec_Issue2743(t *testing.T) {
+	t.Run("should expand but produce unresolvable $ref", func(t *testing.T) {
+		path := filepath.Join("fixtures", "bugs", "2743", "working", "spec.yaml")
+		sp := loadOrFail(t, path)
+		require.NoError(t,
+			spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}),
+		)
+
+		t.Run("all $ref do not resolve when expanding again", func(t *testing.T) {
+			err := spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader})
+			require.Error(t, err)
+			require.ErrorContains(t, err, filepath.FromSlash("swagger/paths/swagger/user/index.yml"))
+		})
+	})
+
+	t.Run("should expand and produce resolvable $ref", func(t *testing.T) {
+		path := filepath.Join("fixtures", "bugs", "2743", "not-working", "spec.yaml")
+		sp := loadOrFail(t, path)
+		require.NoError(t,
+			spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}),
+		)
+
+		t.Run("all $ref properly reolve when expanding again", func(t *testing.T) {
+			require.NoError(t,
+				spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}),
+			)
+			require.NotContainsf(t, asJSON(t, sp), "$ref", "all $ref's should have been expanded properly")
+		})
+	})
+}
+
 func TestSpec_Issue1429(t *testing.T) {
 	path := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
 
