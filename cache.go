@@ -16,6 +16,8 @@ package spec
 
 import (
 	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 // ResolutionCache a cache for resolving urls
@@ -71,12 +73,17 @@ var (
 	resCache  *simpleCache
 	onceCache sync.Once
 
-	_ ResolutionCache = &simpleCache{}
+	_    ResolutionCache = &simpleCache{}
+	json jsoniter.API
 )
 
 // initResolutionCache initializes the URI resolution cache. To be wrapped in a sync.Once.Do call.
 func initResolutionCache() {
 	resCache = defaultResolutionCache()
+}
+
+func init() {
+	json = jsoniter.ConfigFastest
 }
 
 func defaultResolutionCache() *simpleCache {

@@ -15,7 +15,7 @@
 package spec
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -33,12 +33,12 @@ import (
 // NOTE: if you are using the go-openapi/loads package, it will override
 // this value with its own default (a loader to retrieve YAML documents as
 // well as JSON ones).
-var PathLoader = func(pth string) (json.RawMessage, error) {
+var PathLoader = func(pth string) (stdjson.RawMessage, error) {
 	data, err := swag.LoadFromFileOrHTTP(pth)
 	if err != nil {
 		return nil, err
 	}
-	return json.RawMessage(data), nil
+	return stdjson.RawMessage(data), nil
 }
 
 // resolverContext allows to share a context during spec processing.
@@ -50,7 +50,7 @@ type resolverContext struct {
 	// concurrent access, unless we chose to implement a parallel spec walking.
 	circulars map[string]bool
 	basePath  string
-	loadDoc   func(string) (json.RawMessage, error)
+	loadDoc   func(string) (stdjson.RawMessage, error)
 	rootID    string
 }
 
@@ -58,7 +58,7 @@ func newResolverContext(options *ExpandOptions) *resolverContext {
 	expandOptions := optionsOrDefault(options)
 
 	// path loader may be overridden by options
-	var loader func(string) (json.RawMessage, error)
+	var loader func(string) (stdjson.RawMessage, error)
 	if expandOptions.PathLoader == nil {
 		loader = PathLoader
 	} else {
@@ -77,6 +77,7 @@ type schemaLoader struct {
 	options *ExpandOptions
 	cache   ResolutionCache
 	context *resolverContext
+	loadDoc func(string) (stdjson.RawMessage, error)
 }
 
 func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) *schemaLoader {
@@ -327,5 +328,9 @@ func defaultSchemaLoader(
 		options: expandOptions,
 		cache:   cache,
 		context: context,
+		loadDoc: func(path string) (stdjson.RawMessage, error) {
+			debugLog("fetching document at %q", path)
+			return PathLoader(path)
+		},
 	}
 }

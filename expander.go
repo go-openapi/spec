@@ -15,7 +15,7 @@
 package spec
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"fmt"
 )
 
@@ -28,11 +28,11 @@ import (
 //
 // PathLoader injects a document loading method. By default, this resolves to the function provided by the SpecLoader package variable.
 type ExpandOptions struct {
-	RelativeBase        string                                // the path to the root document to expand. This is a file, not a directory
-	SkipSchemas         bool                                  // do not expand schemas, just paths, parameters and responses
-	ContinueOnError     bool                                  // continue expanding even after and error is found
-	PathLoader          func(string) (json.RawMessage, error) `json:"-"` // the document loading method that takes a path as input and yields a json document
-	AbsoluteCircularRef bool                                  // circular $ref remaining after expansion remain absolute URLs
+	RelativeBase        string                                   // the path to the root document to expand. This is a file, not a directory
+	SkipSchemas         bool                                     // do not expand schemas, just paths, parameters and responses
+	ContinueOnError     bool                                     // continue expanding even after and error is found
+	PathLoader          func(string) (stdjson.RawMessage, error) `json:"-"` // the document loading method that takes a path as input and yields a json document
+	AbsoluteCircularRef bool                                     // circular $ref remaining after expansion remain absolute URLs
 }
 
 func optionsOrDefault(opts *ExpandOptions) *ExpandOptions {

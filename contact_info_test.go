@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,10 +22,10 @@ import (
 )
 
 const contactInfoJSON = `{
-	"name": "wordnik api team",
-	"url": "http://developer.wordnik.com",
-	"email": "some@mailayada.dkdkd",
-	"x-teams": "test team"
+  "name": "wordnik api team",
+  "url": "http://developer.wordnik.com",
+  "email": "some@mailayada.dkdkd",
+  "x-teams": "test team"
 }`
 
 var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
@@ -36,9 +35,9 @@ var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
 }, VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-teams": "test team"}}}
 
 func TestIntegrationContactInfo(t *testing.T) {
-	b, err := json.MarshalIndent(contactInfo, "", "\t")
+	b, err := json.MarshalIndent(contactInfo, "", " ")
 	require.NoError(t, err)
-	assert.Equal(t, contactInfoJSON, string(b))
+	assert.JSONEq(t, contactInfoJSON, string(b))
 
 	actual := ContactInfo{}
 	err = json.Unmarshal([]byte(contactInfoJSON), &actual)

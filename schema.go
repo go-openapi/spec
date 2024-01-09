@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 

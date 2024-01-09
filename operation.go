@@ -17,7 +17,6 @@ package spec
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"sort"
 
 	"github.com/go-openapi/jsonpointer"
