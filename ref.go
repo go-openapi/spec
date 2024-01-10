@@ -145,7 +145,10 @@ func (r Ref) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals this ref from a JSON object
 func (r *Ref) UnmarshalJSON(d []byte) error {
-	var v map[string]interface{}
+	v := poolOfMaps.BorrowMap()
+	defer func() {
+		poolOfMaps.RedeemMap(v)
+	}()
 	if err := json.Unmarshal(d, &v); err != nil {
 		return err
 	}
@@ -154,7 +157,7 @@ func (r *Ref) UnmarshalJSON(d []byte) error {
 
 // GobEncode provides a safe gob encoder for Ref
 func (r Ref) GobEncode() ([]byte, error) {
-	var b bytes.Buffer
+	var b bytes.Buffer // TODO: grow
 	raw, err := r.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -165,7 +168,7 @@ func (r Ref) GobEncode() ([]byte, error) {
 
 // GobDecode provides a safe gob decoder for Ref
 func (r *Ref) GobDecode(b []byte) error {
-	var raw []byte
+	var raw []byte // TODO
 	buf := bytes.NewBuffer(b)
 	err := gob.NewDecoder(buf).Decode(&raw)
 	if err != nil {

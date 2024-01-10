@@ -118,7 +118,10 @@ func (v VendorExtensible) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON for this extensible object
 func (v *VendorExtensible) UnmarshalJSON(data []byte) error {
-	var d map[string]interface{}
+	d := poolOfMaps.BorrowMap()
+	defer func() {
+		poolOfMaps.RedeemMap(d)
+	}()
 	if err := json.Unmarshal(data, &d); err != nil {
 		return err
 	}

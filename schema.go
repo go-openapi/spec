@@ -614,7 +614,6 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		SwaggerSchemaProps: props.SwaggerSchemaProps,
 	}
 
-	//var d map[string]interface{}
 	d := poolOfMaps.BorrowMap()
 	defer func() {
 		poolOfMaps.RedeemMap(d)
