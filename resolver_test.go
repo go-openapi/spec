@@ -1,7 +1,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/jsonpointer"
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

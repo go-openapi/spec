@@ -15,12 +15,13 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // BooleanProperty creates a boolean property
@@ -131,7 +132,10 @@ func (r SchemaURL) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshal this from JSON
 func (r *SchemaURL) UnmarshalJSON(data []byte) error {
-	var v map[string]interface{}
+	v := poolOfMaps.BorrowMap()
+	defer func() {
+		poolOfMaps.RedeemMap(v)
+	}()
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
@@ -610,7 +614,10 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		SwaggerSchemaProps: props.SwaggerSchemaProps,
 	}
 
-	var d map[string]interface{}
+	d := poolOfMaps.BorrowMap()
+	defer func() {
+		poolOfMaps.RedeemMap(d)
+	}()
 	if err := json.Unmarshal(data, &d); err != nil {
 		return err
 	}
@@ -642,4 +649,30 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	*s = sch
 
 	return nil
+}
+
+type mapPool struct {
+	*sync.Pool
+}
+
+var poolOfMaps = mapPool{
+	Pool: &sync.Pool{
+		New: func() any {
+			return make(map[string]any)
+		},
+	},
+}
+
+func (p mapPool) BorrowMap() map[string]any {
+	m := p.Get().(map[string]any)
+	// go1.21 clear(m)
+	for k := range m {
+		delete(m, k)
+	}
+
+	return m
+}
+
+func (p mapPool) RedeemMap(m map[string]any) {
+	p.Put(m)
 }

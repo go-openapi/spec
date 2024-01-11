@@ -15,7 +15,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -23,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // PathLoader is a function to use when loading remote refs.
@@ -77,6 +77,7 @@ type schemaLoader struct {
 	options *ExpandOptions
 	cache   ResolutionCache
 	context *resolverContext
+	loadDoc func(string) (json.RawMessage, error)
 }
 
 func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) *schemaLoader {
@@ -327,5 +328,9 @@ func defaultSchemaLoader(
 		options: expandOptions,
 		cache:   cache,
 		context: context,
+		loadDoc: func(path string) (json.RawMessage, error) {
+			debugLog("fetching document at %q", path)
+			return PathLoader(path)
+		},
 	}
 }

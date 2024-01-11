@@ -15,9 +15,9 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,9 +57,9 @@ var info = Info{
 }
 
 func TestIntegrationInfo_Serialize(t *testing.T) {
-	b, err := json.MarshalIndent(info, "", "\t")
+	b, err := json.MarshalIndent(info, "", " ")
 	require.NoError(t, err)
-	assert.Equal(t, infoJSON, string(b))
+	assert.JSONEq(t, infoJSON, string(b))
 }
 
 func TestIntegrationInfo_Deserialize(t *testing.T) {

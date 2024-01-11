@@ -15,13 +15,13 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // Responses is a container for the expected responses of an operation.
@@ -97,7 +97,7 @@ type ResponsesProps struct {
 
 // MarshalJSON marshals responses as JSON
 func (r ResponsesProps) MarshalJSON() ([]byte, error) {
-	toser := map[string]Response{}
+	toser := make(map[string]Response, len(r.StatusCodeResponses)+1)
 	if r.Default != nil {
 		toser["default"] = *r.Default
 	}

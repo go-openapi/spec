@@ -15,8 +15,9 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
+
+	json "github.com/goccy/go-json"
 )
 
 // ExpandOptions provides options for the spec expander.

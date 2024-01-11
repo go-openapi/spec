@@ -2,9 +2,10 @@ package spec
 
 import (
 	"bytes"
-	"encoding/json"
 	"reflect"
 	"sort"
+
+	json "github.com/goccy/go-json"
 )
 
 // OrderSchemaItem holds a named schema (e.g. from a property of an object)

@@ -15,10 +15,9 @@
 package spec
 
 import (
-	"encoding/json"
-
 	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // PathItemProps the path item specific properties

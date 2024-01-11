@@ -15,11 +15,11 @@
 package spec
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/go-openapi/swag"
+	json "github.com/goccy/go-json"
 )
 
 // Paths holds the relative paths to the individual endpoints.
