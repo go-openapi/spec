@@ -1,6 +1,17 @@
 name: go test
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+
+  pull_request:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   lint:
@@ -42,7 +53,7 @@ jobs:
     - run: go test -v -race -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
 
     - name: Upload coverage to codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v3
       with:
         files: './coverage-${{ matrix.os }}.${{ matrix.go_version }}.out'
         flags: '${{ matrix.go_version }}'
