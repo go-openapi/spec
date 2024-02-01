@@ -3,7 +3,7 @@ module github.com/go-openapi/spec
 require (
 	github.com/go-openapi/jsonpointer v0.20.2
 	github.com/go-openapi/jsonreference v0.20.4
-	github.com/go-openapi/swag v0.22.6
+	github.com/go-openapi/swag v0.22.9
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v3 v3.0.1
 )
