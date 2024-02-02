@@ -53,7 +53,7 @@ jobs:
     - run: go test -v -race -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
 
     - name: Upload coverage to codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: './coverage-${{ matrix.os }}.${{ matrix.go_version }}.out'
         flags: '${{ matrix.go_version }}'
