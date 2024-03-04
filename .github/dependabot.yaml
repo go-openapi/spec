@@ -34,22 +34,18 @@ updates:
     open-pull-requests-limit: 4
     groups:
       development-dependencies:
-        dependency-type: development
         patterns:
           - "github.com/stretchr/testify"
 
       golang.org-dependencies:
-        dependency-type: production
         patterns:
           - "golang.org/*"
 
       go-openapi-dependencies:
-        dependency-type: production
         patterns:
           - "github.com/go-openapi/*"
 
       other-dependencies:
-        dependency-type: production
         exclude-patterns:
           - "github.com/go-openapi/*"
           - "github.com/stretchr/testify"
