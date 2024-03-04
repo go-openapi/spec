@@ -243,7 +243,7 @@ func TestSwaggerSpec_Serialize(t *testing.T) {
 	require.NoError(t, err)
 	var actual map[string]interface{}
 	require.NoError(t, json.Unmarshal(b, &actual))
-	assert.EqualValues(t, actual, expected)
+	assert.EqualValues(t, expected, actual)
 }
 
 func TestSwaggerSpec_Deserialize(t *testing.T) {

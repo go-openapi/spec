@@ -78,7 +78,7 @@ func assertParsesYAML(t testing.TB, actual string, expected interface{}) bool {
 	if !isPointed(expected) {
 		act = reflect.Indirect(parsed).Interface()
 	}
-	return assert.EqualValues(t, act, expected)
+	return assert.EqualValues(t, expected, act)
 }
 
 func TestSerialization_SerializeJSON(t *testing.T) {
