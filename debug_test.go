@@ -27,7 +27,8 @@ var (
 )
 
 func TestDebug(t *testing.T) {
-	tmpFile, _ := os.CreateTemp("", "debug-test")
+	// usetesting linter disabled until https://github.com/golang/go/issues/71544 is fixed for windows
+	tmpFile, _ := os.CreateTemp("", "debug-test") //nolint:usetesting
 	tmpName := tmpFile.Name()
 	defer func() {
 		Debug = false

@@ -275,14 +275,14 @@ func (s *Schema) WithAllOf(schemas ...Schema) *Schema {
 }
 
 // WithMaxProperties sets the max number of properties an object can have
-func (s *Schema) WithMaxProperties(max int64) *Schema {
-	s.MaxProperties = &max
+func (s *Schema) WithMaxProperties(maximum int64) *Schema {
+	s.MaxProperties = &maximum
 	return s
 }
 
 // WithMinProperties sets the min number of properties an object must have
-func (s *Schema) WithMinProperties(min int64) *Schema {
-	s.MinProperties = &min
+func (s *Schema) WithMinProperties(minimum int64) *Schema {
+	s.MinProperties = &minimum
 	return s
 }
 
@@ -334,14 +334,14 @@ func (s *Schema) AddRequired(items ...string) *Schema {
 }
 
 // WithMaxLength sets a max length value
-func (s *Schema) WithMaxLength(max int64) *Schema {
-	s.MaxLength = &max
+func (s *Schema) WithMaxLength(maximum int64) *Schema {
+	s.MaxLength = &maximum
 	return s
 }
 
 // WithMinLength sets a min length value
-func (s *Schema) WithMinLength(min int64) *Schema {
-	s.MinLength = &min
+func (s *Schema) WithMinLength(minimum int64) *Schema {
+	s.MinLength = &minimum
 	return s
 }
 
@@ -358,15 +358,15 @@ func (s *Schema) WithMultipleOf(number float64) *Schema {
 }
 
 // WithMaximum sets a maximum number value
-func (s *Schema) WithMaximum(max float64, exclusive bool) *Schema {
-	s.Maximum = &max
+func (s *Schema) WithMaximum(maximum float64, exclusive bool) *Schema {
+	s.Maximum = &maximum
 	s.ExclusiveMaximum = exclusive
 	return s
 }
 
 // WithMinimum sets a minimum number value
-func (s *Schema) WithMinimum(min float64, exclusive bool) *Schema {
-	s.Minimum = &min
+func (s *Schema) WithMinimum(minimum float64, exclusive bool) *Schema {
+	s.Minimum = &minimum
 	s.ExclusiveMinimum = exclusive
 	return s
 }
@@ -566,29 +566,29 @@ func (s Schema) Validations() SchemaValidations {
 func (s Schema) MarshalJSON() ([]byte, error) {
 	b1, err := json.Marshal(s.SchemaProps)
 	if err != nil {
-		return nil, fmt.Errorf("schema props %v", err)
+		return nil, fmt.Errorf("schema props %v: %w", err, ErrSpec)
 	}
 	b2, err := json.Marshal(s.VendorExtensible)
 	if err != nil {
-		return nil, fmt.Errorf("vendor props %v", err)
+		return nil, fmt.Errorf("vendor props %v: %w", err, ErrSpec)
 	}
 	b3, err := s.Ref.MarshalJSON()
 	if err != nil {
-		return nil, fmt.Errorf("ref prop %v", err)
+		return nil, fmt.Errorf("ref prop %v: %w", err, ErrSpec)
 	}
 	b4, err := s.Schema.MarshalJSON()
 	if err != nil {
-		return nil, fmt.Errorf("schema prop %v", err)
+		return nil, fmt.Errorf("schema prop %v: %w", err, ErrSpec)
 	}
 	b5, err := json.Marshal(s.SwaggerSchemaProps)
 	if err != nil {
-		return nil, fmt.Errorf("common validations %v", err)
+		return nil, fmt.Errorf("common validations %v: %w", err, ErrSpec)
 	}
 	var b6 []byte
 	if s.ExtraProps != nil {
 		jj, err := json.Marshal(s.ExtraProps)
 		if err != nil {
-			return nil, fmt.Errorf("extra props %v", err)
+			return nil, fmt.Errorf("extra props %v: %w", err, ErrSpec)
 		}
 		b6 = jj
 	}

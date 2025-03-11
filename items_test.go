@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var items = Items{
+var testItems = Items{
 	Refable: Refable{Ref: MustCreateRef("Dog")},
 	CommonValidations: CommonValidations{
 		Maximum:          float64Ptr(100),
@@ -76,17 +76,17 @@ const itemsJSON = `{
 func TestIntegrationItems(t *testing.T) {
 	var actual Items
 	require.NoError(t, json.Unmarshal([]byte(itemsJSON), &actual))
-	assert.EqualValues(t, actual, items)
+	assert.EqualValues(t, actual, testItems)
 
-	assertParsesJSON(t, itemsJSON, items)
+	assertParsesJSON(t, itemsJSON, testItems)
 }
 
 func TestTypeNameItems(t *testing.T) {
 	var nilItems Items
 	assert.Equal(t, "", nilItems.TypeName())
 
-	assert.Equal(t, "date", items.TypeName())
-	assert.Equal(t, "", items.ItemsTypeName())
+	assert.Equal(t, "date", testItems.TypeName())
+	assert.Equal(t, "", testItems.ItemsTypeName())
 
 	nested := Items{
 		SimpleSchema: SimpleSchema{
@@ -151,39 +151,47 @@ func TestItemsBuilder(t *testing.T) {
 }
 
 func TestJSONLookupItems(t *testing.T) {
-	res, err := items.JSONLookup("$ref")
-	require.NoError(t, err)
-	require.NotNil(t, res)
-	require.IsType(t, &Ref{}, res)
+	t.Run(`lookup should find "$ref"`, func(t *testing.T) {
+		res, err := testItems.JSONLookup("$ref")
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.IsType(t, &Ref{}, res)
 
-	var ok bool
-	ref, ok := res.(*Ref)
-	require.True(t, ok)
-	assert.EqualValues(t, MustCreateRef("Dog"), *ref)
+		ref, ok := res.(*Ref)
+		require.True(t, ok)
+		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
+	})
 
-	var max *float64
-	res, err = items.JSONLookup("maximum")
-	require.NoError(t, err)
-	require.NotNil(t, res)
-	require.IsType(t, max, res)
+	t.Run(`lookup should find "maximum"`, func(t *testing.T) {
+		var maximum *float64
+		res, err := testItems.JSONLookup("maximum")
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.IsType(t, maximum, res)
 
-	max, ok = res.(*float64)
-	require.True(t, ok)
-	assert.InDelta(t, float64(100), *max, epsilon)
+		var ok bool
+		maximum, ok = res.(*float64)
+		require.True(t, ok)
+		assert.InDelta(t, float64(100), *maximum, epsilon)
+	})
 
-	var f string
-	res, err = items.JSONLookup("collectionFormat")
-	require.NoError(t, err)
-	require.NotNil(t, res)
-	require.IsType(t, f, res)
+	t.Run(`lookup should find "collectionFormat"`, func(t *testing.T) {
+		var f string
+		res, err := testItems.JSONLookup("collectionFormat")
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.IsType(t, f, res)
 
-	f, ok = res.(string)
-	require.True(t, ok)
-	assert.Equal(t, "csv", f)
+		f, ok := res.(string)
+		require.True(t, ok)
+		assert.Equal(t, "csv", f)
+	})
 
-	res, err = items.JSONLookup("unknown")
-	require.Error(t, err)
-	require.Nil(t, res)
+	t.Run(`lookup should fail on "unknown"`, func(t *testing.T) {
+		res, err := testItems.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
 }
 
 func TestItemsWithValidation(t *testing.T) {

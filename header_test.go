@@ -118,15 +118,15 @@ func TestJSONLookupHeader(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, res)
 
-	var max *float64
+	var maximum *float64
 	res, err = header.JSONLookup("maximum")
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.IsType(t, max, res)
+	require.IsType(t, maximum, res)
 
-	max, ok = res.(*float64)
+	maximum, ok = res.(*float64)
 	require.True(t, ok)
-	assert.InDelta(t, float64(100), *max, epsilon)
+	assert.InDelta(t, float64(100), *maximum, epsilon)
 }
 
 func TestResponseHeaueder(t *testing.T) {

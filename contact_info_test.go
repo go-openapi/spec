@@ -38,7 +38,7 @@ var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
 func TestIntegrationContactInfo(t *testing.T) {
 	b, err := json.MarshalIndent(contactInfo, "", "\t")
 	require.NoError(t, err)
-	assert.Equal(t, contactInfoJSON, string(b))
+	assert.JSONEq(t, contactInfoJSON, string(b))
 
 	actual := ContactInfo{}
 	err = json.Unmarshal([]byte(contactInfoJSON), &actual)

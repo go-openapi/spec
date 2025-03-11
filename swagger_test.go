@@ -29,7 +29,7 @@ var spec = Swagger{
 		Consumes:    []string{"application/json", "application/x-yaml"},
 		Produces:    []string{"application/json"},
 		Schemes:     []string{"http", "https"},
-		Info:        &info,
+		Info:        &testInfo,
 		Host:        "some.api.out.there",
 		BasePath:    "/",
 		Paths:       &paths,

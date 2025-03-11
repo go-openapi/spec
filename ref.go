@@ -75,7 +75,8 @@ func (r *Ref) IsValidURI(basepaths ...string) bool {
 		}
 		defer rr.Body.Close()
 
-		return rr.StatusCode/100 == 2
+		// true if the response is >= 200 and < 300
+		return rr.StatusCode/100 == 2 //nolint:mnd
 	}
 
 	if !(r.HasFileScheme || r.HasFullFilePath || r.HasURLPathOnly) {
