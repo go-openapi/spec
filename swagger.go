@@ -379,7 +379,7 @@ func (s *StringOrArray) UnmarshalJSON(data []byte) error {
 		*s = StringOrArray([]string{v})
 		return nil
 	default:
-		return fmt.Errorf("only string or array is allowed, not %T", single)
+		return fmt.Errorf("only string or array is allowed, not %T: %w", single, ErrSpec)
 	}
 }
 

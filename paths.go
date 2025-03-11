@@ -41,7 +41,7 @@ func (p Paths) JSONLookup(token string) (interface{}, error) {
 	if ex, ok := p.Extensions[token]; ok {
 		return &ex, nil
 	}
-	return nil, fmt.Errorf("object has no field %q", token)
+	return nil, fmt.Errorf("object has no field %q: %w", token, ErrSpec)
 }
 
 // UnmarshalJSON hydrates this items instance with the data from JSON

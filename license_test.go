@@ -22,26 +22,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var license = License{
-	LicenseProps:     LicenseProps{Name: "the name", URL: "the url"},
-	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-license": "custom term"}}}
-
-const licenseJSON = `{
+func TestIntegrationLicense(t *testing.T) {
+	const licenseJSON = `{
 	"name": "the name",
 	"url": "the url",
 	"x-license": "custom term"
 }`
 
-func TestIntegrationLicense(t *testing.T) {
+	var testLicense = License{
+		LicenseProps:     LicenseProps{Name: "the name", URL: "the url"},
+		VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-license": "custom term"}}}
 
 	// const licenseYAML = "name: the name\nurl: the url\n"
 
-	b, err := json.MarshalIndent(license, "", "\t")
-	require.NoError(t, err)
-	assert.Equal(t, licenseJSON, string(b))
+	t.Run("should marshal license", func(t *testing.T) {
+		b, err := json.MarshalIndent(testLicense, "", "\t")
+		require.NoError(t, err)
+		assert.JSONEq(t, licenseJSON, string(b))
+	})
 
-	actual := License{}
-	err = json.Unmarshal([]byte(licenseJSON), &actual)
-	require.NoError(t, err)
-	assert.EqualValues(t, license, actual)
+	t.Run("should unmarshal empty license", func(t *testing.T) {
+		actual := License{}
+		err := json.Unmarshal([]byte(licenseJSON), &actual)
+		require.NoError(t, err)
+		assert.EqualValues(t, testLicense, actual)
+	})
 }

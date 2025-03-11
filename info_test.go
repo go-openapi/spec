@@ -39,7 +39,7 @@ const infoJSON = `{
 	"x-framework": "go-swagger"
 }`
 
-var info = Info{
+var testInfo = Info{
 	InfoProps: InfoProps{
 		Version: "1.0.9-abcd",
 		Title:   "Swagger Sample API",
@@ -56,21 +56,23 @@ var info = Info{
 	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-framework": "go-swagger"}},
 }
 
-func TestIntegrationInfo_Serialize(t *testing.T) {
-	b, err := json.MarshalIndent(info, "", "\t")
-	require.NoError(t, err)
-	assert.Equal(t, infoJSON, string(b))
-}
+func TestInfo(t *testing.T) {
+	t.Run("should marshal Info", func(t *testing.T) {
+		b, err := json.MarshalIndent(testInfo, "", "\t")
+		require.NoError(t, err)
+		assert.JSONEq(t, infoJSON, string(b))
+	})
 
-func TestIntegrationInfo_Deserialize(t *testing.T) {
-	actual := Info{}
-	require.NoError(t, json.Unmarshal([]byte(infoJSON), &actual))
-	assert.EqualValues(t, info, actual)
-}
+	t.Run("should unmarshal Info", func(t *testing.T) {
+		actual := Info{}
+		require.NoError(t, json.Unmarshal([]byte(infoJSON), &actual))
+		assert.EqualValues(t, testInfo, actual)
+	})
 
-func TestInfoGobEncoding(t *testing.T) {
-	var src, dst Info
-	require.NoError(t, json.Unmarshal([]byte(infoJSON), &src))
-	assert.EqualValues(t, src, info)
-	doTestAnyGobEncoding(t, &src, &dst)
+	t.Run("should GobEncode Info", func(t *testing.T) {
+		var src, dst Info
+		require.NoError(t, json.Unmarshal([]byte(infoJSON), &src))
+		assert.EqualValues(t, src, testInfo)
+		doTestAnyGobEncoding(t, &src, &dst)
+	})
 }

@@ -97,14 +97,14 @@ func (i *Items) WithDefault(defaultValue interface{}) *Items {
 }
 
 // WithMaxLength sets a max length value
-func (i *Items) WithMaxLength(max int64) *Items {
-	i.MaxLength = &max
+func (i *Items) WithMaxLength(maximum int64) *Items {
+	i.MaxLength = &maximum
 	return i
 }
 
 // WithMinLength sets a min length value
-func (i *Items) WithMinLength(min int64) *Items {
-	i.MinLength = &min
+func (i *Items) WithMinLength(minimum int64) *Items {
+	i.MinLength = &minimum
 	return i
 }
 
@@ -121,15 +121,15 @@ func (i *Items) WithMultipleOf(number float64) *Items {
 }
 
 // WithMaximum sets a maximum number value
-func (i *Items) WithMaximum(max float64, exclusive bool) *Items {
-	i.Maximum = &max
+func (i *Items) WithMaximum(maximum float64, exclusive bool) *Items {
+	i.Maximum = &maximum
 	i.ExclusiveMaximum = exclusive
 	return i
 }
 
 // WithMinimum sets a minimum number value
-func (i *Items) WithMinimum(min float64, exclusive bool) *Items {
-	i.Minimum = &min
+func (i *Items) WithMinimum(minimum float64, exclusive bool) *Items {
+	i.Minimum = &minimum
 	i.ExclusiveMinimum = exclusive
 	return i
 }

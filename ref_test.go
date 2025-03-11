@@ -40,5 +40,5 @@ func TestCloneRef(t *testing.T) {
 	jazon, err := json.Marshal(dst)
 	require.NoError(t, err)
 
-	assert.Equal(t, `{"$ref":"#/definitions/test"}`, string(jazon))
+	assert.JSONEq(t, `{"$ref":"#/definitions/test"}`, string(jazon))
 }
