@@ -37,21 +37,21 @@ jobs:
         go_version: ['oldstable', 'stable' ]
 
     steps:
-    - name: Run unit tests
-      uses: actions/setup-go@v5
+    - uses: actions/setup-go@v5
       with:
         go-version: '${{ matrix.go_version }}'
         check-latest: true
         cache: true
 
     - uses: actions/checkout@v4
-
-    - run: go test -v -race -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
+    - name: Run unit tests
+      shell: bash
+      run: go test -v -race -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
 
     - name: Upload coverage to codecov
       uses: codecov/codecov-action@v5
       with:
         files: './coverage-${{ matrix.os }}.${{ matrix.go_version }}.out'
-        flags: '${{ matrix.go_version }},${{ matrix.os }}'
+        flags: '${{ matrix.go_version }}-${{ matrix.os }}'
         fail_ci_if_error: false
         verbose: true
