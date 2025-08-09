@@ -73,10 +73,21 @@ func newResolverContext(options *ExpandOptions) *resolverContext {
 }
 
 type schemaLoader struct {
-	root    interface{}
+	root    any
 	options *ExpandOptions
 	cache   ResolutionCache
 	context *resolverContext
+}
+
+// Resolve resolves a reference against basePath and stores the result in target.
+//
+// Resolve is not in charge of following references: it only resolves ref by following its URL.
+//
+// If the schema the ref is referring to holds nested refs, Resolve doesn't resolve them.
+//
+// If basePath is an empty string, ref is resolved against the root schema stored in the schemaLoader struct
+func (r *schemaLoader) Resolve(ref *Ref, target any, basePath string) error {
+	return r.resolveRef(ref, target, basePath)
 }
 
 func (r *schemaLoader) transitiveResolver(basePath string, ref Ref) *schemaLoader {
@@ -113,7 +124,7 @@ func (r *schemaLoader) updateBasePath(transitive *schemaLoader, basePath string)
 	return basePath
 }
 
-func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string) error {
+func (r *schemaLoader) resolveRef(ref *Ref, target any, basePath string) error {
 	tgt := reflect.ValueOf(target)
 	if tgt.Kind() != reflect.Ptr {
 		return ErrResolveRefNeedsAPointer
@@ -124,8 +135,8 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 	}
 
 	var (
-		res  interface{}
-		data interface{}
+		res  any
+		data any
 		err  error
 	)
 
@@ -158,7 +169,7 @@ func (r *schemaLoader) resolveRef(ref *Ref, target interface{}, basePath string)
 	return swag.DynamicJSONToStruct(res, target)
 }
 
-func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error) {
+func (r *schemaLoader) load(refURL *url.URL) (any, url.URL, bool, error) {
 	debugLog("loading schema from url: %s", refURL)
 	toFetch := *refURL
 	toFetch.Fragment = ""
@@ -178,7 +189,7 @@ func (r *schemaLoader) load(refURL *url.URL) (interface{}, url.URL, bool, error)
 		return nil, url.URL{}, false, err
 	}
 
-	var doc interface{}
+	var doc any
 	if err := json.Unmarshal(b, &doc); err != nil {
 		return nil, url.URL{}, false, err
 	}
@@ -204,18 +215,7 @@ func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...strin
 	return
 }
 
-// Resolve resolves a reference against basePath and stores the result in target.
-//
-// Resolve is not in charge of following references: it only resolves ref by following its URL.
-//
-// If the schema the ref is referring to holds nested refs, Resolve doesn't resolve them.
-//
-// If basePath is an empty string, ref is resolved against the root schema stored in the schemaLoader struct
-func (r *schemaLoader) Resolve(ref *Ref, target interface{}, basePath string) error {
-	return r.resolveRef(ref, target, basePath)
-}
-
-func (r *schemaLoader) deref(input interface{}, parentRefs []string, basePath string) error {
+func (r *schemaLoader) deref(input any, parentRefs []string, basePath string) error {
 	var ref *Ref
 	switch refable := input.(type) {
 	case *Schema:
@@ -267,7 +267,7 @@ func (r *schemaLoader) shouldStopOnError(err error) bool {
 	return false
 }
 
-func (r *schemaLoader) setSchemaID(target interface{}, id, basePath string) (string, string) {
+func (r *schemaLoader) setSchemaID(target any, id, basePath string) (string, string) {
 	debugLog("schema has ID: %s", id)
 
 	// handling the case when id is a folder
@@ -299,7 +299,7 @@ func (r *schemaLoader) setSchemaID(target interface{}, id, basePath string) (str
 }
 
 func defaultSchemaLoader(
-	root interface{},
+	root any,
 	expandOptions *ExpandOptions,
 	cache ResolutionCache,
 	context *resolverContext) *schemaLoader {

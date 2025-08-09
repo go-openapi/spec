@@ -125,20 +125,20 @@ func (r SchemaURL) MarshalJSON() ([]byte, error) {
 	if r == "" {
 		return []byte("{}"), nil
 	}
-	v := map[string]interface{}{"$schema": string(r)}
+	v := map[string]any{"$schema": string(r)}
 	return json.Marshal(v)
 }
 
 // UnmarshalJSON unmarshal this from JSON
 func (r *SchemaURL) UnmarshalJSON(data []byte) error {
-	var v map[string]interface{}
+	var v map[string]any
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
 	return r.fromMap(v)
 }
 
-func (r *SchemaURL) fromMap(v map[string]interface{}) error {
+func (r *SchemaURL) fromMap(v map[string]any) error {
 	if v == nil {
 		return nil
 	}
@@ -165,7 +165,7 @@ type SchemaProps struct {
 	Nullable             bool             `json:"nullable,omitempty"`
 	Format               string           `json:"format,omitempty"`
 	Title                string           `json:"title,omitempty"`
-	Default              interface{}      `json:"default,omitempty"`
+	Default              any              `json:"default,omitempty"`
 	Maximum              *float64         `json:"maximum,omitempty"`
 	ExclusiveMaximum     bool             `json:"exclusiveMaximum,omitempty"`
 	Minimum              *float64         `json:"minimum,omitempty"`
@@ -177,7 +177,7 @@ type SchemaProps struct {
 	MinItems             *int64           `json:"minItems,omitempty"`
 	UniqueItems          bool             `json:"uniqueItems,omitempty"`
 	MultipleOf           *float64         `json:"multipleOf,omitempty"`
-	Enum                 []interface{}    `json:"enum,omitempty"`
+	Enum                 []any            `json:"enum,omitempty"`
 	MaxProperties        *int64           `json:"maxProperties,omitempty"`
 	MinProperties        *int64           `json:"minProperties,omitempty"`
 	Required             []string         `json:"required,omitempty"`
@@ -200,7 +200,7 @@ type SwaggerSchemaProps struct {
 	ReadOnly      bool                   `json:"readOnly,omitempty"`
 	XML           *XMLObject             `json:"xml,omitempty"`
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitempty"`
-	Example       interface{}            `json:"example,omitempty"`
+	Example       any                    `json:"example,omitempty"`
 }
 
 // Schema the schema object allows the definition of input and output data types.
@@ -214,11 +214,12 @@ type Schema struct {
 	VendorExtensible
 	SchemaProps
 	SwaggerSchemaProps
-	ExtraProps map[string]interface{} `json:"-"`
+
+	ExtraProps map[string]any `json:"-"`
 }
 
 // JSONLookup implements an interface to customize json pointer lookup
-func (s Schema) JSONLookup(token string) (interface{}, error) {
+func (s Schema) JSONLookup(token string) (any, error) {
 	if ex, ok := s.Extensions[token]; ok {
 		return &ex, nil
 	}
@@ -316,7 +317,7 @@ func (s *Schema) CollectionOf(items Schema) *Schema {
 }
 
 // WithDefault sets the default value on this parameter
-func (s *Schema) WithDefault(defaultValue interface{}) *Schema {
+func (s *Schema) WithDefault(defaultValue any) *Schema {
 	s.Default = defaultValue
 	return s
 }
@@ -372,8 +373,8 @@ func (s *Schema) WithMinimum(minimum float64, exclusive bool) *Schema {
 }
 
 // WithEnum sets a the enum values (replace)
-func (s *Schema) WithEnum(values ...interface{}) *Schema {
-	s.Enum = append([]interface{}{}, values...)
+func (s *Schema) WithEnum(values ...any) *Schema {
+	s.Enum = append([]any{}, values...)
 	return s
 }
 
@@ -426,7 +427,7 @@ func (s *Schema) AsWritable() *Schema {
 }
 
 // WithExample sets the example for this schema
-func (s *Schema) WithExample(example interface{}) *Schema {
+func (s *Schema) WithExample(example any) *Schema {
 	s.Example = example
 	return s
 }
@@ -610,7 +611,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		SwaggerSchemaProps: props.SwaggerSchemaProps,
 	}
 
-	var d map[string]interface{}
+	var d map[string]any
 	if err := json.Unmarshal(data, &d); err != nil {
 		return err
 	}
@@ -628,13 +629,13 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		lk := strings.ToLower(k)
 		if strings.HasPrefix(lk, "x-") {
 			if sch.Extensions == nil {
-				sch.Extensions = map[string]interface{}{}
+				sch.Extensions = map[string]any{}
 			}
 			sch.Extensions[k] = vv
 			continue
 		}
 		if sch.ExtraProps == nil {
-			sch.ExtraProps = map[string]interface{}{}
+			sch.ExtraProps = map[string]any{}
 		}
 		sch.ExtraProps[k] = vv
 	}

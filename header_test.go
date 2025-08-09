@@ -33,7 +33,7 @@ func int64Ptr(f int64) *int64 {
 }
 
 var header = Header{
-	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{
+	VendorExtensible: VendorExtensible{Extensions: map[string]any{
 		"x-framework": "swagger-go",
 	}},
 	HeaderProps: HeaderProps{Description: "the description of this header"},
@@ -57,7 +57,7 @@ var header = Header{
 		MinItems:         int64Ptr(5),
 		UniqueItems:      true,
 		MultipleOf:       float64Ptr(5),
-		Enum:             []interface{}{"hello", "world"},
+		Enum:             []any{"hello", "world"},
 	},
 }
 
@@ -87,7 +87,7 @@ const headerJSON = `{
 func TestIntegrationHeader(t *testing.T) {
 	var actual Header
 	require.NoError(t, json.Unmarshal([]byte(headerJSON), &actual))
-	assert.EqualValues(t, actual, header)
+	assert.Equal(t, actual, header)
 
 	assertParsesJSON(t, headerJSON, header)
 }
@@ -104,13 +104,13 @@ func TestJSONLookupHeader(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "8", def)
 
-	var x *interface{}
+	var x *any
 	res, err = header.JSONLookup("x-framework")
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.IsType(t, x, res)
 
-	x, ok = res.(*interface{})
+	x, ok = res.(*any)
 	require.True(t, ok)
 	assert.EqualValues(t, "swagger-go", *x)
 
@@ -144,7 +144,7 @@ func TestWithHeader(t *testing.T) {
 	i := new(Items).Typed("string", "date")
 	h = new(Header).CollectionOf(i, "pipe")
 
-	assert.EqualValues(t, *i, *h.Items)
+	assert.Equal(t, *i, *h.Items)
 	assert.Equal(t, "pipe", h.CollectionFormat)
 
 	h = new(Header).WithDefault([]string{"a", "b", "c"}).WithMaxLength(10).WithMinLength(3)
@@ -162,7 +162,7 @@ func TestWithHeader(t *testing.T) {
 	h = new(Header).WithEnum("a", "b", "c")
 	assert.Equal(t, Header{
 		CommonValidations: CommonValidations{
-			Enum: []interface{}{
+			Enum: []any{
 				"a",
 				"b",
 				"c",
@@ -173,5 +173,5 @@ func TestWithHeader(t *testing.T) {
 
 func TestHeaderWithValidation(t *testing.T) {
 	h := new(Header).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
-	assert.EqualValues(t, swag.Int64(15), h.MaxLength)
+	assert.Equal(t, swag.Int64(15), h.MaxLength)
 }

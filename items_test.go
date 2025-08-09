@@ -76,17 +76,17 @@ const itemsJSON = `{
 func TestIntegrationItems(t *testing.T) {
 	var actual Items
 	require.NoError(t, json.Unmarshal([]byte(itemsJSON), &actual))
-	assert.EqualValues(t, actual, testItems)
+	assert.Equal(t, actual, testItems)
 
 	assertParsesJSON(t, itemsJSON, testItems)
 }
 
 func TestTypeNameItems(t *testing.T) {
 	var nilItems Items
-	assert.Equal(t, "", nilItems.TypeName())
+	assert.Empty(t, nilItems.TypeName())
 
 	assert.Equal(t, "date", testItems.TypeName())
-	assert.Equal(t, "", testItems.ItemsTypeName())
+	assert.Empty(t, testItems.ItemsTypeName())
 
 	nested := Items{
 		SimpleSchema: SimpleSchema{
@@ -110,7 +110,7 @@ func TestTypeNameItems(t *testing.T) {
 	}
 
 	assert.Equal(t, "string", simple.TypeName())
-	assert.Equal(t, "", simple.ItemsTypeName())
+	assert.Empty(t, simple.ItemsTypeName())
 
 	simple.Items = NewItems()
 	simple.Type = "array"
@@ -159,7 +159,7 @@ func TestJSONLookupItems(t *testing.T) {
 
 		ref, ok := res.(*Ref)
 		require.True(t, ok)
-		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
+		assert.Equal(t, MustCreateRef("Dog"), *ref)
 	})
 
 	t.Run(`lookup should find "maximum"`, func(t *testing.T) {
@@ -196,5 +196,5 @@ func TestJSONLookupItems(t *testing.T) {
 
 func TestItemsWithValidation(t *testing.T) {
 	i := new(Items).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
-	assert.EqualValues(t, swag.Int64(15), i.MaxLength)
+	assert.Equal(t, swag.Int64(15), i.MaxLength)
 }

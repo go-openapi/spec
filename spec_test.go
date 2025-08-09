@@ -95,7 +95,7 @@ func assertPaths1429(t testing.TB, sp *spec.Swagger) {
 			require.NotNilf(t, param.Schema, "expected param schema not to be nil")
 			// all param fixtures are body param with schema
 			// all $ref expanded
-			assert.Equal(t, "", param.Schema.Ref.String())
+			assert.Empty(t, param.Schema.Ref.String())
 		}
 
 		for code, response := range pi.Get.Responses.StatusCodeResponses {
@@ -105,7 +105,7 @@ func assertPaths1429(t testing.TB, sp *spec.Swagger) {
 				continue
 			}
 			require.NotNilf(t, response.Schema, "expected response schema not to be nil")
-			assert.Equal(t, "", response.Schema.Ref.String())
+			assert.Empty(t, response.Schema.Ref.String())
 		}
 	}
 }
@@ -119,7 +119,7 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 			switch param.Name {
 			case "plainRequest":
 				// this one is expanded
-				assert.Equal(t, "", param.Schema.Ref.String())
+				assert.Empty(t, param.Schema.Ref.String())
 				continue
 			case "nestedBody":
 				// this one is local
@@ -144,7 +144,7 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 				assert.Contains(t, response.Schema.Ref.String(), "remote/remote.yaml#/")
 				continue
 			case 404:
-				assert.Equal(t, "", response.Schema.Ref.String())
+				assert.Empty(t, response.Schema.Ref.String())
 				continue
 			}
 			assert.Containsf(t, response.Schema.Ref.String(), "responses.yaml#/", "expected remote ref at resp. %d", code)

@@ -36,7 +36,7 @@ const pathsJSON = `{"x-framework":"go-swagger","/":{"$ref":"cats"}}`
 func TestIntegrationPaths(t *testing.T) {
 	var actual Paths
 	require.NoError(t, json.Unmarshal([]byte(pathsJSON), &actual))
-	assert.EqualValues(t, actual, paths)
+	assert.Equal(t, actual, paths)
 
 	assertParsesJSON(t, pathsJSON, paths)
 

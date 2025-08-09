@@ -28,11 +28,6 @@ type TagProps struct {
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
 }
 
-// NewTag creates a new tag
-func NewTag(name, description string, externalDocs *ExternalDocumentation) Tag {
-	return Tag{TagProps: TagProps{Description: description, Name: name, ExternalDocs: externalDocs}}
-}
-
 // Tag allows adding meta data to a single tag that is used by the
 // [Operation Object](http://goo.gl/8us55a#operationObject).
 // It is not mandatory to have a Tag Object per tag used there.
@@ -41,6 +36,11 @@ func NewTag(name, description string, externalDocs *ExternalDocumentation) Tag {
 type Tag struct {
 	VendorExtensible
 	TagProps
+}
+
+// NewTag creates a new tag
+func NewTag(name, description string, externalDocs *ExternalDocumentation) Tag {
+	return Tag{TagProps: TagProps{Description: description, Name: name, ExternalDocs: externalDocs}}
 }
 
 // JSONLookup implements an interface to customize json pointer lookup

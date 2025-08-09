@@ -243,13 +243,13 @@ func TestSwaggerSpec_Serialize(t *testing.T) {
 	require.NoError(t, err)
 	var actual map[string]interface{}
 	require.NoError(t, json.Unmarshal(b, &actual))
-	assert.EqualValues(t, expected, actual)
+	assert.Equal(t, expected, actual)
 }
 
 func TestSwaggerSpec_Deserialize(t *testing.T) {
 	var actual Swagger
 	require.NoError(t, json.Unmarshal([]byte(specJSON), &actual))
-	assert.EqualValues(t, actual, spec)
+	assert.Equal(t, actual, spec)
 }
 
 func TestVendorExtensionStringSlice(t *testing.T) {
@@ -257,7 +257,7 @@ func TestVendorExtensionStringSlice(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(specJSON), &actual))
 	schemes, ok := actual.Extensions.GetStringSlice("x-schemes")
 	require.True(t, ok)
-	assert.EqualValues(t, []string{"unix", "amqp"}, schemes)
+	assert.Equal(t, []string{"unix", "amqp"}, schemes)
 
 	notSlice, ok := actual.Extensions.GetStringSlice("x-some-extension")
 	assert.Nil(t, notSlice)

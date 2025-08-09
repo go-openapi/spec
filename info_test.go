@@ -53,7 +53,7 @@ var testInfo = Info{
 		},
 		},
 	},
-	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-framework": "go-swagger"}},
+	VendorExtensible: VendorExtensible{Extensions: map[string]any{"x-framework": "go-swagger"}},
 }
 
 func TestInfo(t *testing.T) {
@@ -66,13 +66,13 @@ func TestInfo(t *testing.T) {
 	t.Run("should unmarshal Info", func(t *testing.T) {
 		actual := Info{}
 		require.NoError(t, json.Unmarshal([]byte(infoJSON), &actual))
-		assert.EqualValues(t, testInfo, actual)
+		assert.Equal(t, testInfo, actual)
 	})
 
 	t.Run("should GobEncode Info", func(t *testing.T) {
 		var src, dst Info
 		require.NoError(t, json.Unmarshal([]byte(infoJSON), &src))
-		assert.EqualValues(t, src, testInfo)
+		assert.Equal(t, src, testInfo)
 		doTestAnyGobEncoding(t, &src, &dst)
 	})
 }

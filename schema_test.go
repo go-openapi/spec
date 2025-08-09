@@ -215,10 +215,10 @@ func BenchmarkSchemaUnmarshal(b *testing.B) {
 
 func TestSchemaWithValidation(t *testing.T) {
 	s := new(Schema).WithValidations(SchemaValidations{CommonValidations: CommonValidations{MaxLength: swag.Int64(15)}})
-	assert.EqualValues(t, swag.Int64(15), s.MaxLength)
+	assert.Equal(t, swag.Int64(15), s.MaxLength)
 
 	val := mkVal()
 	s = new(Schema).WithValidations(val)
 
-	assert.EqualValues(t, val, s.Validations())
+	assert.Equal(t, val, s.Validations())
 }
