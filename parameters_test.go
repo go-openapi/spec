@@ -94,7 +94,7 @@ var parameterJSON = `{
 func TestIntegrationParameter(t *testing.T) {
 	var actual Parameter
 	require.NoError(t, json.Unmarshal([]byte(parameterJSON), &actual))
-	assert.EqualValues(t, actual, parameter)
+	assert.Equal(t, actual, parameter)
 
 	assertParsesJSON(t, parameterJSON, parameter)
 }
@@ -164,5 +164,5 @@ func TestParameterGobEncoding(t *testing.T) {
 
 func TestParametersWithValidation(t *testing.T) {
 	p := new(Parameter).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
-	assert.EqualValues(t, swag.Int64(15), p.MaxLength)
+	assert.Equal(t, swag.Int64(15), p.MaxLength)
 }

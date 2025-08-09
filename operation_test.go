@@ -259,7 +259,7 @@ func TestOperationBuilder(t *testing.T) {
 func TestIntegrationOperation(t *testing.T) {
 	var actual Operation
 	require.NoError(t, json.Unmarshal([]byte(operationJSON), &actual))
-	assert.EqualValues(t, actual, operation)
+	assert.Equal(t, actual, operation)
 
 	assertParsesJSON(t, operationJSON, operation)
 }

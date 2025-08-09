@@ -30,11 +30,12 @@ import (
 // For more information: http://goo.gl/8us55a#pathsObject
 type Paths struct {
 	VendorExtensible
+
 	Paths map[string]PathItem `json:"-"` // custom serializer to flatten this, each entry must start with "/"
 }
 
 // JSONLookup look up a value by the json property name
-func (p Paths) JSONLookup(token string) (interface{}, error) {
+func (p Paths) JSONLookup(token string) (any, error) {
 	if pi, ok := p.Paths[token]; ok {
 		return &pi, nil
 	}
@@ -53,9 +54,9 @@ func (p *Paths) UnmarshalJSON(data []byte) error {
 	for k, v := range res {
 		if strings.HasPrefix(strings.ToLower(k), "x-") {
 			if p.Extensions == nil {
-				p.Extensions = make(map[string]interface{})
+				p.Extensions = make(map[string]any)
 			}
-			var d interface{}
+			var d any
 			if err := json.Unmarshal(v, &d); err != nil {
 				return err
 			}

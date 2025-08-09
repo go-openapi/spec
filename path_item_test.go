@@ -75,7 +75,7 @@ const pathItemJSON = `{
 func TestIntegrationPathItem(t *testing.T) {
 	var actual PathItem
 	require.NoError(t, json.Unmarshal([]byte(pathItemJSON), &actual))
-	assert.EqualValues(t, actual, pathItem)
+	assert.Equal(t, actual, pathItem)
 
 	assertParsesJSON(t, pathItemJSON, pathItem)
 }

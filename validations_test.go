@@ -39,7 +39,7 @@ func TestValidations(t *testing.T) {
 	cv.SetValidations(val)
 
 	expectedCV := val.CommonValidations
-	require.EqualValues(t, expectedCV, cv)
+	require.Equal(t, expectedCV, cv)
 
 	require.True(t, cv.HasArrayValidations())
 	require.True(t, cv.HasNumberValidations())
@@ -78,16 +78,16 @@ func TestValidations(t *testing.T) {
 
 	val = mkVal()
 	cv.SetValidations(val)
-	require.EqualValues(t, expectedSV, cv.Validations())
+	require.Equal(t, expectedSV, cv.Validations())
 
 	var sv SchemaValidations
 	val = mkVal()
 	sv.SetValidations(val)
 
 	expectedSV = val
-	require.EqualValues(t, expectedSV, sv)
+	require.Equal(t, expectedSV, sv)
 
-	require.EqualValues(t, val, sv.Validations())
+	require.Equal(t, val, sv.Validations())
 
 	require.True(t, sv.HasObjectValidations())
 	sv.MinProperties = nil

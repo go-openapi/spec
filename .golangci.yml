@@ -22,7 +22,9 @@ linters:
     - nestif
     - nlreturn
     - nonamedreturns
+    - noinlineerr
     - paralleltest
+    - recvcheck
     - testpackage
     - thelper
     - tparallel
@@ -31,6 +33,7 @@ linters:
     - whitespace
     - wrapcheck
     - wsl
+    - wsl_v5
   settings:
     dupl:
       threshold: 200

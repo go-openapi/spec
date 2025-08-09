@@ -45,6 +45,6 @@ func TestIntegrationLicense(t *testing.T) {
 		actual := License{}
 		err := json.Unmarshal([]byte(licenseJSON), &actual)
 		require.NoError(t, err)
-		assert.EqualValues(t, testLicense, actual)
+		assert.Equal(t, testLicense, actual)
 	})
 }

@@ -61,7 +61,7 @@ const responsesJSON = `{
 func TestIntegrationResponses(t *testing.T) {
 	var actual Responses
 	require.NoError(t, json.Unmarshal([]byte(responsesJSON), &actual))
-	assert.EqualValues(t, actual, responses)
+	assert.Equal(t, actual, responses)
 
 	assertParsesJSON(t, responsesJSON, responses)
 }
@@ -77,7 +77,7 @@ func TestJSONLookupResponses(t *testing.T) {
 
 	ref, ok := res.(*Ref)
 	require.True(t, ok)
-	assert.EqualValues(t, MustCreateRef("Dog"), *ref)
+	assert.Equal(t, MustCreateRef("Dog"), *ref)
 
 	var def string
 	res, err = resp200.JSONLookup("description")

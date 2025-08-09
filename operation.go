@@ -25,8 +25,8 @@ import (
 )
 
 func init() {
-	gob.Register(map[string]interface{}{})
-	gob.Register([]interface{}{})
+	gob.Register(map[string]any{})
+	gob.Register([]any{})
 }
 
 // OperationProps describes an operation
@@ -58,19 +58,22 @@ func (op OperationProps) MarshalJSON() ([]byte, error) {
 	type Alias OperationProps
 	if op.Security == nil {
 		return json.Marshal(&struct {
-			Security []map[string][]string `json:"security,omitempty"`
 			*Alias
+
+			Security []map[string][]string `json:"security,omitempty"`
 		}{
-			Security: op.Security,
 			Alias:    (*Alias)(&op),
+			Security: op.Security,
 		})
 	}
+
 	return json.Marshal(&struct {
-		Security []map[string][]string `json:"security"`
 		*Alias
+
+		Security []map[string][]string `json:"security"`
 	}{
-		Security: op.Security,
 		Alias:    (*Alias)(&op),
+		Security: op.Security,
 	})
 }
 
@@ -80,6 +83,14 @@ func (op OperationProps) MarshalJSON() ([]byte, error) {
 type Operation struct {
 	VendorExtensible
 	OperationProps
+}
+
+// NewOperation creates a new operation instance.
+// It expects an ID as parameter but not passing an ID is also valid.
+func NewOperation(id string) *Operation {
+	op := new(Operation)
+	op.ID = id
+	return op
 }
 
 // SuccessResponse gets a success response model
@@ -104,7 +115,7 @@ func (o *Operation) SuccessResponse() (*Response, int, bool) {
 }
 
 // JSONLookup look up a value by the json property name
-func (o Operation) JSONLookup(token string) (interface{}, error) {
+func (o Operation) JSONLookup(token string) (any, error) {
 	if ex, ok := o.Extensions[token]; ok {
 		return &ex, nil
 	}
@@ -132,14 +143,6 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	}
 	concated := swag.ConcatJSON(b1, b2)
 	return concated, nil
-}
-
-// NewOperation creates a new operation instance.
-// It expects an ID as parameter but not passing an ID is also valid.
-func NewOperation(id string) *Operation {
-	op := new(Operation)
-	op.ID = id
-	return op
 }
 
 // WithID sets the ID property on this operation, allows for chaining.

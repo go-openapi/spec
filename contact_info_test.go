@@ -43,5 +43,5 @@ func TestIntegrationContactInfo(t *testing.T) {
 	actual := ContactInfo{}
 	err = json.Unmarshal([]byte(contactInfoJSON), &actual)
 	require.NoError(t, err)
-	assert.EqualValues(t, contactInfo, actual)
+	assert.Equal(t, contactInfo, actual)
 }
