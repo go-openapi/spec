@@ -200,9 +200,9 @@ func TestSchema(t *testing.T) {
 	exp1 := expEx[0].(map[string]interface{})
 	exp2 := expEx[1].(map[string]interface{})
 
-	assert.EqualValues(t, exp1["id"], ex1["id"])
+	assert.EqualValues(t, exp1["id"], ex1["id"]) //nolint:testifylint // false positive: types are different
 	assert.Equal(t, exp1["name"], ex1["name"])
-	assert.EqualValues(t, exp2["id"], ex2["id"])
+	assert.EqualValues(t, exp2["id"], ex2["id"]) //nolint:testifylint // false positive: types are different
 	assert.Equal(t, exp2["name"], ex2["name"])
 }
 
