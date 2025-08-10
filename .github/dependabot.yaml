@@ -37,7 +37,7 @@ updates:
         patterns:
           - "github.com/stretchr/testify"
 
-      golang.org-dependencies:
+      golang-org-dependencies:
         patterns:
           - "golang.org/*"
 
