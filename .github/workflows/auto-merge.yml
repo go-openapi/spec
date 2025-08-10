@@ -35,7 +35,7 @@ jobs:
           GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Auto-merge dependabot PRs for golang.org updates
-        if: contains(steps.metadata.outputs.dependency-group, 'golang.org-dependencies')
+        if: contains(steps.metadata.outputs.dependency-group, 'golang-org-dependencies')
         run: gh pr merge --auto --rebase "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
