@@ -14,7 +14,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: stable
@@ -43,7 +43,7 @@ jobs:
         check-latest: true
         cache: true
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Run unit tests
       shell: bash
       run: go test -v -race -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
