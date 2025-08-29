@@ -4,7 +4,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.2
 	github.com/go-openapi/jsonreference v0.21.0
 	github.com/go-openapi/swag v0.23.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
