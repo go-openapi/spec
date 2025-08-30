@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
 // Paths holds the relative paths to the individual endpoints.
@@ -93,6 +93,6 @@ func (p Paths) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	concated := swag.ConcatJSON(b1, b2)
+	concated := jsonutils.ConcatJSON(b1, b2)
 	return concated, nil
 }

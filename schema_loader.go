@@ -22,7 +22,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/loading"
+	"github.com/go-openapi/swag/stringutils"
 )
 
 // PathLoader is a function to use when loading remote refs.
@@ -34,7 +36,7 @@ import (
 // this value with its own default (a loader to retrieve YAML documents as
 // well as JSON ones).
 var PathLoader = func(pth string) (json.RawMessage, error) {
-	data, err := swag.LoadFromFileOrHTTP(pth)
+	data, err := loading.LoadFromFileOrHTTP(pth)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +168,7 @@ func (r *schemaLoader) resolveRef(ref *Ref, target any, basePath string) error {
 			return err
 		}
 	}
-	return swag.DynamicJSONToStruct(res, target)
+	return jsonutils.FromDynamicJSON(res, target)
 }
 
 func (r *schemaLoader) load(refURL *url.URL) (any, url.URL, bool, error) {
@@ -208,7 +210,7 @@ func (r *schemaLoader) isCircular(ref *Ref, basePath string, parentRefs ...strin
 		foundCycle = true
 		return
 	}
-	foundCycle = swag.ContainsStrings(parentRefs, normalizedRef) // normalized windows url's are lower cased
+	foundCycle = stringutils.ContainsStrings(parentRefs, normalizedRef) // normalized windows url's are lower cased
 	if foundCycle {
 		r.context.circulars[normalizedRef] = true
 	}

@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -214,8 +214,8 @@ func BenchmarkSchemaUnmarshal(b *testing.B) {
 }
 
 func TestSchemaWithValidation(t *testing.T) {
-	s := new(Schema).WithValidations(SchemaValidations{CommonValidations: CommonValidations{MaxLength: swag.Int64(15)}})
-	assert.Equal(t, swag.Int64(15), s.MaxLength)
+	s := new(Schema).WithValidations(SchemaValidations{CommonValidations: CommonValidations{MaxLength: conv.Pointer(int64(15))}})
+	assert.Equal(t, conv.Pointer(int64(15)), s.MaxLength)
 
 	val := mkVal()
 	s = new(Schema).WithValidations(val)

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/spec"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/loading"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,10 +21,10 @@ var (
 func init() {
 	// mimics what the go-openapi/load does
 	testLoader = func(path string) (json.RawMessage, error) {
-		if swag.YAMLMatcher(path) {
-			return swag.YAMLDoc(path)
+		if loading.YAMLMatcher(path) {
+			return loading.YAMLDoc(path)
 		}
-		data, err := swag.LoadFromFileOrHTTP(path)
+		data, err := loading.LoadFromFileOrHTTP(path)
 		if err != nil {
 			return nil, err
 		}

@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -142,8 +142,8 @@ func TestItemsBuilder(t *testing.T) {
 			},
 			CommonValidations: CommonValidations{
 				Enum:        []interface{}{[]string{"abc", "efg"}, []string{"hij"}},
-				MinItems:    swag.Int64(1),
-				MaxItems:    swag.Int64(4),
+				MinItems:    conv.Pointer(int64(1)),
+				MaxItems:    conv.Pointer(int64(4)),
 				UniqueItems: true,
 			},
 		},
@@ -195,6 +195,6 @@ func TestJSONLookupItems(t *testing.T) {
 }
 
 func TestItemsWithValidation(t *testing.T) {
-	i := new(Items).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
-	assert.Equal(t, swag.Int64(15), i.MaxLength)
+	i := new(Items).WithValidations(CommonValidations{MaxLength: conv.Pointer(int64(15))})
+	assert.Equal(t, conv.Pointer(int64(15)), i.MaxLength)
 }

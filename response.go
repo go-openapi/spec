@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/go-openapi/jsonpointer"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
 // ResponseProps properties specific to a response
@@ -108,7 +108,7 @@ func (r Response) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return swag.ConcatJSON(b1, b2, b3), nil
+	return jsonutils.ConcatJSON(b1, b2, b3), nil
 }
 
 // WithDescription sets the description on this response, allows for chaining

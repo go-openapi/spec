@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -163,6 +163,6 @@ func TestParameterGobEncoding(t *testing.T) {
 }
 
 func TestParametersWithValidation(t *testing.T) {
-	p := new(Parameter).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
-	assert.Equal(t, swag.Int64(15), p.MaxLength)
+	p := new(Parameter).WithValidations(CommonValidations{MaxLength: conv.Pointer(int64(15))})
+	assert.Equal(t, conv.Pointer(int64(15)), p.MaxLength)
 }

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/jsonpointer"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
 const (
@@ -213,7 +213,7 @@ func (i Items) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return swag.ConcatJSON(b4, b3, b1, b2), nil
+	return jsonutils.ConcatJSON(b4, b3, b1, b2), nil
 }
 
 // JSONLookup look up a value by the json property name
