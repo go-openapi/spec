@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -172,6 +172,6 @@ func TestWithHeader(t *testing.T) {
 }
 
 func TestHeaderWithValidation(t *testing.T) {
-	h := new(Header).WithValidations(CommonValidations{MaxLength: swag.Int64(15)})
-	assert.Equal(t, swag.Int64(15), h.MaxLength)
+	h := new(Header).WithValidations(CommonValidations{MaxLength: conv.Pointer(int64(15))})
+	assert.Equal(t, conv.Pointer(int64(15)), h.MaxLength)
 }

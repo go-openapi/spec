@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/loading"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +15,7 @@ import (
 var rex = regexp.MustCompile(`"\$ref":\s*"(.*?)"`)
 
 func jsonDoc(path string) (json.RawMessage, error) {
-	data, err := swag.LoadFromFileOrHTTP(path)
+	data, err := loading.LoadFromFileOrHTTP(path)
 	if err != nil {
 		return nil, err
 	}

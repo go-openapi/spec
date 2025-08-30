@@ -129,7 +129,7 @@ const specJSON = `{
 		expectedType := reflect.TypeOf(expected)
 		if reflect.TypeOf(actual).ConvertibleTo(expectedType) {
 			expectedValue := reflect.ValueOf(expected)
-			if swag.IsZero(expectedValue) && swag.IsZero(reflect.ValueOf(actual)) {
+			if typeutil.IsZero(expectedValue) && typeutils.IsZero(reflect.ValueOf(actual)) {
 				return true
 			}
 
@@ -162,7 +162,7 @@ const specJSON = `{
 		expectedType := reflect.TypeOf(expected)
 		if reflect.TypeOf(actual).ConvertibleTo(expectedType) {
 			expectedValue := reflect.ValueOf(expected)
-			if swag.IsZero(expectedValue) && swag.IsZero(reflect.ValueOf(actual)) {
+			if typeutils.IsZero(expectedValue) && typeutils.IsZero(reflect.ValueOf(actual)) {
 				return ""
 			}
 

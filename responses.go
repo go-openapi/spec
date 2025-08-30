@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
 // Responses is a container for the expected responses of an operation.
@@ -83,7 +83,7 @@ func (r Responses) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	concated := swag.ConcatJSON(b1, b2)
+	concated := jsonutils.ConcatJSON(b1, b2)
 	return concated, nil
 }
 
