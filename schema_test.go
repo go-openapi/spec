@@ -24,7 +24,7 @@ import (
 )
 
 var schema = Schema{
-	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-framework": "go-swagger"}},
+	VendorExtensible: VendorExtensible{Extensions: map[string]any{"x-framework": "go-swagger"}},
 	SchemaProps: SchemaProps{
 		Ref:              MustCreateRef("Cat"),
 		Type:             []string{"string"},
@@ -43,7 +43,7 @@ var schema = Schema{
 		MinItems:         int64Ptr(5),
 		UniqueItems:      true,
 		MultipleOf:       float64Ptr(5),
-		Enum:             []interface{}{"hello", "world"},
+		Enum:             []any{"hello", "world"},
 		MaxProperties:    int64Ptr(5),
 		MinProperties:    int64Ptr(1),
 		Required:         []string{"id", "name"},
@@ -66,12 +66,12 @@ var schema = Schema{
 			Description: "the documentation etc",
 			URL:         "http://readthedocs.org/swagger",
 		},
-		Example: []interface{}{
-			map[string]interface{}{
+		Example: []any{
+			map[string]any{
 				"id":   1,
 				"name": "a book",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"id":   2,
 				"name": "the thing",
 			},
@@ -151,12 +151,12 @@ var schemaJSON = `{
 
 func TestSchema(t *testing.T) {
 
-	expected := map[string]interface{}{}
+	expected := map[string]any{}
 	_ = json.Unmarshal([]byte(schemaJSON), &expected)
 	b, err := json.Marshal(schema)
 	require.NoError(t, err)
 
-	var actual map[string]interface{}
+	var actual map[string]any
 	require.NoError(t, json.Unmarshal(b, &actual))
 	assert.Equal(t, expected, actual)
 
@@ -193,12 +193,12 @@ func TestSchema(t *testing.T) {
 	assert.Equal(t, schema.AdditionalProperties, actual2.AdditionalProperties)
 	assert.Equal(t, schema.Extensions, actual2.Extensions)
 
-	examples := actual2.Example.([]interface{})
-	expEx := schema.Example.([]interface{})
-	ex1 := examples[0].(map[string]interface{})
-	ex2 := examples[1].(map[string]interface{})
-	exp1 := expEx[0].(map[string]interface{})
-	exp2 := expEx[1].(map[string]interface{})
+	examples := actual2.Example.([]any)
+	expEx := schema.Example.([]any)
+	ex1 := examples[0].(map[string]any)
+	ex2 := examples[1].(map[string]any)
+	exp1 := expEx[0].(map[string]any)
+	exp2 := expEx[1].(map[string]any)
 
 	assert.EqualValues(t, exp1["id"], ex1["id"]) //nolint:testifylint // false positive: types are different
 	assert.Equal(t, exp1["name"], ex1["name"])
@@ -207,7 +207,7 @@ func TestSchema(t *testing.T) {
 }
 
 func BenchmarkSchemaUnmarshal(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sch := &Schema{}
 		_ = sch.UnmarshalJSON([]byte(schemaJSON))
 	}
