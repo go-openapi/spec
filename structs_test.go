@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 )
 
 func assertSerializeJSON(t testing.TB, actual any, expected string) bool {
