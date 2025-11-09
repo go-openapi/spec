@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 package spec
 
 import (
@@ -105,7 +108,7 @@ func assertNoRef(t testing.TB, jazon string) {
 // assertRefExpand ensures that all $ref in some json doc expand properly against a root document.
 //
 // "exclude" is a regexp pattern to ignore certain $ref (e.g. some specs may embed $ref that are not processed, such as extensions).
-func assertRefExpand(t *testing.T, jazon, _ string, root interface{}, opts ...*ExpandOptions) {
+func assertRefExpand(t *testing.T, jazon, _ string, root any, opts ...*ExpandOptions) {
 	assertRefWithFunc(t, jazon, "", func(t *testing.T, match string) {
 		ref := RefSchema(match)
 		if len(opts) > 0 {
@@ -120,7 +123,7 @@ func assertRefExpand(t *testing.T, jazon, _ string, root interface{}, opts ...*E
 // assertRefResolve ensures that all $ref in some json doc resolve properly against a root document.
 //
 // "exclude" is a regexp pattern to ignore certain $ref (e.g. some specs may embed $ref that are not processed, such as extensions).
-func assertRefResolve(t *testing.T, jazon, exclude string, root interface{}, opts ...*ExpandOptions) {
+func assertRefResolve(t *testing.T, jazon, exclude string, root any, opts ...*ExpandOptions) {
 	assertRefWithFunc(t, jazon, exclude, func(t *testing.T, match string) {
 		ref := MustCreateRef(match)
 		var (
@@ -165,7 +168,7 @@ func assertRefWithFunc(t *testing.T, jazon, exclude string, asserter func(t *tes
 	}
 }
 
-func asJSON(t testing.TB, sp interface{}) string {
+func asJSON(t testing.TB, sp any) string {
 	bbb, err := json.MarshalIndent(sp, "", " ")
 	require.NoError(t, err)
 

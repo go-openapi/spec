@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 package spec
 
 import (
@@ -14,7 +17,7 @@ import (
 )
 
 func TestResolveRef(t *testing.T) {
-	var root interface{}
+	var root any
 	require.NoError(t, json.Unmarshal([]byte(PetStore20), &root))
 
 	ref, err := NewRef("#/definitions/Category")

@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package spec
 
@@ -53,9 +42,9 @@ var spec = Swagger{
 		Tags:         []Tag{NewTag("pets", "", nil)},
 		ExternalDocs: &ExternalDocumentation{Description: "the name", URL: "the url"},
 	},
-	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{
+	VendorExtensible: VendorExtensible{Extensions: map[string]any{
 		"x-some-extension": "vendor",
-		"x-schemes":        []interface{}{"unix", "amqp"},
+		"x-schemes":        []any{"unix", "amqp"},
 	}},
 }
 
@@ -237,11 +226,11 @@ func assertSpecJSON(t testing.TB, specJSON []byte) bool {
 */
 
 func TestSwaggerSpec_Serialize(t *testing.T) {
-	expected := make(map[string]interface{})
+	expected := make(map[string]any)
 	_ = json.Unmarshal([]byte(specJSON), &expected)
 	b, err := json.MarshalIndent(spec, "", "  ")
 	require.NoError(t, err)
-	var actual map[string]interface{}
+	var actual map[string]any
 	require.NoError(t, json.Unmarshal(b, &actual))
 	assert.Equal(t, expected, actual)
 }
@@ -268,7 +257,7 @@ func TestVendorExtensionStringSlice(t *testing.T) {
 	assert.Nil(t, notString)
 	assert.False(t, ok)
 
-	actual.AddExtension("x-another-slice-ext", []interface{}{100, 100})
+	actual.AddExtension("x-another-slice-ext", []any{100, 100})
 	notStringSlice, ok := actual.Extensions.GetStringSlice("x-another-slice-ext")
 	assert.Nil(t, notStringSlice)
 	assert.False(t, ok)
@@ -303,7 +292,7 @@ func TestOptionalSwaggerProps_Serialize(t *testing.T) {
 	bytes, err := json.Marshal(&minimalSpec)
 	require.NoError(t, err)
 
-	var ms map[string]interface{}
+	var ms map[string]any
 	require.NoError(t, json.Unmarshal(bytes, &ms))
 
 	assert.NotContains(t, ms, "consumes")
