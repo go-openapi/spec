@@ -6,7 +6,7 @@ package spec
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/go-openapi/testify/v2/assert"
 )
 
 func TestDefaultResolutionCache(t *testing.T) {

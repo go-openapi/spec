@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag/conv"
-	"github.com/stretchr/testify/require"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 func mkVal() SchemaValidations {
