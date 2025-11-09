@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag/loading"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 var rex = regexp.MustCompile(`"\$ref":\s*"(.*?)"`)
