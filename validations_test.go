@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 package spec
 
 import (
@@ -21,7 +24,7 @@ func mkVal() SchemaValidations {
 			MinItems:         conv.Pointer(int64(18)),
 			UniqueItems:      true,
 			MultipleOf:       conv.Pointer(4.4),
-			Enum:             []interface{}{"a", 12.5},
+			Enum:             []any{"a", 12.5},
 		},
 		PatternProperties: SchemaProperties{
 			"x": *BooleanProperty(),
@@ -109,7 +112,7 @@ func TestValidations(t *testing.T) {
 	require.False(t, cv.HasArrayValidations())
 
 	sv.SetValidations(val)
-	sv.ClearObjectValidations(func(validation string, _ interface{}) {
+	sv.ClearObjectValidations(func(validation string, _ any) {
 		switch validation {
 		case "minProperties", "maxProperties", "patternProperties":
 			return

@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package spec
 
@@ -817,7 +806,7 @@ func resolutionContextServer() *httptest.Server {
 		if req.URL.Path == "/resolution.json" {
 
 			b, _ := os.ReadFile(filepath.Join(specs, "resolution.json"))
-			var ctnt map[string]interface{}
+			var ctnt map[string]any
 			_ = json.Unmarshal(b, &ctnt)
 			ctnt["id"] = servedAt
 
@@ -829,7 +818,7 @@ func resolutionContextServer() *httptest.Server {
 		}
 		if req.URL.Path == "/resolution2.json" {
 			b, _ := os.ReadFile(filepath.Join(specs, "resolution2.json"))
-			var ctnt map[string]interface{}
+			var ctnt map[string]any
 			_ = json.Unmarshal(b, &ctnt)
 			ctnt["id"] = servedAt
 
@@ -841,7 +830,7 @@ func resolutionContextServer() *httptest.Server {
 
 		if req.URL.Path == "/boolProp.json" {
 			rw.Header().Set("Content-Type", "application/json")
-			b, _ := json.Marshal(map[string]interface{}{
+			b, _ := json.Marshal(map[string]any{
 				"type": "boolean",
 			})
 			_, _ = rw.Write(b)
@@ -850,7 +839,7 @@ func resolutionContextServer() *httptest.Server {
 
 		if req.URL.Path == "/deeper/stringProp.json" {
 			rw.Header().Set("Content-Type", "application/json")
-			b, _ := json.Marshal(map[string]interface{}{
+			b, _ := json.Marshal(map[string]any{
 				"type": "string",
 			})
 			_, _ = rw.Write(b)
@@ -859,9 +848,9 @@ func resolutionContextServer() *httptest.Server {
 
 		if req.URL.Path == "/deeper/arrayProp.json" {
 			rw.Header().Set("Content-Type", "application/json")
-			b, _ := json.Marshal(map[string]interface{}{
+			b, _ := json.Marshal(map[string]any{
 				"type": "array",
-				"items": map[string]interface{}{
+				"items": map[string]any{
 					"type": "file",
 				},
 			})
@@ -1111,7 +1100,7 @@ func TestExpand_Issue145(t *testing.T) {
 		t.Run("empty root is cached", func(t *testing.T) {
 			value, ok := cache.Get(pseudoRoot)
 			require.True(t, ok) // found in cache
-			asMap, ok := value.(map[string]interface{})
+			asMap, ok := value.(map[string]any)
 			require.True(t, ok)
 			require.Empty(t, asMap)
 		})
@@ -1119,12 +1108,12 @@ func TestExpand_Issue145(t *testing.T) {
 
 	t.Run("with non-nil root, empty cache", func(t *testing.T) {
 		cache := defaultResolutionCache()
-		require.Equal(t, pseudoRoot, baseForRoot(map[string]interface{}{"key": "arbitrary"}, cache))
+		require.Equal(t, pseudoRoot, baseForRoot(map[string]any{"key": "arbitrary"}, cache))
 
 		t.Run("non-empty root is cached", func(t *testing.T) {
 			value, ok := cache.Get(pseudoRoot)
 			require.True(t, ok) // found in cache
-			asMap, ok := value.(map[string]interface{})
+			asMap, ok := value.(map[string]any)
 			require.True(t, ok)
 			require.Contains(t, asMap, "key")
 			require.Equal(t, "arbitrary", asMap["key"])
@@ -1136,7 +1125,7 @@ func TestExpand_Issue145(t *testing.T) {
 			t.Run("non-empty root is kept", func(t *testing.T) {
 				value, ok := cache.Get(pseudoRoot)
 				require.True(t, ok) // found in cache
-				asMap, ok := value.(map[string]interface{})
+				asMap, ok := value.(map[string]any)
 				require.True(t, ok)
 				require.Contains(t, asMap, "key")
 				require.Equal(t, "arbitrary", asMap["key"])

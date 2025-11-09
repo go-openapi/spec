@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright 2017 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +27,7 @@ import (
 
 var responses = Responses{
 	VendorExtensible: VendorExtensible{
-		Extensions: map[string]interface{}{
+		Extensions: map[string]any{
 			"x-go-name": "PutDogExists",
 		},
 	},
@@ -33,7 +36,7 @@ var responses = Responses{
 			200: {
 				Refable: Refable{Ref: MustCreateRef("Dog")},
 				VendorExtensible: VendorExtensible{
-					Extensions: map[string]interface{}{
+					Extensions: map[string]any{
 						"x-go-name": "PutDogExists",
 					},
 				},
@@ -89,13 +92,13 @@ func TestJSONLookupResponses(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "Dog exists", def)
 
-	var x *interface{}
+	var x *any
 	res, err = responses.JSONLookup("x-go-name")
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.IsType(t, x, res)
 
-	x, ok = res.(*interface{})
+	x, ok = res.(*any)
 	require.True(t, ok)
 	assert.EqualValues(t, "PutDogExists", *x)
 
