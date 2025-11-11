@@ -37,7 +37,7 @@ func TestSpec_Issue2743(t *testing.T) {
 			spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}),
 		)
 
-		t.Run("all $ref properly reolve when expanding again", func(t *testing.T) {
+		t.Run("all $ref properly resolve when expanding again", func(t *testing.T) {
 			require.NoError(t,
 				spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}),
 			)

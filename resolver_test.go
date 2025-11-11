@@ -412,7 +412,7 @@ func TestResolveExtraItem(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal(specDoc, spec))
 
-	// Resolve param Items use case: here we explicitly resolve the unsuppord case
+	// Resolve param Items use case: here we explicitly resolve the unsupported case
 	parm := spec.Paths.Paths["/employees"].Get.Parameters[0]
 	parmItem, err := ResolveItems(spec, parm.Items.Ref, &ExpandOptions{RelativeBase: extraRefFixture})
 	require.NoError(t, err)
@@ -424,7 +424,7 @@ func TestResolveExtraItem(t *testing.T) {
          "format": "int32"
 			 }`, jazon)
 
-	// Resolve header Items use case: here we explicitly resolve the unsuppord case
+	// Resolve header Items use case: here we explicitly resolve the unsupported case
 	hdr := spec.Paths.Paths["/employees"].Get.Responses.StatusCodeResponses[200].Headers["X-header"]
 	hdrItem, err := ResolveItems(spec, hdr.Items.Ref, &ExpandOptions{RelativeBase: extraRefFixture})
 	require.NoError(t, err)
