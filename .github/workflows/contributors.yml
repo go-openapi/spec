@@ -1,0 +1,18 @@
+name: Contributors
+
+on:
+  schedule:
+    - cron: '18 4 * * 6'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contributors:
+    permissions:
+      pull-requests: write
+      contents: write
+    uses: go-openapi/ci-workflows/.github/workflows/contributors.yml@d0b50195d14745b9a9a8a41cf3bb7ecd874af37a # v0.1.1
+    secrets: inherit
