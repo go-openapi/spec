@@ -16,6 +16,8 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
+// Note: schemaVersion, testFixture, and testFixturePaths are defined in expander_test.go
+
 func TestResolveRef(t *testing.T) {
 	var root any
 	require.NoError(t, json.Unmarshal([]byte(PetStore20), &root))
@@ -44,23 +46,33 @@ func TestResolveRef(t *testing.T) {
 }
 
 func TestResolveResponse(t *testing.T) {
-	specDoc, err := jsonDoc(filepath.Join("fixtures", "expansion", "all-the-things.json"))
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(filepath.Join("fixtures", "expansion", "all-the-things.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			specDoc, err := jsonDoc(tc.Path)
+			require.NoError(t, err)
 
-	spec := new(Swagger)
-	require.NoError(t, json.Unmarshal(specDoc, spec))
+			spec := new(Swagger)
+			require.NoError(t, json.Unmarshal(specDoc, spec))
 
-	// Resolve with root version
-	resp := spec.Paths.Paths["/"].Get.Responses.StatusCodeResponses[200]
-	resp2, err := ResolveResponse(spec, resp.Ref)
-	require.NoError(t, err)
+			// Resolve with root version
+			resp := spec.Paths.Paths["/"].Get.Responses.StatusCodeResponses[200]
+			resp2, err := ResolveResponse(spec, resp.Ref)
+			require.NoError(t, err)
 
-	// resolve resolves the ref, but dos not expand
-	jazon := asJSON(t, resp2)
+			// resolve resolves the ref, but does not expand
+			jazon := asJSON(t, resp2)
 
-	assert.JSONEq(t, `{
-         "$ref": "#/responses/petResponse"
-        }`, jazon)
+			if tc.Version == swagger2 {
+				assert.JSONEq(t, `{
+					"$ref": "#/responses/petResponse"
+				}`, jazon)
+			} else {
+				assert.JSONEq(t, `{
+					"$ref": "#/components/responses/petResponse"
+				}`, jazon)
+			}
+		})
+	}
 }
 
 func TestResolveResponseWithBase(t *testing.T) {
@@ -84,26 +96,44 @@ func TestResolveResponseWithBase(t *testing.T) {
 }
 
 func TestResolveParam(t *testing.T) {
-	specDoc, err := jsonDoc(filepath.Join("fixtures", "expansion", "all-the-things.json"))
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(filepath.Join("fixtures", "expansion", "all-the-things.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			specDoc, err := jsonDoc(tc.Path)
+			require.NoError(t, err)
 
-	var spec Swagger
-	require.NoError(t, json.Unmarshal(specDoc, &spec))
+			var spec Swagger
+			require.NoError(t, json.Unmarshal(specDoc, &spec))
 
-	param := spec.Paths.Paths["/pets/{id}"].Get.Parameters[0]
-	par, err := ResolveParameter(spec, param.Ref)
-	require.NoError(t, err)
+			param := spec.Paths.Paths["/pets/{id}"].Get.Parameters[0]
+			par, err := ResolveParameter(spec, param.Ref)
+			require.NoError(t, err)
 
-	jazon := asJSON(t, par)
+			jazon := asJSON(t, par)
 
-	assert.JSONEq(t, `{
-      "name": "id",
-      "in": "path",
-      "description": "ID of pet to fetch",
-      "required": true,
-      "type": "integer",
-      "format": "int64"
-      }`, jazon)
+			if tc.Version == swagger2 {
+				assert.JSONEq(t, `{
+					"name": "id",
+					"in": "path",
+					"description": "ID of pet to fetch",
+					"required": true,
+					"type": "integer",
+					"format": "int64"
+				}`, jazon)
+			} else {
+				// OpenAPI 3 uses schema object for type/format
+				assert.JSONEq(t, `{
+					"name": "id",
+					"in": "path",
+					"description": "ID of pet to fetch",
+					"required": true,
+					"schema": {
+						"type": "integer",
+						"format": "int64"
+					}
+				}`, jazon)
+			}
+		})
+	}
 }
 
 func TestResolveParamWithBase(t *testing.T) {
@@ -130,69 +160,109 @@ func TestResolveParamWithBase(t *testing.T) {
 }
 
 func TestResolveRemoteRef_RootSame(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			fileserver := http.FileServer(http.Dir(specs))
+			server := httptest.NewServer(fileserver)
+			defer server.Close()
 
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	// the filename doesn't matter because ref will eventually point to refed.json
-	specBase := normalizeBase(filepath.Join(specs, "anyotherfile.json"))
+			specFileName := filepath.Base(tc.Path)
+			// the filename doesn't matter because ref will eventually point to refed.json
+			specBase := normalizeBase(filepath.Join(specs, "anyotherfile.json"))
 
-	var result0 Swagger
-	ref0, _ := NewRef(server.URL + "/refed.json#")
-	resolver0 := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver0.Resolve(&ref0, &result0, ""))
-	assertSpecs(t, result0, *rootDoc)
+			var result0 Swagger
+			ref0, _ := NewRef(server.URL + "/" + specFileName + "#")
+			resolver0 := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver0.Resolve(&ref0, &result0, ""))
 
-	var result1 Swagger
-	ref1, _ := NewRef("./refed.json")
-	resolver1 := defaultSchemaLoader(rootDoc, &ExpandOptions{
-		RelativeBase: specBase,
-	}, nil, nil)
-	require.NoError(t, resolver1.Resolve(&ref1, &result1, specBase))
-	assertSpecs(t, result1, *rootDoc)
+			if tc.Version == swagger2 {
+				assertSpecs(t, result0, *rootDoc)
+			} else {
+				// For OpenAPI 3, compare directly without hardcoding Swagger version
+				assert.Equal(t, *rootDoc, result0)
+			}
+
+			var result1 Swagger
+			ref1, _ := NewRef("./" + specFileName)
+			resolver1 := defaultSchemaLoader(rootDoc, &ExpandOptions{
+				RelativeBase: specBase,
+			}, nil, nil)
+			require.NoError(t, resolver1.Resolve(&ref1, &result1, specBase))
+
+			if tc.Version == swagger2 {
+				assertSpecs(t, result1, *rootDoc)
+			} else {
+				assert.Equal(t, *rootDoc, result1)
+			}
+		})
+	}
 }
 
 func TestResolveRemoteRef_FromFragment(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			fileserver := http.FileServer(http.Dir(specs))
+			server := httptest.NewServer(fileserver)
+			defer server.Close()
 
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt Schema
-	ref, err := NewRef(server.URL + "/refed.json#/definitions/pet")
-	require.NoError(t, err)
+			specFileName := filepath.Base(tc.Path)
+			var refPath string
+			if tc.Version == swagger2 {
+				refPath = server.URL + "/" + specFileName + "#/definitions/pet"
+			} else {
+				refPath = server.URL + "/" + specFileName + "#/components/schemas/pet"
+			}
 
-	context := newResolverContext(&ExpandOptions{PathLoader: jsonDoc})
-	resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: context}
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
-	assert.Equal(t, []string{"id", "name"}, tgt.Required)
+			var tgt Schema
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
+
+			context := newResolverContext(&ExpandOptions{PathLoader: jsonDoc})
+			resolver := &schemaLoader{root: rootDoc, cache: defaultResolutionCache(), context: context}
+			require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+			assert.Equal(t, []string{"id", "name"}, tgt.Required)
+		})
+	}
 }
 
 func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			fileserver := http.FileServer(http.Dir(specs))
+			server := httptest.NewServer(fileserver)
+			defer server.Close()
 
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt Schema
-	ref, err := NewRef(server.URL + "/refed.json#/definitions/NotThere")
-	require.NoError(t, err)
+			specFileName := filepath.Base(tc.Path)
+			var refPath string
+			if tc.Version == swagger2 {
+				refPath = server.URL + "/" + specFileName + "#/definitions/NotThere"
+			} else {
+				refPath = server.URL + "/" + specFileName + "#/components/schemas/NotThere"
+			}
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.Error(t, resolver.Resolve(&ref, &tgt, ""))
+			var tgt Schema
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
+
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.Error(t, resolver.Resolve(&ref, &tgt, ""))
+		})
+	}
 }
 
 /* This next test will have to wait until we do full $ID analysis for every subschema on every file that is referenced */
@@ -215,66 +285,110 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 // }
 
 func TestResolveRemoteRef_ToParameter(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			fileserver := http.FileServer(http.Dir(specs))
+			server := httptest.NewServer(fileserver)
+			defer server.Close()
 
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt Parameter
-	ref, err := NewRef(server.URL + "/refed.json#/parameters/idParam")
-	require.NoError(t, err)
+			specFileName := filepath.Base(tc.Path)
+			var refPath string
+			if tc.Version == swagger2 {
+				refPath = server.URL + "/" + specFileName + "#/parameters/idParam"
+			} else {
+				refPath = server.URL + "/" + specFileName + "#/components/parameters/idParam"
+			}
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+			var tgt Parameter
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
 
-	assert.Equal(t, "id", tgt.Name)
-	assert.Equal(t, "path", tgt.In)
-	assert.Equal(t, "ID of pet to fetch", tgt.Description)
-	assert.True(t, tgt.Required)
-	assert.Equal(t, "integer", tgt.Type)
-	assert.Equal(t, "int64", tgt.Format)
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+
+			assert.Equal(t, "id", tgt.Name)
+			assert.Equal(t, "path", tgt.In)
+			assert.Equal(t, "ID of pet to fetch", tgt.Description)
+			assert.True(t, tgt.Required)
+
+			if tc.Version == swagger2 {
+				assert.Equal(t, "integer", tgt.Type)
+				assert.Equal(t, "int64", tgt.Format)
+			} else {
+				// OpenAPI 3 uses schema object
+				require.NotNil(t, tgt.Schema)
+				assert.Equal(t, StringOrArray{"integer"}, tgt.Schema.Type)
+				assert.Equal(t, "int64", tgt.Schema.Format)
+			}
+		})
+	}
 }
 
 func TestResolveRemoteRef_ToPathItem(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			fileserver := http.FileServer(http.Dir(specs))
+			server := httptest.NewServer(fileserver)
+			defer server.Close()
 
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt PathItem
-	ref, err := NewRef(server.URL + "/refed.json#/paths/" + jsonpointer.Escape("/pets/{id}"))
-	require.NoError(t, err)
+			specFileName := filepath.Base(tc.Path)
+			refPath := server.URL + "/" + specFileName + "#/paths/" + jsonpointer.Escape("/pets/{id}")
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
-	assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
+			var tgt PathItem
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
+
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+			assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
+		})
+	}
 }
 
 func TestResolveRemoteRef_ToResponse(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			fileserver := http.FileServer(http.Dir(specs))
+			server := httptest.NewServer(fileserver)
+			defer server.Close()
 
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt Response
-	ref, err := NewRef(server.URL + "/refed.json#/responses/petResponse")
-	require.NoError(t, err)
+			specFileName := filepath.Base(tc.Path)
+			var refPath string
+			if tc.Version == swagger2 {
+				refPath = server.URL + "/" + specFileName + "#/responses/petResponse"
+			} else {
+				refPath = server.URL + "/" + specFileName + "#/components/responses/petResponse"
+			}
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
-	assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
+			var tgt Response
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
+
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
+
+			if tc.Version == swagger2 {
+				assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
+			} else {
+				assert.Equal(t, rootDoc.Components.Responses["petResponse"], tgt)
+			}
+		})
+	}
 }
 
 func TestResolveLocalRef_SameRoot(t *testing.T) {
@@ -314,125 +428,218 @@ func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
 }
 
 func TestResolveLocalRef_Parameter(t *testing.T) {
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
 
-	basePath := filepath.Join(specs, "refed.json")
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			basePath := tc.Path
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt Parameter
-	ref, err := NewRef("#/parameters/idParam")
-	require.NoError(t, err)
+			var refPath string
+			if tc.Version == swagger2 {
+				refPath = "#/parameters/idParam"
+			} else {
+				refPath = "#/components/parameters/idParam"
+			}
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+			var tgt Parameter
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
 
-	assert.Equal(t, "id", tgt.Name)
-	assert.Equal(t, "path", tgt.In)
-	assert.Equal(t, "ID of pet to fetch", tgt.Description)
-	assert.True(t, tgt.Required)
-	assert.Equal(t, "integer", tgt.Type)
-	assert.Equal(t, "int64", tgt.Format)
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+
+			assert.Equal(t, "id", tgt.Name)
+			assert.Equal(t, "path", tgt.In)
+			assert.Equal(t, "ID of pet to fetch", tgt.Description)
+			assert.True(t, tgt.Required)
+
+			if tc.Version == swagger2 {
+				assert.Equal(t, "integer", tgt.Type)
+				assert.Equal(t, "int64", tgt.Format)
+			} else {
+				// OpenAPI 3 uses schema object
+				require.NotNil(t, tgt.Schema)
+				assert.Equal(t, StringOrArray{"integer"}, tgt.Schema.Type)
+				assert.Equal(t, "int64", tgt.Schema.Format)
+			}
+		})
+	}
 }
 
 func TestResolveLocalRef_PathItem(t *testing.T) {
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
 
-	basePath := filepath.Join(specs, "refed.json")
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			basePath := tc.Path
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt PathItem
-	ref, err := NewRef("#/paths/" + jsonpointer.Escape("/pets/{id}"))
-	require.NoError(t, err)
+			var tgt PathItem
+			ref, err := NewRef("#/paths/" + jsonpointer.Escape("/pets/{id}"))
+			require.NoError(t, err)
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
-	assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+			assert.Equal(t, rootDoc.Paths.Paths["/pets/{id}"].Get, tgt.Get)
+		})
+	}
 }
 
 func TestResolveLocalRef_Response(t *testing.T) {
-	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(filepath.Join(specs, "refed.json")) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			rootDoc := new(Swagger)
+			b, err := os.ReadFile(tc.Path)
+			require.NoError(t, err)
 
-	basePath := filepath.Join(specs, "refed.json")
-	require.NoError(t, json.Unmarshal(b, rootDoc))
+			basePath := tc.Path
+			require.NoError(t, json.Unmarshal(b, rootDoc))
 
-	var tgt Response
-	ref, err := NewRef("#/responses/petResponse")
-	require.NoError(t, err)
+			var refPath string
+			if tc.Version == swagger2 {
+				refPath = "#/responses/petResponse"
+			} else {
+				refPath = "#/components/responses/petResponse"
+			}
 
-	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
-	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
-	assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
+			var tgt Response
+			ref, err := NewRef(refPath)
+			require.NoError(t, err)
+
+			resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
+			require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
+
+			if tc.Version == swagger2 {
+				assert.Equal(t, rootDoc.Responses["petResponse"], tgt)
+			} else {
+				assert.Equal(t, rootDoc.Components.Responses["petResponse"], tgt)
+			}
+		})
+	}
 }
 
 func TestResolvePathItem(t *testing.T) {
-	spec := new(Swagger)
-	specDoc, err := jsonDoc(pathItemsFixture)
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(pathItemsFixture) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			spec := new(Swagger)
+			specDoc, err := jsonDoc(tc.Path)
+			require.NoError(t, err)
 
-	require.NoError(t, json.Unmarshal(specDoc, spec))
+			require.NoError(t, json.Unmarshal(specDoc, spec))
 
-	// Resolve use case
-	pth := spec.Paths.Paths["/todos"]
-	pathItem, err := ResolvePathItem(spec, pth.Ref, &ExpandOptions{RelativeBase: pathItemsFixture})
-	require.NoError(t, err)
+			// Resolve use case
+			pth := spec.Paths.Paths["/todos"]
+			pathItem, err := ResolvePathItem(spec, pth.Ref, &ExpandOptions{RelativeBase: tc.Path})
+			require.NoError(t, err)
 
-	jazon := asJSON(t, pathItem)
+			jazon := asJSON(t, pathItem)
 
-	assert.JSONEq(t, `{
-         "get": {
-          "responses": {
-           "200": {
-            "description": "List Todos",
-            "schema": {
-             "type": "array",
-             "items": {
-              "type": "string"
-             }
-            }
-           },
-           "404": {
-            "description": "error"
-           }
-          }
-         }
-			 }`, jazon)
+			if tc.Version == swagger2 {
+				assert.JSONEq(t, `{
+					"get": {
+						"responses": {
+							"200": {
+								"description": "List Todos",
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									}
+								}
+							},
+							"404": {
+								"description": "error"
+							}
+						}
+					}
+				}`, jazon)
+			} else {
+				assert.JSONEq(t, `{
+					"get": {
+						"responses": {
+							"200": {
+								"description": "List Todos",
+								"content": {
+									"application/json": {
+										"schema": {
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									}
+								}
+							},
+							"404": {
+								"description": "error"
+							}
+						}
+					}
+				}`, jazon)
+			}
+		})
+	}
 }
 
 func TestResolveExtraItem(t *testing.T) {
-	// go-openapi extra goodie: $ref in simple schema Items and Headers
-	spec := new(Swagger)
-	specDoc, err := jsonDoc(extraRefFixture)
-	require.NoError(t, err)
+	for _, tc := range testFixturePaths(extraRefFixture) {
+		t.Run(tc.Version.String(), func(t *testing.T) {
+			// go-openapi extra goodie: $ref in simple schema Items and Headers
+			spec := new(Swagger)
+			specDoc, err := jsonDoc(tc.Path)
+			require.NoError(t, err)
 
-	require.NoError(t, json.Unmarshal(specDoc, spec))
+			require.NoError(t, json.Unmarshal(specDoc, spec))
 
-	// Resolve param Items use case: here we explicitly resolve the unsupported case
-	parm := spec.Paths.Paths["/employees"].Get.Parameters[0]
-	parmItem, err := ResolveItems(spec, parm.Items.Ref, &ExpandOptions{RelativeBase: extraRefFixture})
-	require.NoError(t, err)
+			if tc.Version == swagger2 {
+				// Resolve param Items use case: here we explicitly resolve the unsupported case
+				parm := spec.Paths.Paths["/employees"].Get.Parameters[0]
+				parmItem, err := ResolveItems(spec, parm.Items.Ref, &ExpandOptions{RelativeBase: tc.Path})
+				require.NoError(t, err)
 
-	jazon := asJSON(t, parmItem)
+				jazon := asJSON(t, parmItem)
 
-	assert.JSONEq(t, `{
-         "type": "integer",
-         "format": "int32"
-			 }`, jazon)
+				assert.JSONEq(t, `{
+					"type": "integer",
+					"format": "int32"
+				}`, jazon)
 
-	// Resolve header Items use case: here we explicitly resolve the unsupported case
-	hdr := spec.Paths.Paths["/employees"].Get.Responses.StatusCodeResponses[200].Headers["X-header"]
-	hdrItem, err := ResolveItems(spec, hdr.Items.Ref, &ExpandOptions{RelativeBase: extraRefFixture})
-	require.NoError(t, err)
+				// Resolve header Items use case: here we explicitly resolve the unsupported case
+				hdr := spec.Paths.Paths["/employees"].Get.Responses.StatusCodeResponses[200].Headers["X-header"]
+				hdrItem, err := ResolveItems(spec, hdr.Items.Ref, &ExpandOptions{RelativeBase: tc.Path})
+				require.NoError(t, err)
 
-	jazon = asJSON(t, hdrItem)
+				jazon = asJSON(t, hdrItem)
 
-	assert.JSONEq(t, `{
-         "type": "string",
-         "format": "uuid"
-			 }`, jazon)
+				assert.JSONEq(t, `{
+					"type": "string",
+					"format": "uuid"
+				}`, jazon)
+			} else {
+				// OpenAPI 3: parameters use schema.items with $ref
+				parm := spec.Paths.Paths["/employees"].Get.Parameters[0]
+				require.NotNil(t, parm.Schema)
+				require.NotNil(t, parm.Schema.Items)
+				require.NotNil(t, parm.Schema.Items.Schema)
+				parmSchema, err := ResolveRefWithBase(spec, &parm.Schema.Items.Schema.Ref, &ExpandOptions{RelativeBase: tc.Path})
+				require.NoError(t, err)
+
+				jazon := asJSON(t, parmSchema)
+
+				assert.JSONEq(t, `{
+					"type": "integer",
+					"format": "int32"
+				}`, jazon)
+
+				// OpenAPI 3 headers: the Header struct doesn't have Schema field in the current data model
+				// The v3 fixture uses schema.items.$ref but the Header type uses SimpleSchema.Items
+				// For now, verify the parameter resolution works; header resolution would require Header type updates
+			}
+		})
+	}
 }

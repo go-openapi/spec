@@ -1203,9 +1203,7 @@ func TestExpand_PathItem(t *testing.T) {
 					}
 				}`, jazon)
 			} else {
-				// Note: pathItems.v3.json references pathItem1.json which uses Swagger 2 style
-				// (schema directly on response, not in content). The fixture validates
-				// that path refs are expanded correctly in an OpenAPI 3 document.
+				// OpenAPI 3 uses content/mediaType instead of schema directly on response
 				assert.JSONEq(t, `{
 					"openapi": "3.2.0",
 					"info": {
@@ -1218,10 +1216,14 @@ func TestExpand_PathItem(t *testing.T) {
 								"responses": {
 									"200": {
 										"description": "List Todos",
-										"schema": {
-											"type": "array",
-											"items": {
-												"type": "string"
+										"content": {
+											"application/json": {
+												"schema": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													}
+												}
 											}
 										}
 									},

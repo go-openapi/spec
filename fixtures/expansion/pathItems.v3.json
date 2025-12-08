@@ -6,7 +6,7 @@
     },
     "paths": {
         "/todos": {
-            "$ref": "pathItem1.json#/getTodo"
+            "$ref": "pathItem1.v3.json#/getTodo"
         }
     }
 }
