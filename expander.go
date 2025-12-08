@@ -45,7 +45,24 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 
 	specBasePath := options.RelativeBase
 
-	if !options.SkipSchemas {
+	// Handle OpenAPI 3.x Components.Schemas
+	if !options.SkipSchemas && spec.Components != nil {
+		for key, schema := range spec.Components.Schemas {
+			parentRefs := make([]string, 0, smallPrealloc)
+			parentRefs = append(parentRefs, "#/components/schemas/"+key)
+
+			def, err := expandSchema(schema, parentRefs, resolver, specBasePath)
+			if resolver.shouldStopOnError(err) {
+				return err
+			}
+			if def != nil {
+				spec.Components.Schemas[key] = *def
+			}
+		}
+	}
+
+	// Handle Swagger 2.0 Definitions
+	if !options.SkipSchemas && spec.Definitions != nil {
 		for key, definition := range spec.Definitions {
 			parentRefs := make([]string, 0, smallPrealloc)
 			parentRefs = append(parentRefs, "#/definitions/"+key)
@@ -60,20 +77,53 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 		}
 	}
 
-	for key := range spec.Parameters {
-		parameter := spec.Parameters[key]
-		if err := expandParameterOrResponse(&parameter, resolver, specBasePath); resolver.shouldStopOnError(err) {
-			return err
+	// Handle OpenAPI 3.x Components parameters, responses, and requestBodies
+	if spec.Components != nil {
+		for key := range spec.Components.Parameters {
+			parameter := spec.Components.Parameters[key]
+			if err := expandParameterOrResponse(&parameter, resolver, specBasePath); resolver.shouldStopOnError(err) {
+				return err
+			}
+			spec.Components.Parameters[key] = parameter
 		}
-		spec.Parameters[key] = parameter
+
+		for key := range spec.Components.Responses {
+			response := spec.Components.Responses[key]
+			if err := expandParameterOrResponse(&response, resolver, specBasePath); resolver.shouldStopOnError(err) {
+				return err
+			}
+			spec.Components.Responses[key] = response
+		}
+
+		for key := range spec.Components.RequestBodies {
+			requestBody := spec.Components.RequestBodies[key]
+			if err := expandRequestBody(&requestBody, resolver, specBasePath); resolver.shouldStopOnError(err) {
+				return err
+			}
+			spec.Components.RequestBodies[key] = requestBody
+		}
 	}
 
-	for key := range spec.Responses {
-		response := spec.Responses[key]
-		if err := expandParameterOrResponse(&response, resolver, specBasePath); resolver.shouldStopOnError(err) {
-			return err
+	// Handle Swagger 2.0 top-level Parameters (backward compatibility)
+	if spec.Parameters != nil {
+		for key := range spec.Parameters {
+			parameter := spec.Parameters[key]
+			if err := expandParameterOrResponse(&parameter, resolver, specBasePath); resolver.shouldStopOnError(err) {
+				return err
+			}
+			spec.Parameters[key] = parameter
 		}
-		spec.Responses[key] = response
+	}
+
+	// Handle Swagger 2.0 top-level Responses (backward compatibility)
+	if spec.Responses != nil {
+		for key := range spec.Responses {
+			response := spec.Responses[key]
+			if err := expandParameterOrResponse(&response, resolver, specBasePath); resolver.shouldStopOnError(err) {
+				return err
+			}
+			spec.Responses[key] = response
+		}
 	}
 
 	if spec.Paths != nil {
@@ -151,6 +201,12 @@ func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *Expan
 
 	resolver := defaultSchemaLoader(nil, opts, cache, nil)
 
+	// Preserve $defs from the original schema, as JSON Schema 2020-12 allows
+	// $ref alongside other keywords, but our expander replaces the schema with
+	// the referenced one when $ref is present.
+	originalDefs := schema.Defs
+	originalDefinitions := schema.Definitions
+
 	parentRefs := make([]string, 0, smallPrealloc)
 	s, err := expandSchema(*schema, parentRefs, resolver, opts.RelativeBase)
 	if err != nil {
@@ -159,6 +215,14 @@ func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *Expan
 	if s != nil {
 		// guard for when continuing on error
 		*schema = *s
+	}
+
+	// Restore $defs and definitions if they were lost during expansion
+	if len(schema.Defs) == 0 && len(originalDefs) > 0 {
+		schema.Defs = originalDefs
+	}
+	if len(schema.Definitions) == 0 && len(originalDefinitions) > 0 {
+		schema.Definitions = originalDefinitions
 	}
 
 	return nil
@@ -226,6 +290,17 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 		if tt != nil {
 			target.Definitions[k] = *tt
+		}
+	}
+
+	// JSON Schema 2020-12 uses $defs instead of definitions
+	for k := range target.Defs {
+		tt, err := expandSchema(target.Defs[k], parentRefs, resolver, basePath)
+		if resolver.shouldStopOnError(err) {
+			return &target, err
+		}
+		if tt != nil {
+			target.Defs[k] = *tt
 		}
 	}
 
@@ -298,12 +373,16 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 	}
 
 	for k := range target.PatternProperties {
-		t, err := expandSchema(target.PatternProperties[k], parentRefs, resolver, basePath)
-		if resolver.shouldStopOnError(err) {
-			return &target, err
-		}
-		if t != nil {
-			target.PatternProperties[k] = *t
+		if target.PatternProperties[k].Schema != nil {
+			t, err := expandSchema(*target.PatternProperties[k].Schema, parentRefs, resolver, basePath)
+			if resolver.shouldStopOnError(err) {
+				return &target, err
+			}
+			if t != nil {
+				v := target.PatternProperties[k]
+				v.Schema = t
+				target.PatternProperties[k] = v
+			}
 		}
 	}
 
@@ -372,6 +451,20 @@ func expandSchemaRef(target Schema, parentRefs []string, resolver *schemaLoader,
 	return expandSchema(*t, parentRefs, transitiveResolver, basePath)
 }
 
+// expandContentSchema expands a schema from Content (OpenAPI 3.x).
+// It handles both schemas with a root $ref and inline schemas with nested refs.
+// Note: Content schemas are always expanded regardless of SkipSchemas option,
+// because in OpenAPI 3.x the schema structure in responses/parameters is different
+// from Swagger 2.0, and partial expansion would leave inconsistent results.
+func expandContentSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
+	if target.Ref.String() != "" {
+		// Schema has a root $ref - always expand it (ignore SkipSchemas for Content schemas)
+		return expandSchemaRef(target, parentRefs, resolver, basePath)
+	}
+	// Schema is inline (no root $ref) - expand nested refs
+	return expandSchema(target, parentRefs, resolver, basePath)
+}
+
 func expandPathItem(pathItem *PathItem, resolver *schemaLoader, basePath string) error {
 	if pathItem == nil {
 		return nil
@@ -426,6 +519,13 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 		op.Parameters[i] = param
 	}
 
+	// Handle OpenAPI 3.x RequestBody
+	if op.RequestBody != nil {
+		if err := expandRequestBody(op.RequestBody, resolver, basePath); resolver.shouldStopOnError(err) {
+			return err
+		}
+	}
+
 	if op.Responses == nil {
 		return nil
 	}
@@ -441,6 +541,47 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 			return err
 		}
 		responses.StatusCodeResponses[code] = response
+	}
+
+	return nil
+}
+
+// expandRequestBody expands a RequestBody and its content schemas
+func expandRequestBody(requestBody *RequestBody, resolver *schemaLoader, basePath string) error {
+	if requestBody == nil {
+		return nil
+	}
+
+	parentRefs := make([]string, 0, smallPrealloc)
+
+	// Handle $ref on the RequestBody itself
+	if requestBody.Ref.String() != "" {
+		if err := resolver.deref(requestBody, parentRefs, basePath); resolver.shouldStopOnError(err) {
+			return err
+		}
+
+		if requestBody.Ref.String() != "" {
+			transitiveResolver := resolver.transitiveResolver(basePath, requestBody.Ref)
+			basePath = resolver.updateBasePath(transitiveResolver, basePath)
+			resolver = transitiveResolver
+		}
+		requestBody.Ref = Ref{}
+	}
+
+	// Expand schemas in Content
+	if requestBody.Content != nil {
+		for mediaType, mediaTypeObj := range requestBody.Content {
+			if mediaTypeObj.Schema != nil {
+				sch, err := expandContentSchema(*mediaTypeObj.Schema, parentRefs, resolver, basePath)
+				if resolver.shouldStopOnError(err) {
+					return err
+				}
+				if sch != nil {
+					mediaTypeObj.Schema = sch
+					requestBody.Content[mediaType] = mediaTypeObj
+				}
+			}
+		}
 	}
 
 	return nil
@@ -513,6 +654,7 @@ func getRefAndSchema(input any) (*Ref, *Schema, error) {
 			return nil, nil, nil
 		}
 		ref = &refable.Ref
+		// For OpenAPI v3, we'll need to handle Content separately
 		sch = refable.Schema
 	case *Response:
 		if refable == nil {
@@ -554,6 +696,37 @@ func expandParameterOrResponse(input any, resolver *schemaLoader, basePath strin
 	}
 
 	if sch == nil {
+		// For OpenAPI v3, also expand schemas in Content (for both Response and Parameter)
+		if resp, ok := input.(*Response); ok && resp != nil && resp.Content != nil {
+			for mediaType, mediaTypeObj := range resp.Content {
+				if mediaTypeObj.Schema != nil {
+					sch, err := expandContentSchema(*mediaTypeObj.Schema, parentRefs, resolver, basePath)
+					if resolver.shouldStopOnError(err) {
+						return err
+					}
+					if sch != nil {
+						mediaTypeObj.Schema = sch
+						resp.Content[mediaType] = mediaTypeObj
+					}
+				}
+			}
+		}
+
+		if param, ok := input.(*Parameter); ok && param != nil && param.Content != nil {
+			for mediaType, mediaTypeObj := range param.Content {
+				if mediaTypeObj.Schema != nil {
+					sch, err := expandContentSchema(*mediaTypeObj.Schema, parentRefs, resolver, basePath)
+					if resolver.shouldStopOnError(err) {
+						return err
+					}
+					if sch != nil {
+						mediaTypeObj.Schema = sch
+						param.Content[mediaType] = mediaTypeObj
+					}
+				}
+			}
+		}
+
 		// nothing to be expanded
 		if ref != nil {
 			*ref = Ref{}
@@ -592,6 +765,37 @@ func expandParameterOrResponse(input any, resolver *schemaLoader, basePath strin
 
 	if s != nil { // guard for when continuing on error
 		*sch = *s
+	}
+
+	// For v3, also expand schemas in Content (for both Response and Parameter)
+	if resp, ok := input.(*Response); ok && resp != nil && resp.Content != nil {
+		for mediaType, mediaTypeObj := range resp.Content {
+			if mediaTypeObj.Schema != nil {
+				sch, err := expandContentSchema(*mediaTypeObj.Schema, parentRefs, resolver, basePath)
+				if resolver.shouldStopOnError(err) {
+					return err
+				}
+				if sch != nil {
+					mediaTypeObj.Schema = sch
+					resp.Content[mediaType] = mediaTypeObj
+				}
+			}
+		}
+	}
+
+	if param, ok := input.(*Parameter); ok && param != nil && param.Content != nil {
+		for mediaType, mediaTypeObj := range param.Content {
+			if mediaTypeObj.Schema != nil {
+				sch, err := expandContentSchema(*mediaTypeObj.Schema, parentRefs, resolver, basePath)
+				if resolver.shouldStopOnError(err) {
+					return err
+				}
+				if sch != nil {
+					mediaTypeObj.Schema = sch
+					param.Content[mediaType] = mediaTypeObj
+				}
+			}
+		}
 	}
 
 	return nil

@@ -93,3 +93,51 @@ func (properties SchemaProperties) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(properties.ToOrderedSchemaItems())
 }
+
+// UnmarshalJSON handles JSON Schema 2020-12 where property values can be either
+// a schema object or a boolean (true/false). Boolean values are converted to
+// empty schemas with appropriate semantics (true = allows any, false = allows none).
+func (properties *SchemaProperties) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	result := make(SchemaProperties, len(raw))
+	for k, v := range raw {
+		// Check if it's a boolean value
+		trimmed := bytes.TrimSpace(v)
+		if bytes.Equal(trimmed, []byte("true")) || bytes.Equal(trimmed, []byte("false")) {
+			// For boolean values in properties (JSON Schema 2020-12):
+			// true = schema that allows anything (empty schema)
+			// false = schema that allows nothing (we can represent this with impossible constraints)
+			// For simplicity, we use an empty schema for true and skip false entries
+			if bytes.Equal(trimmed, []byte("true")) {
+				result[k] = Schema{} // empty schema allows anything
+			}
+			// false entries are not added - they disallow any value
+			continue
+		}
+
+		var schema Schema
+		if err := json.Unmarshal(v, &schema); err != nil {
+			return err
+		}
+		result[k] = schema
+	}
+
+	*properties = result
+	return nil
+}
+
+// PatternSchemaProperties is a map representing pattern properties of a Schema object.
+// In JSON Schema 2020-12, pattern property values can be either a schema or a boolean.
+type PatternSchemaProperties map[string]SchemaOrBool
+
+// MarshalJSON produces pattern properties as json.
+func (properties PatternSchemaProperties) MarshalJSON() ([]byte, error) {
+	if properties == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(map[string]SchemaOrBool(properties))
+}

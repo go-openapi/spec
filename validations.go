@@ -170,9 +170,9 @@ func (v CommonValidations) HasEnum() bool {
 type SchemaValidations struct {
 	CommonValidations
 
-	PatternProperties SchemaProperties `json:"patternProperties,omitempty"`
-	MaxProperties     *int64           `json:"maxProperties,omitempty"`
-	MinProperties     *int64           `json:"minProperties,omitempty"`
+	PatternProperties PatternSchemaProperties `json:"patternProperties,omitempty"`
+	MaxProperties     *int64                  `json:"maxProperties,omitempty"`
+	MinProperties     *int64                  `json:"minProperties,omitempty"`
 }
 
 // HasObjectValidations indicates if the validations are for objects

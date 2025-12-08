@@ -538,8 +538,8 @@ func TestExpand_InternalSchemas2(t *testing.T) {
 
 	schema = *s
 	prop := schema.PatternProperties["^x-ab"]
-	assert.Empty(t, prop.Items.Schema.Ref.String())
-	assert.Equal(t, *prop.Items.Schema, spec.Definitions["tag"])
+	assert.Empty(t, prop.Schema.Items.Schema.Ref.String())
+	assert.Equal(t, *prop.Schema.Items.Schema, spec.Definitions["tag"])
 
 	// verify expanded schema for Deps, in the returned schema [expand dependencies]
 	schema = spec.Definitions["deps"]
@@ -559,9 +559,9 @@ func TestExpand_InternalSchemas2(t *testing.T) {
 	require.NotNil(t, s)
 
 	schema = *s
-	prop = schema.Definitions["something"]
-	assert.Empty(t, prop.Items.Schema.Ref.String())
-	assert.Equal(t, *prop.Items.Schema, spec.Definitions["tag"])
+	something := schema.Definitions["something"]
+	assert.Empty(t, something.Items.Schema.Ref.String())
+	assert.Equal(t, *something.Items.Schema, spec.Definitions["tag"])
 }
 
 func TestExpand_InternalSchemas1(t *testing.T) {
@@ -692,8 +692,8 @@ func TestExpand_InternalSchemas1(t *testing.T) {
 
 	schema = *s
 	prop := schema.PatternProperties["^x-ab"]
-	assert.Empty(t, prop.Ref.String())
-	assert.Equal(t, prop, spec.Definitions["tag"])
+	assert.Empty(t, prop.Schema.Ref.String())
+	assert.Equal(t, *prop.Schema, spec.Definitions["tag"])
 
 	schema = spec.Definitions["deps"]
 	s, err = expandSchema(schema, []string{"#/definitions/deps"}, resolver, basePath)
@@ -711,9 +711,9 @@ func TestExpand_InternalSchemas1(t *testing.T) {
 	require.NotNil(t, s)
 
 	schema = *s
-	prop = schema.Definitions["something"]
-	assert.Empty(t, prop.Ref.String())
-	assert.Equal(t, prop, spec.Definitions["tag"])
+	something := schema.Definitions["something"]
+	assert.Empty(t, something.Ref.String())
+	assert.Equal(t, something, spec.Definitions["tag"])
 }
 
 func TestExpand_RelativeBaseURI(t *testing.T) {

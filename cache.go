@@ -69,8 +69,10 @@ func initResolutionCache() {
 
 func defaultResolutionCache() *simpleCache {
 	return &simpleCache{store: map[string]any{
-		"http://swagger.io/v2/schema.json":       MustLoadSwagger20Schema(),
-		"http://json-schema.org/draft-04/schema": MustLoadJSONSchemaDraft04(),
+		"http://swagger.io/v2/schema.json":                     MustLoadSwagger20Schema(),
+		"http://json-schema.org/draft-04/schema":               MustLoadJSONSchemaDraft04(),
+		"https://spec.openapis.org/oas/3.2/schema/2025-09-17":  MustLoadOpenAPI32Schema(),
+		"https://spec.openapis.org/oas/3.2/schema/2025-09-17#": MustLoadOpenAPI32Schema(),
 	}}
 }
 

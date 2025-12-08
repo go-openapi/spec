@@ -9,6 +9,7 @@ import (
 
 //go:generate curl -L --progress -o ./schemas/v2/schema.json http://swagger.io/v2/schema.json
 //go:generate curl -L --progress  -o ./schemas/jsonschema-draft-04.json http://json-schema.org/draft-04/schema
+//go:generate curl -L --progress -o ./schemas/v3/schema.json https://spec.openapis.org/oas/3.2/schema/2025-09-17
 //go:generate go-bindata -pkg=spec -prefix=./schemas -ignore=.*\.md ./schemas/...
 //go:generate perl -pi -e s,Json,JSON,g bindata.go
 
@@ -17,6 +18,10 @@ const (
 	SwaggerSchemaURL = "http://swagger.io/v2/schema.json#"
 	// JSONSchemaURL the url for the json schema
 	JSONSchemaURL = "http://json-schema.org/draft-04/schema#"
+	// OpenAPI32SchemaURL the url for the OpenAPI 3.2 schema to validate specs
+	OpenAPI32SchemaURL = "https://spec.openapis.org/oas/3.2/schema/2025-09-17#"
+	// OpenAPIVersion the default OpenAPI version to use
+	OpenAPIVersion = "3.2.0"
 )
 
 // MustLoadJSONSchemaDraft04 panics when Swagger20Schema returns an error
@@ -55,6 +60,30 @@ func MustLoadSwagger20Schema() *Schema {
 func Swagger20Schema() (*Schema, error) {
 
 	b, err := v2SchemaJSONBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	schema := new(Schema)
+	if err := json.Unmarshal(b, schema); err != nil {
+		return nil, err
+	}
+	return schema, nil
+}
+
+// MustLoadOpenAPI32Schema panics when OpenAPI32Schema returns an error
+func MustLoadOpenAPI32Schema() *Schema {
+	d, e := OpenAPI32Schema()
+	if e != nil {
+		panic(e)
+	}
+	return d
+}
+
+// OpenAPI32Schema loads the OpenAPI 3.2 schema from the embedded assets
+func OpenAPI32Schema() (*Schema, error) {
+
+	b, err := v3SchemaJSONBytes()
 	if err != nil {
 		return nil, err
 	}

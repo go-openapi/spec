@@ -12,15 +12,18 @@ import (
 
 // ResponseProps properties specific to a response
 type ResponseProps struct {
-	Description string            `json:"description"`
-	Schema      *Schema           `json:"schema,omitempty"`
-	Headers     map[string]Header `json:"headers,omitempty"`
-	Examples    map[string]any    `json:"examples,omitempty"`
+	Description string               `json:"description"`
+	Schema      *Schema              `json:"schema,omitempty"`
+	Headers     map[string]Header    `json:"headers,omitempty"`
+	Content     map[string]MediaType `json:"content,omitempty"` // Replaces Schema in OpenAPI v3
+	Links       map[string]Link      `json:"links,omitempty"`
+	Examples    map[string]any       `json:"examples,omitempty"`
 }
 
 // Response describes a single response from an API Operation.
 //
 // For more information: http://goo.gl/8us55a#responseObject
+// For more information: https://spec.openapis.org/oas/v3.1.0#response-object
 type Response struct {
 	Refable
 	ResponseProps

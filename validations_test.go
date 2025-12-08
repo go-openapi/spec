@@ -26,9 +26,9 @@ func mkVal() SchemaValidations {
 			MultipleOf:       conv.Pointer(4.4),
 			Enum:             []any{"a", 12.5},
 		},
-		PatternProperties: SchemaProperties{
-			"x": *BooleanProperty(),
-			"y": *BooleanProperty(),
+		PatternProperties: PatternSchemaProperties{
+			"x": SchemaOrBool{Schema: BooleanProperty()},
+			"y": SchemaOrBool{Schema: BooleanProperty()},
 		},
 		MinProperties: conv.Pointer(int64(19)),
 		MaxProperties: conv.Pointer(int64(20)),

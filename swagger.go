@@ -30,6 +30,48 @@ func (s Swagger) JSONLookup(token string) (any, error) {
 	if ex, ok := s.Extensions[token]; ok {
 		return &ex, nil
 	}
+
+	// Handle backward compatibility for v2 field names
+	// When resolving JSON pointers, support both v2 and v3 paths
+	switch token {
+	case "definitions":
+		// First try Components.Schemas (OpenAPI 3.x)
+		if s.Components != nil && len(s.Components.Schemas) > 0 {
+			return s.Components.Schemas, nil
+		}
+		// Fall back to Definitions (Swagger 2.0)
+		if len(s.Definitions) > 0 {
+			return s.Definitions, nil
+		}
+	case "parameters":
+		// First try Components.Parameters (OpenAPI 3.x)
+		if s.Components != nil && len(s.Components.Parameters) > 0 {
+			return s.Components.Parameters, nil
+		}
+		// Fall back to Parameters (Swagger 2.0)
+		if len(s.Parameters) > 0 {
+			return s.Parameters, nil
+		}
+	case "responses":
+		// First try Components.Responses (OpenAPI 3.x)
+		if s.Components != nil && len(s.Components.Responses) > 0 {
+			return s.Components.Responses, nil
+		}
+		// Fall back to Responses (Swagger 2.0)
+		if len(s.Responses) > 0 {
+			return s.Responses, nil
+		}
+	case "securityDefinitions":
+		// First try Components.SecuritySchemes (OpenAPI 3.x)
+		if s.Components != nil && len(s.Components.SecuritySchemes) > 0 {
+			return s.Components.SecuritySchemes, nil
+		}
+		// Fall back to SecurityDefinitions (Swagger 2.0)
+		if len(s.SecurityDefinitions) > 0 {
+			return s.SecurityDefinitions, nil
+		}
+	}
+
 	r, _, err := jsonpointer.GetForToken(s.SwaggerProps, token)
 	return r, err
 }
@@ -56,6 +98,22 @@ func (s *Swagger) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &sw.VendorExtensible); err != nil {
 		return err
 	}
+
+	// Sync Swagger 2.0 fields with OpenAPI 3.x components for backward compatibility
+	if sw.Components != nil {
+		sw.Definitions = sw.Components.Schemas
+		sw.Parameters = sw.Components.Parameters
+		sw.Responses = sw.Components.Responses
+		// Convert SecuritySchemes (value) to SecurityDefinitions (pointer)
+		if sw.Components.SecuritySchemes != nil {
+			sw.SecurityDefinitions = make(SecurityDefinitions, len(sw.Components.SecuritySchemes))
+			for k, v := range sw.Components.SecuritySchemes {
+				scheme := v
+				sw.SecurityDefinitions[k] = &scheme
+			}
+		}
+	}
+
 	*s = sw
 	return nil
 }
@@ -97,22 +155,37 @@ func (s *Swagger) GobDecode(b []byte) error {
 // - BasePath must start with a leading "/"
 // - Paths is required
 type SwaggerProps struct {
-	ID                  string                 `json:"id,omitempty"`
-	Consumes            []string               `json:"consumes,omitempty"`
-	Produces            []string               `json:"produces,omitempty"`
-	Schemes             []string               `json:"schemes,omitempty"`
-	Swagger             string                 `json:"swagger,omitempty"`
-	Info                *Info                  `json:"info,omitempty"`
-	Host                string                 `json:"host,omitempty"`
-	BasePath            string                 `json:"basePath,omitempty"`
-	Paths               *Paths                 `json:"paths"`
-	Definitions         Definitions            `json:"definitions,omitempty"`
-	Parameters          map[string]Parameter   `json:"parameters,omitempty"`
-	Responses           map[string]Response    `json:"responses,omitempty"`
-	SecurityDefinitions SecurityDefinitions    `json:"securityDefinitions,omitempty"`
-	Security            []map[string][]string  `json:"security,omitempty"`
-	Tags                []Tag                  `json:"tags,omitempty"`
-	ExternalDocs        *ExternalDocumentation `json:"externalDocs,omitempty"`
+	ID           string                 `json:"id,omitempty"`
+	Info         *Info                  `json:"info,omitempty"`
+	Paths        *Paths                 `json:"paths"`
+	Security     []map[string][]string  `json:"security,omitempty"`
+	Tags         []Tag                  `json:"tags,omitempty"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
+
+	OpenAPI           string              `json:"openapi,omitempty"` // for OpenAPI 3 document
+	JSONSchemaDialect string              `json:"jsonSchemaDialect,omitempty"`
+	Servers           []Server            `json:"servers,omitempty"`
+	Webhooks          map[string]PathItem `json:"webhooks,omitempty"`
+	Components        *Components         `json:"components,omitempty"`
+
+	// In OpenAPI 3.x these map to different locations:
+	// - Definitions -> Components.Schemas
+	// - Parameters -> Components.Parameters
+	// - Responses -> Components.Responses
+	// - SecurityDefinitions -> Components.SecuritySchemes
+	// - Consumes/Produces are now in individual operations or media types
+	// - Host/BasePath/Schemes -> Servers
+	// These fields are kept for backward compatibility with Swagger 2.0 specs
+	Swagger             string               `json:"swagger,omitempty"` // for Swagger 2 document
+	Consumes            []string             `json:"consumes,omitempty"`
+	Produces            []string             `json:"produces,omitempty"`
+	Schemes             []string             `json:"schemes,omitempty"`
+	Host                string               `json:"host,omitempty"`
+	BasePath            string               `json:"basePath,omitempty"`
+	Definitions         Definitions          `json:"definitions,omitempty"`
+	Parameters          map[string]Parameter `json:"parameters,omitempty"`
+	Responses           map[string]Response  `json:"responses,omitempty"`
+	SecurityDefinitions SecurityDefinitions  `json:"securityDefinitions,omitempty"`
 }
 
 type swaggerPropsAlias SwaggerProps

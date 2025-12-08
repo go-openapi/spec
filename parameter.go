@@ -26,17 +26,25 @@ func PathParam(name string) *Parameter {
 	return &Parameter{ParamProps: ParamProps{Name: name, In: "path", Required: true}}
 }
 
+// CookieParam creates a cookie parameter
+func CookieParam(name string) *Parameter {
+	return &Parameter{ParamProps: ParamProps{Name: name, In: "cookie"}}
+}
+
 // BodyParam creates a body parameter
+// for OpenAPI v3 use RequestBody instead
 func BodyParam(name string, schema *Schema) *Parameter {
 	return &Parameter{ParamProps: ParamProps{Name: name, In: "body", Schema: schema}}
 }
 
 // FormDataParam creates a body parameter
+// for OpenAPI v3 use RequestBody with appropriate media type
 func FormDataParam(name string) *Parameter {
 	return &Parameter{ParamProps: ParamProps{Name: name, In: "formData"}}
 }
 
 // FileParam creates a body parameter
+// for OpenAPI v3 use RequestBody with multipart/form-data media type
 func FileParam(name string) *Parameter {
 	return &Parameter{ParamProps: ParamProps{Name: name, In: "formData"},
 		SimpleSchema: SimpleSchema{Type: "file"}}
@@ -61,13 +69,20 @@ func ParamRef(uri string) *Parameter {
 // NOTE:
 // - Schema is defined when "in" == "body": see validate
 // - AllowEmptyValue is allowed where "in" == "query" || "formData"
+// - In OpenAPI v3, valid values for "in" are: query, header, path, cookie
 type ParamProps struct {
-	Description     string  `json:"description,omitempty"`
-	Name            string  `json:"name,omitempty"`
-	In              string  `json:"in,omitempty"`
-	Required        bool    `json:"required,omitempty"`
-	Schema          *Schema `json:"schema,omitempty"`
-	AllowEmptyValue bool    `json:"allowEmptyValue,omitempty"`
+	Description     string               `json:"description,omitempty"`
+	Name            string               `json:"name,omitempty"`
+	In              string               `json:"in,omitempty"`
+	Required        bool                 `json:"required,omitempty"`
+	Schema          *Schema              `json:"schema,omitempty"`
+	AllowEmptyValue bool                 `json:"allowEmptyValue,omitempty"`
+	Deprecated      bool                 `json:"deprecated,omitempty"`
+	Style           string               `json:"style,omitempty"`
+	Explode         *bool                `json:"explode,omitempty"`
+	AllowReserved   bool                 `json:"allowReserved,omitempty"`
+	Examples        map[string]Example   `json:"examples,omitempty"`
+	Content         map[string]MediaType `json:"content,omitempty"`
 }
 
 // Parameter a unique parameter is defined by a combination of a [name](#parameterName) and [location](#parameterIn).
@@ -78,24 +93,26 @@ type ParamProps struct {
 //     the path parameter is `itemId`.
 //   - Query - Parameters that are appended to the URL. For example, in `/items?id=###`, the query parameter is `id`.
 //   - Header - Custom headers that are expected as part of the request.
-//   - Body - The payload that's appended to the HTTP request. Since there can only be one payload, there can only be
+//   - Body (Swagger 2) - The payload that's appended to the HTTP request. Since there can only be one payload, there can only be
 //     _one_ body parameter. The name of the body parameter has no effect on the parameter itself and is used for
 //     documentation purposes only. Since Form parameters are also in the payload, body and form parameters cannot exist
 //     together for the same operation.
-//   - Form - Used to describe the payload of an HTTP request when either `application/x-www-form-urlencoded` or
+//   - Form (Swagger 2) - Used to describe the payload of an HTTP request when either `application/x-www-form-urlencoded` or
 //     `multipart/form-data` are used as the content type of the request (in Swagger's definition,
 //     the [`consumes`](#operationConsumes) property of an operation). This is the only parameter type that can be used
 //     to send files, thus supporting the `file` type. Since form parameters are sent in the payload, they cannot be
 //     declared together with a body parameter for the same operation. Form parameters have a different format based on
 //     the content-type used (for further details, consult http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4).
-//   - `application/x-www-form-urlencoded` - Similar to the format of Query parameters but as a payload.
+//   - `application/x-www-form-urlencoded` (Swagger 2) - Similar to the format of Query parameters but as a payload.
 //     For example, `foo=1&bar=swagger` - both `foo` and `bar` are form parameters. This is normally used for simple
 //     parameters that are being transferred.
-//   - `multipart/form-data` - each parameter takes a section in the payload with an internal header.
+//   - `multipart/form-data` (Swagger 2) - each parameter takes a section in the payload with an internal header.
 //     For example, for the header `Content-Disposition: form-data; name="submit-name"` the name of the parameter is
 //     `submit-name`. This type of form parameters is more commonly used for file transfers.
+//   - Cookie - Used to pass a specific cookie value to the API.
 //
 // For more information: http://goo.gl/8us55a#parameterObject
+// For more information: https://spec.openapis.org/oas/v3.1.0#parameter-object
 type Parameter struct {
 	Refable
 	CommonValidations
