@@ -217,6 +217,8 @@ func (r *schemaLoader) deref(input any, parentRefs []string, basePath string) er
 		ref = &refable.Ref
 	case *PathItem:
 		ref = &refable.Ref
+	case *RequestBody:
+		ref = &refable.Ref
 	default:
 		return fmt.Errorf("unsupported type: %T: %w", input, ErrDerefUnsupportedType)
 	}

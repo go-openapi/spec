@@ -1,0 +1,61 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "title": "Item API",
+        "description": "Item API",
+        "version": "1.0.0"
+    },
+    "security": [
+        {
+            "key": []
+        }
+    ],
+    "paths": {
+        "/item": {
+            "get": {
+                "operationId": "GetItem",
+                "responses": {
+                    "200": {
+                        "description": "item detail response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "item2.json#/item"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "$ref": "#/components/responses/itemResponse"
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "http://item.api.local/v1"
+        }
+    ],
+    "components": {
+        "responses": {
+            "itemResponse": {
+                "description": "Item",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "item2.json#/item"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "key": {
+                "type": "apiKey",
+                "name": "x-item-token",
+                "in": "header"
+            }
+        }
+    }
+}

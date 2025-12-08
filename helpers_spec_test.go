@@ -19,6 +19,10 @@ import (
 var (
 	rex        = regexp.MustCompile(`"\$ref":\s*"(.*?)"`)
 	testLoader func(string) (json.RawMessage, error)
+
+	// nonSchemaRefPattern matches OpenAPI 3 $ref paths that point to non-schema components
+	// (requestBodies, responses, parameters, headers, etc.) which cannot be expanded as schemas
+	nonSchemaRefPattern = regexp.MustCompile(`#/components/(requestBodies|responses|parameters|headers|securitySchemes|links|callbacks)/`)
 )
 
 func init() {
@@ -71,12 +75,23 @@ func assertRefInJSONRegexp(t testing.TB, jazon, match string) {
 	}
 }
 
+// isSchemaRef returns true if the ref points to a schema (can be expanded as a schema).
+// Returns false for OpenAPI 3 non-schema component refs like requestBodies, responses, etc.
+func isSchemaRef(ref string) bool {
+	return !nonSchemaRefPattern.MatchString(ref)
+}
+
 // assertRefExpand ensures that all $ref in some json doc expand properly against a root document.
 //
 // "exclude" is a regexp pattern to ignore certain $ref (e.g. some specs may embed $ref that are not processed, such as extensions).
 func assertRefExpand(t *testing.T, jazon, _ string, root any, opts ...*spec.ExpandOptions) {
 	if len(opts) > 0 {
 		assertRefWithFunc(t, "expand-with-base", jazon, "", func(t *testing.T, match string) {
+			// Skip non-schema refs (OpenAPI 3 requestBodies, responses, etc.)
+			if !isSchemaRef(match) {
+				t.Skipf("skipping non-schema ref: %s", match)
+				return
+			}
 			ref := spec.RefSchema(match)
 			options := *opts[0]
 			require.NoError(t, spec.ExpandSchemaWithBasePath(ref, nil, &options))
@@ -85,6 +100,11 @@ func assertRefExpand(t *testing.T, jazon, _ string, root any, opts ...*spec.Expa
 	}
 
 	assertRefWithFunc(t, "expand", jazon, "", func(t *testing.T, match string) {
+		// Skip non-schema refs (OpenAPI 3 requestBodies, responses, etc.)
+		if !isSchemaRef(match) {
+			t.Skipf("skipping non-schema ref: %s", match)
+			return
+		}
 		ref := spec.RefSchema(match)
 		require.NoError(t, spec.ExpandSchema(ref, root, nil))
 	})
@@ -92,6 +112,11 @@ func assertRefExpand(t *testing.T, jazon, _ string, root any, opts ...*spec.Expa
 
 func assertRefResolve(t *testing.T, jazon, exclude string, root any, opts ...*spec.ExpandOptions) {
 	assertRefWithFunc(t, "resolve", jazon, exclude, func(t *testing.T, match string) {
+		// Skip non-schema refs (OpenAPI 3 requestBodies, responses, etc.)
+		if !isSchemaRef(match) {
+			t.Skipf("skipping non-schema ref: %s", match)
+			return
+		}
 		ref := spec.MustCreateRef(match)
 		var (
 			sch *spec.Schema

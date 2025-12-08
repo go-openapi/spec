@@ -1,0 +1,68 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "description": "My API",
+        "version": "1.0.0",
+        "title": "my api",
+        "contact": {
+            "email": "me@myorg.com"
+        },
+        "license": {
+            "name": "my org"
+        }
+    },
+    "tags": [],
+    "paths": {
+        "/api/v1/endpoint": {
+            "post": {
+                "summary": "my endpoint",
+                "description": "Accessible to . ",
+                "operationId": "ep1",
+                "responses": {
+                    "200": {
+                        "description": "Operation successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "https://127.0.0.1"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "errorCode": {
+                        "type": "string",
+                        "format": "string"
+                    },
+                    "errorMessage": {
+                        "type": "string",
+                        "format": "string"
+                    },
+                    "warning": {
+                        "type": "string"
+                    },
+                    "child-errors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

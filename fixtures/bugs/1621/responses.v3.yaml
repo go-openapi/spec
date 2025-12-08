@@ -1,0 +1,18 @@
+openapi: 3.2.0
+info:
+  title: Responses
+  version: 0.1.0
+paths: {}
+components:
+  responses:
+    V4Generic401Response:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: "./definitions.v3.yaml#/components/schemas/V4GenericResponse"
+          examples:
+            response:
+              value:
+                code: PERMISSION_DENIED
+                message: The requested resource cannot be accessed using the provided authentication details.

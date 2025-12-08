@@ -24,18 +24,25 @@ func init() {
 // - schemes, when present must be from [http, https, ws, wss]: see validate
 // - Security is handled as a special case: see MarshalJSON function
 type OperationProps struct {
+	ID           string                 `json:"operationId,omitempty"`
 	Description  string                 `json:"description,omitempty"`
-	Consumes     []string               `json:"consumes,omitempty"`
-	Produces     []string               `json:"produces,omitempty"`
-	Schemes      []string               `json:"schemes,omitempty"`
 	Tags         []string               `json:"tags,omitempty"`
 	Summary      string                 `json:"summary,omitempty"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
-	ID           string                 `json:"operationId,omitempty"`
-	Deprecated   bool                   `json:"deprecated,omitempty"`
-	Security     []map[string][]string  `json:"security,omitempty"`
 	Parameters   []Parameter            `json:"parameters,omitempty"`
 	Responses    *Responses             `json:"responses,omitempty"`
+	Deprecated   bool                   `json:"deprecated,omitempty"`
+	Security     []map[string][]string  `json:"security,omitempty"`
+
+	// Swagger 2
+	Consumes []string `json:"consumes,omitempty"`
+	Produces []string `json:"produces,omitempty"`
+	Schemes  []string `json:"schemes,omitempty"`
+
+	// OpenAPI 3
+	RequestBody *RequestBody        `json:"requestBody,omitempty"`
+	Callbacks   map[string]Callback `json:"callbacks,omitempty"`
+	Servers     []Server            `json:"servers,omitempty"`
 }
 
 // MarshalJSON takes care of serializing operation properties to JSON
@@ -183,12 +190,14 @@ func (o *Operation) Undeprecate() *Operation {
 }
 
 // WithConsumes adds media types for incoming body values
+// OpenAPI v3 use RequestBody with Content instead
 func (o *Operation) WithConsumes(mediaTypes ...string) *Operation {
 	o.Consumes = append(o.Consumes, mediaTypes...)
 	return o
 }
 
 // WithProduces adds media types for outgoing body values
+// OpenAPI v3 use Response with Content instead
 func (o *Operation) WithProduces(mediaTypes ...string) *Operation {
 	o.Produces = append(o.Produces, mediaTypes...)
 	return o

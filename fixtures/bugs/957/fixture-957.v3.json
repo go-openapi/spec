@@ -1,0 +1,3746 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "title": "API title",
+        "version": "0.0.1"
+    },
+    "tags": [
+        {
+            "name": "devices",
+            "description": "Operations about devices"
+        },
+        {
+            "name": "info",
+            "description": "Operations about infos"
+        }
+    ],
+    "paths": {
+        "/v2/devices": {
+            "get": {
+                "summary": "Query Nmdb::Device Object.",
+                "description": "Query Nmdb::Device Object.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "description": "Page offset to fetch.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "description": "Number of results to return per page.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "Pad a number of results.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "fmt",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "full",
+                                "full_root",
+                                "base"
+                            ],
+                            "default": "full_root"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "rels",
+                        "description": "Comma-separated list of relationships. Maximum 5 levels. \n e.g. interfaces,interfaces.ip_address",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "filters",
+                        "description": "Supports nesting up to 2 levels. \n e.g {\"host_name\":\"~hhcvi\",\"interfaces\":{\"ip_address\":{\"network_address\":\"~10.10.10\"},\"name\":\"eth0\"}}",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "search",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Query Nmdb::Device Object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Device"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "406": {
+                        "description": "NmdbQueryError",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NmdbQueryError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "devices"
+                ],
+                "operationId": "getV2Devices"
+            },
+            "post": {
+                "summary": "Create Nmdb::Device Object.",
+                "description": "Create Nmdb::Device Object.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/postV2Devices"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Create Nmdb::Device Object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Device"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "devices"
+                ],
+                "operationId": "postV2Devices"
+            }
+        },
+        "/v2/devices/{id}": {
+            "get": {
+                "summary": "GET Nmdb::Device Object.",
+                "description": "GET Nmdb::Device Object.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "fmt",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "full",
+                                "full_root",
+                                "base"
+                            ],
+                            "default": "full_root"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "rels",
+                        "description": "Comma-separated list of relationships. Maximum 5 levels. \n e.g. interfaces,interfaces.ip_address",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GET Nmdb::Device Object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Device"
+                                }
+                            }
+                        }
+                    },
+                    "406": {
+                        "description": "NmdbQueryError",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NmdbQueryError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "devices"
+                ],
+                "operationId": "getV2DevicesId"
+            },
+            "put": {
+                "summary": "Update Nmdb::Device Object.",
+                "description": "Update Nmdb::Device Object.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/putV2Devices"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update Nmdb::Device Object.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Device"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "devices"
+                ],
+                "operationId": "putV2DevicesId"
+            }
+        },
+        "/v2/info/version": {
+            "get": {
+                "summary": "Get API Version",
+                "description": "Get API Version",
+                "responses": {
+                    "200": {
+                        "description": "Get API Version",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Version"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "info"
+                ],
+                "operationId": "getV2InfoVersion"
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "https://local.tools.stack.local/torca/nmdb/api"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "api_key": {
+                "type": "apiKey",
+                "name": "private_token",
+                "in": "query"
+            },
+            "oauth2": {
+                "type": "oauth2",
+                "flows": {
+                    "implicit": {
+                        "authorizationUrl": "https://local.tools.stack.local/torca/oauth/authorize",
+                        "scopes": {}
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "Device": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "host_name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "zone_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "project_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_model_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "rack_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_reason_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "asset_tag": {
+                        "type": "string"
+                    },
+                    "reconciliation_identity": {
+                        "type": "string"
+                    },
+                    "serial_number": {
+                        "type": "string"
+                    },
+                    "application_environment_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pod_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "vm_capacity": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "switch_domain_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "blade_slot": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "blade_slots_required": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "blade_chassis_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "virtual_host_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "physical_host_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "blade_capacity": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ru_required": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "primary_device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "instance_id": {
+                        "type": "string"
+                    },
+                    "operating_system_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "workbook_version": {
+                        "type": "string"
+                    },
+                    "virtualized_on_vm_host_pool_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "contained_in_vm_host_pool_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "a_or_b": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "bottom_ru": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "event_logs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventLog"
+                        }
+                    },
+                    "sync_status": {
+                        "$ref": "#/components/schemas/SyncStatus"
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    },
+                    "device_status_reason": {
+                        "$ref": "#/components/schemas/DeviceStatusReason"
+                    },
+                    "versions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Version"
+                        }
+                    },
+                    "device_model": {
+                        "$ref": "#/components/schemas/DeviceModel"
+                    },
+                    "device_type": {
+                        "$ref": "#/components/schemas/DeviceType"
+                    },
+                    "project": {
+                        "$ref": "#/components/schemas/Project"
+                    },
+                    "rack": {
+                        "$ref": "#/components/schemas/Rack"
+                    },
+                    "zone": {
+                        "$ref": "#/components/schemas/Zone"
+                    },
+                    "pod": {
+                        "$ref": "#/components/schemas/Pod"
+                    },
+                    "application_environment": {
+                        "$ref": "#/components/schemas/ApplicationEnvironment"
+                    },
+                    "operating_system": {
+                        "$ref": "#/components/schemas/OperatingSystem"
+                    },
+                    "host_name_reservation": {
+                        "$ref": "#/components/schemas/HostNameReservation"
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    },
+                    "switch_ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwitchPort"
+                        }
+                    },
+                    "nat_entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NatEntry"
+                        }
+                    },
+                    "load_balancer_entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LoadBalancerEntry"
+                        }
+                    },
+                    "blades": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "blade_chassis": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "virtual_clients": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "virtual_host": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "virtual_hosts": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "physical_host": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "host_pool": {
+                        "$ref": "#/components/schemas/VmHostPool"
+                    },
+                    "virtualization_pool": {
+                        "$ref": "#/components/schemas/VmHostPool"
+                    },
+                    "primary_device": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "subnet_assignments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SubnetAssignment"
+                        }
+                    },
+                    "subnets": {
+                        "$ref": "#/components/schemas/Subnet"
+                    }
+                },
+                "description": "Update Nmdb::Device Object."
+            },
+            "EventLog": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "event_class": {
+                        "type": "string"
+                    },
+                    "severity": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "details": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "loggable_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "loggable_type": {
+                        "type": "string"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "loggable": {
+                        "$ref": "#/components/schemas/Loggable"
+                    }
+                }
+            },
+            "Loggable": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SyncStatus": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "locked": {
+                        "type": "boolean"
+                    },
+                    "details": {
+                        "type": "string"
+                    },
+                    "last_sync_start": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "last_sync_end": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "synchronizable_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "synchronizable_type": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "synchronizable": {
+                        "$ref": "#/components/schemas/Synchronizable"
+                    }
+                }
+            },
+            "Synchronizable": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "DeviceStatus": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "color": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "integration_id": {
+                        "type": "string"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "racks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Rack"
+                        }
+                    },
+                    "device_status_reasons": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceStatusReason"
+                        }
+                    }
+                }
+            },
+            "Rack": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "width": {
+                        "type": "string"
+                    },
+                    "height": {
+                        "type": "string"
+                    },
+                    "depth": {
+                        "type": "string"
+                    },
+                    "total_ru_space": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "max_power_watts": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "location_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "fibre_connection_count": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ethernet_connection_count": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_reason_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pod_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "reconciliation_identity": {
+                        "type": "string"
+                    },
+                    "event_logs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventLog"
+                        }
+                    },
+                    "sync_status": {
+                        "$ref": "#/components/schemas/SyncStatus"
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    },
+                    "device_status_reason": {
+                        "$ref": "#/components/schemas/DeviceStatusReason"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "location": {
+                        "$ref": "#/components/schemas/Location"
+                    },
+                    "pod": {
+                        "$ref": "#/components/schemas/Pod"
+                    }
+                }
+            },
+            "DeviceStatusReason": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "integration_id": {
+                        "type": "string"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "racks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Rack"
+                        }
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    }
+                }
+            },
+            "Location": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "site": {
+                        "type": "string"
+                    },
+                    "region": {
+                        "type": "string"
+                    },
+                    "building": {
+                        "type": "string"
+                    },
+                    "floor": {
+                        "type": "string"
+                    },
+                    "room": {
+                        "type": "string"
+                    },
+                    "latitude": {
+                        "type": "string"
+                    },
+                    "longitude": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "pods": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Pod"
+                        }
+                    }
+                }
+            },
+            "Pod": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "pod_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "environment_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "location_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pod_type": {
+                        "$ref": "#/components/schemas/PodType"
+                    },
+                    "location": {
+                        "$ref": "#/components/schemas/Location"
+                    },
+                    "zones": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Zone"
+                        }
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "racks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Rack"
+                        }
+                    },
+                    "data_transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DataTransaction"
+                        }
+                    }
+                }
+            },
+            "PodType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "pods": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Pod"
+                        }
+                    }
+                }
+            },
+            "Zone": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "parent_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pod_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "zone_group_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "vlans": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Vlan"
+                        }
+                    },
+                    "subnets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subnet"
+                        }
+                    },
+                    "pod": {
+                        "$ref": "#/components/schemas/Pod"
+                    },
+                    "children": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Zone"
+                        }
+                    },
+                    "data_transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DataTransaction"
+                        }
+                    },
+                    "parent": {
+                        "$ref": "#/components/schemas/Zone"
+                    }
+                }
+            },
+            "Vlan": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "primary_number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "zone_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "direction_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "vlan_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "is_primary": {
+                        "type": "boolean"
+                    },
+                    "notes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Note"
+                        }
+                    },
+                    "subnets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subnet"
+                        }
+                    },
+                    "zone": {
+                        "$ref": "#/components/schemas/Zone"
+                    },
+                    "direction": {
+                        "$ref": "#/components/schemas/Direction"
+                    },
+                    "vlan_type": {
+                        "$ref": "#/components/schemas/VlanType"
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    },
+                    "switch_ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwitchPort"
+                        }
+                    },
+                    "data_transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DataTransaction"
+                        }
+                    }
+                }
+            },
+            "Note": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Subnet": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "network_address": {
+                        "type": "string"
+                    },
+                    "netmask": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "default_gateway_id": {
+                        "type": "string"
+                    },
+                    "broadcast": {
+                        "type": "string"
+                    },
+                    "zone_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "supernet_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "default_gateway": {
+                        "type": "string"
+                    },
+                    "vlan_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "direction_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "int_address": {
+                        "type": "string"
+                    },
+                    "cidr_address": {
+                        "type": "string"
+                    },
+                    "zone": {
+                        "$ref": "#/components/schemas/Zone"
+                    },
+                    "vlan": {
+                        "$ref": "#/components/schemas/Vlan"
+                    },
+                    "direction": {
+                        "$ref": "#/components/schemas/Direction"
+                    },
+                    "ip_addresses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IpAddress"
+                        }
+                    },
+                    "data_transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DataTransaction"
+                        }
+                    },
+                    "subnets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subnet"
+                        }
+                    },
+                    "supernet": {
+                        "$ref": "#/components/schemas/Subnet"
+                    },
+                    "devices": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "versions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Version"
+                        }
+                    }
+                }
+            },
+            "Direction": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "zone_group_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "dns_suffix": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "vlans": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Vlan"
+                        }
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    },
+                    "subnets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subnet"
+                        }
+                    },
+                    "data_transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DataTransaction"
+                        }
+                    }
+                }
+            },
+            "Interface": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "mac_address": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "require_ip": {
+                        "type": "boolean"
+                    },
+                    "require_switch_port": {
+                        "type": "boolean"
+                    },
+                    "require_default_gateway": {
+                        "type": "boolean"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "media": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "vlan_direction_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "interface_speed_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "vlan_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "subnet_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "direction_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "duplex_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "medium_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "switch_port_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pci_slot": {
+                        "type": "string"
+                    },
+                    "a_or_b": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "require_route_for_management": {
+                        "type": "boolean"
+                    },
+                    "require_route_for_getronics": {
+                        "type": "boolean"
+                    },
+                    "default_gateway_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "static_routes": {
+                        "type": "string"
+                    },
+                    "interface_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "connector_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "mac_addr": {
+                        "type": "string"
+                    },
+                    "device": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "subnet": {
+                        "$ref": "#/components/schemas/Subnet"
+                    },
+                    "ip_address": {
+                        "$ref": "#/components/schemas/IpAddress"
+                    },
+                    "vlan": {
+                        "$ref": "#/components/schemas/Vlan"
+                    },
+                    "direction": {
+                        "$ref": "#/components/schemas/Direction"
+                    },
+                    "duplex": {
+                        "$ref": "#/components/schemas/Duplex"
+                    },
+                    "interface_speed": {
+                        "$ref": "#/components/schemas/InterfaceSpeed"
+                    },
+                    "medium": {
+                        "$ref": "#/components/schemas/Medium"
+                    },
+                    "switch_port": {
+                        "$ref": "#/components/schemas/SwitchPort"
+                    },
+                    "interface_type": {
+                        "$ref": "#/components/schemas/InterfaceType"
+                    },
+                    "connector_type": {
+                        "$ref": "#/components/schemas/ConnectorType"
+                    },
+                    "versions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Version"
+                        }
+                    }
+                }
+            },
+            "IpAddress": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "network_address": {
+                        "type": "string"
+                    },
+                    "int_address": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "interface_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "subnet_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "dns_name": {
+                        "type": "string"
+                    },
+                    "inet_address": {
+                        "type": "string"
+                    },
+                    "ip_type": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "subnet": {
+                        "$ref": "#/components/schemas/Subnet"
+                    },
+                    "interface": {
+                        "$ref": "#/components/schemas/Interface"
+                    },
+                    "outgoing_load_balancer_entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LoadBalancerEntry"
+                        }
+                    },
+                    "incoming_load_balancer_entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LoadBalancerEntry"
+                        }
+                    },
+                    "versions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Version"
+                        }
+                    }
+                }
+            },
+            "LoadBalancerEntry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "virtual_ip_address_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "physical_ip_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "virtual_ip_address": {
+                        "$ref": "#/components/schemas/IpAddress"
+                    },
+                    "physical_ip": {
+                        "$ref": "#/components/schemas/IpAddress"
+                    }
+                }
+            },
+            "Version": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "event": {
+                        "type": "string"
+                    },
+                    "item_type": {
+                        "type": "string"
+                    },
+                    "item_id": {
+                        "type": "string"
+                    },
+                    "whodunnit": {
+                        "type": "string"
+                    },
+                    "object_changes": {
+                        "type": "string"
+                    }
+                },
+                "description": "Get API Version"
+            },
+            "Duplex": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "switch_ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwitchPort"
+                        }
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    }
+                }
+            },
+            "SwitchPort": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "port_number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "speed": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "stp": {
+                        "type": "boolean"
+                    },
+                    "direction": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "duplex_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "medium_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "zone_group_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "blade": {
+                        "type": "string"
+                    },
+                    "switch_port_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "vlan_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "cc_frame_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "pvlan_edge": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "in_use": {
+                        "type": "boolean"
+                    },
+                    "ether_channel": {
+                        "type": "boolean"
+                    },
+                    "blade_serial_number": {
+                        "type": "string"
+                    },
+                    "trunk_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "stp_port_fast": {
+                        "type": "boolean"
+                    },
+                    "vpc": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "wwn": {
+                        "type": "string"
+                    },
+                    "connected_mac": {
+                        "type": "string"
+                    },
+                    "connected_mac_updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "bottom_ru": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "supports_kvm": {
+                        "type": "boolean"
+                    },
+                    "capability": {
+                        "type": "string"
+                    },
+                    "interface_speed_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "port_channel": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "duplex": {
+                        "$ref": "#/components/schemas/Duplex"
+                    },
+                    "medium": {
+                        "$ref": "#/components/schemas/Medium"
+                    },
+                    "switch_port_type": {
+                        "$ref": "#/components/schemas/SwitchPortType"
+                    },
+                    "interface_speed": {
+                        "$ref": "#/components/schemas/InterfaceSpeed"
+                    },
+                    "vlan": {
+                        "$ref": "#/components/schemas/Vlan"
+                    },
+                    "interface": {
+                        "$ref": "#/components/schemas/Interface"
+                    },
+                    "versions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Version"
+                        }
+                    }
+                }
+            },
+            "Medium": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "switch_ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwitchPort"
+                        }
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    }
+                }
+            },
+            "SwitchPortType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "switch_ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwitchPort"
+                        }
+                    }
+                }
+            },
+            "InterfaceSpeed": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    },
+                    "switch_ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SwitchPort"
+                        }
+                    }
+                }
+            },
+            "InterfaceType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    }
+                }
+            },
+            "ConnectorType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Interface"
+                        }
+                    }
+                }
+            },
+            "DataTransaction": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "transactable_type": {
+                        "type": "string"
+                    },
+                    "transactable_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "data_cleanup_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "transactions": {
+                        "type": "string"
+                    },
+                    "data_cleanup": {
+                        "$ref": "#/components/schemas/DataCleanup"
+                    }
+                }
+            },
+            "DataCleanup": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "data_transactions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DataTransaction"
+                        }
+                    }
+                }
+            },
+            "VlanType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "vlans": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Vlan"
+                        }
+                    }
+                }
+            },
+            "DeviceModel": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "vendor_name": {
+                        "type": "string"
+                    },
+                    "manufacturer_name": {
+                        "type": "string"
+                    },
+                    "integration_class": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "device_types": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceType"
+                        }
+                    },
+                    "default_interfaces": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DefaultInterface"
+                        }
+                    }
+                }
+            },
+            "DeviceType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "networkable": {
+                        "type": "boolean"
+                    },
+                    "routable": {
+                        "type": "boolean"
+                    },
+                    "interfaceable": {
+                        "type": "boolean"
+                    },
+                    "switchable": {
+                        "type": "boolean"
+                    },
+                    "has_switch_ports": {
+                        "type": "boolean"
+                    },
+                    "rackable": {
+                        "type": "boolean"
+                    },
+                    "virtual_client": {
+                        "type": "boolean"
+                    },
+                    "virtual_host": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_category_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "has_blades": {
+                        "type": "boolean"
+                    },
+                    "is_blade": {
+                        "type": "boolean"
+                    },
+                    "is_load_balancer": {
+                        "type": "boolean"
+                    },
+                    "is_patch_panel": {
+                        "type": "boolean"
+                    },
+                    "extends_switch": {
+                        "type": "boolean"
+                    },
+                    "esmt_device_category_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "esmt_device_type_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "esmt_device_class_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "device_models": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceModel"
+                        }
+                    },
+                    "esmt_device_class": {
+                        "$ref": "#/components/schemas/EsmtDeviceClass"
+                    },
+                    "esmt_device_type": {
+                        "$ref": "#/components/schemas/EsmtDeviceType"
+                    },
+                    "esmt_device_category": {
+                        "$ref": "#/components/schemas/EsmtDeviceCategory"
+                    },
+                    "device_category": {
+                        "$ref": "#/components/schemas/DeviceCategory"
+                    }
+                }
+            },
+            "EsmtDeviceClass": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_types": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceType"
+                        }
+                    }
+                }
+            },
+            "EsmtDeviceType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_types": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceType"
+                        }
+                    }
+                }
+            },
+            "EsmtDeviceCategory": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_categories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceCategory"
+                        }
+                    },
+                    "device_types": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceType"
+                        }
+                    }
+                }
+            },
+            "DeviceCategory": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "interfaceable": {
+                        "type": "boolean"
+                    },
+                    "networkable": {
+                        "type": "boolean"
+                    },
+                    "routable": {
+                        "type": "boolean"
+                    },
+                    "switchable": {
+                        "type": "boolean"
+                    },
+                    "has_switch_ports": {
+                        "type": "boolean"
+                    },
+                    "rackable": {
+                        "type": "boolean"
+                    },
+                    "virtual_host": {
+                        "type": "boolean"
+                    },
+                    "virtual_client": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "has_blades": {
+                        "type": "boolean"
+                    },
+                    "is_blade": {
+                        "type": "boolean"
+                    },
+                    "is_load_balancer": {
+                        "type": "boolean"
+                    },
+                    "is_patch_panel": {
+                        "type": "boolean"
+                    },
+                    "extends_switch": {
+                        "type": "boolean"
+                    },
+                    "device_types": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DeviceType"
+                        }
+                    },
+                    "esmt_device_type": {
+                        "$ref": "#/components/schemas/EsmtDeviceType"
+                    },
+                    "esmt_device_category": {
+                        "$ref": "#/components/schemas/EsmtDeviceCategory"
+                    }
+                }
+            },
+            "DefaultInterface": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "device_model_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "direction": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "speed": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "require_ip": {
+                        "type": "boolean"
+                    },
+                    "require_switch_port": {
+                        "type": "boolean"
+                    },
+                    "require_default_gateway": {
+                        "type": "boolean"
+                    },
+                    "interface_type": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_model": {
+                        "$ref": "#/components/schemas/DeviceModel"
+                    }
+                }
+            },
+            "Project": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "system_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "instance_id": {
+                        "type": "string"
+                    },
+                    "reconciliation_identity": {
+                        "type": "string"
+                    },
+                    "workbook_location": {
+                        "type": "string"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_reason_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "event_logs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventLog"
+                        }
+                    },
+                    "sync_status": {
+                        "$ref": "#/components/schemas/SyncStatus"
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    },
+                    "device_status_reason": {
+                        "$ref": "#/components/schemas/DeviceStatusReason"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "system": {
+                        "$ref": "#/components/schemas/System"
+                    }
+                }
+            },
+            "System": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "instance_id": {
+                        "type": "string"
+                    },
+                    "reconciliation_identity": {
+                        "type": "string"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_reason_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "event_logs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventLog"
+                        }
+                    },
+                    "sync_status": {
+                        "$ref": "#/components/schemas/SyncStatus"
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    },
+                    "device_status_reason": {
+                        "$ref": "#/components/schemas/DeviceStatusReason"
+                    },
+                    "projects": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Project"
+                        }
+                    }
+                }
+            },
+            "ApplicationEnvironment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "impact_scale": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "instance_id": {
+                        "type": "string"
+                    },
+                    "reconciliation_identity": {
+                        "type": "string"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_reason_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "event_logs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventLog"
+                        }
+                    },
+                    "sync_status": {
+                        "$ref": "#/components/schemas/SyncStatus"
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    },
+                    "device_status_reason": {
+                        "$ref": "#/components/schemas/DeviceStatusReason"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    }
+                }
+            },
+            "OperatingSystem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "device_status_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_status_reason_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "reconciliation_identity": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "instance_id": {
+                        "type": "string"
+                    },
+                    "event_logs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventLog"
+                        }
+                    },
+                    "sync_status": {
+                        "$ref": "#/components/schemas/SyncStatus"
+                    },
+                    "device_status": {
+                        "$ref": "#/components/schemas/DeviceStatus"
+                    },
+                    "device_status_reason": {
+                        "$ref": "#/components/schemas/DeviceStatusReason"
+                    },
+                    "devices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    }
+                }
+            },
+            "HostNameReservation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "host_name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device": {
+                        "$ref": "#/components/schemas/Device"
+                    }
+                }
+            },
+            "NatEntry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "in_ip_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "out_ip_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "in_ip": {
+                        "$ref": "#/components/schemas/IpAddress"
+                    },
+                    "out_ip": {
+                        "$ref": "#/components/schemas/IpAddress"
+                    }
+                }
+            },
+            "VmHostPool": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ciid": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "hosts": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    },
+                    "clients": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Device"
+                        }
+                    }
+                }
+            },
+            "SubnetAssignment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "device_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "subnet_id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "assigns_vips": {
+                        "type": "boolean"
+                    },
+                    "assigns_physical_ips": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "device": {
+                        "$ref": "#/components/schemas/Device"
+                    },
+                    "subnet": {
+                        "$ref": "#/components/schemas/Subnet"
+                    }
+                }
+            },
+            "NmdbQueryError": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "filters": {
+                        "type": "string"
+                    },
+                    "rels": {
+                        "type": "string"
+                    }
+                },
+                "description": "GET Nmdb::Device Object."
+            },
+            "postV2Devices": {
+                "type": "object",
+                "properties": {
+                    "body": {
+                        "type": "object",
+                        "properties": {
+                            "ciid": {
+                                "type": "string"
+                            },
+                            "host_name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "zone_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "project_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_model_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "rack_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_status_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_status_reason_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "asset_tag": {
+                                "type": "string"
+                            },
+                            "reconciliation_identity": {
+                                "type": "string"
+                            },
+                            "serial_number": {
+                                "type": "string"
+                            },
+                            "application_environment_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "pod_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "vm_capacity": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "switch_domain_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_slot": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_slots_required": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_chassis_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "virtual_host_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "physical_host_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_capacity": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_type_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "ru_required": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "primary_device_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "instance_id": {
+                                "type": "string"
+                            },
+                            "operating_system_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "workbook_version": {
+                                "type": "string"
+                            },
+                            "virtualized_on_vm_host_pool_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "contained_in_vm_host_pool_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "a_or_b": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "bottom_ru": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "host_name_reservation_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "interfaces_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "mac_address": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "require_ip": {
+                                            "type": "boolean"
+                                        },
+                                        "require_switch_port": {
+                                            "type": "boolean"
+                                        },
+                                        "require_default_gateway": {
+                                            "type": "boolean"
+                                        },
+                                        "notes": {
+                                            "type": "string"
+                                        },
+                                        "media": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "vlan_direction_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "interface_speed_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "vlan_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "subnet_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "direction_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "duplex_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "medium_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "switch_port_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "pci_slot": {
+                                            "type": "string"
+                                        },
+                                        "a_or_b": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "require_route_for_management": {
+                                            "type": "boolean"
+                                        },
+                                        "require_route_for_getronics": {
+                                            "type": "boolean"
+                                        },
+                                        "default_gateway_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "static_routes": {
+                                            "type": "string"
+                                        },
+                                        "interface_type_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "connector_type_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "mac_addr": {
+                                            "type": "string"
+                                        },
+                                        "ip_address_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "switch_ports_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "port_number": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "speed": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "stp": {
+                                            "type": "boolean"
+                                        },
+                                        "direction": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "duplex_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "medium_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "zone_group_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "blade": {
+                                            "type": "string"
+                                        },
+                                        "switch_port_type_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "vlan_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "notes": {
+                                            "type": "string"
+                                        },
+                                        "cc_frame_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "pvlan_edge": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "in_use": {
+                                            "type": "boolean"
+                                        },
+                                        "ether_channel": {
+                                            "type": "boolean"
+                                        },
+                                        "blade_serial_number": {
+                                            "type": "string"
+                                        },
+                                        "trunk_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "stp_port_fast": {
+                                            "type": "boolean"
+                                        },
+                                        "vpc": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "wwn": {
+                                            "type": "string"
+                                        },
+                                        "connected_mac": {
+                                            "type": "string"
+                                        },
+                                        "connected_mac_updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "bottom_ru": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "supports_kvm": {
+                                            "type": "boolean"
+                                        },
+                                        "capability": {
+                                            "type": "string"
+                                        },
+                                        "interface_speed_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "port_channel": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "nat_entries_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "in_ip_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "out_ip_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "load_balancer_entries_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "virtual_ip_address_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "physical_ip_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "subnet_assignments_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "subnet_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "assigns_vips": {
+                                            "type": "boolean"
+                                        },
+                                        "assigns_physical_ips": {
+                                            "type": "boolean"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "body"
+                ],
+                "description": "Create Nmdb::Device Object."
+            },
+            "putV2Devices": {
+                "type": "object",
+                "properties": {
+                    "body": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "ciid": {
+                                "type": "string"
+                            },
+                            "host_name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "zone_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "project_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_model_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "rack_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_status_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_status_reason_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "asset_tag": {
+                                "type": "string"
+                            },
+                            "reconciliation_identity": {
+                                "type": "string"
+                            },
+                            "serial_number": {
+                                "type": "string"
+                            },
+                            "application_environment_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "pod_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "vm_capacity": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "switch_domain_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_slot": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_slots_required": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_chassis_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "virtual_host_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "physical_host_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "blade_capacity": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "device_type_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "ru_required": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "primary_device_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "instance_id": {
+                                "type": "string"
+                            },
+                            "operating_system_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "workbook_version": {
+                                "type": "string"
+                            },
+                            "virtualized_on_vm_host_pool_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "contained_in_vm_host_pool_id": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "a_or_b": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "bottom_ru": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "interfaces_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "mac_address": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "require_ip": {
+                                            "type": "boolean"
+                                        },
+                                        "require_switch_port": {
+                                            "type": "boolean"
+                                        },
+                                        "require_default_gateway": {
+                                            "type": "boolean"
+                                        },
+                                        "notes": {
+                                            "type": "string"
+                                        },
+                                        "media": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "vlan_direction_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "interface_speed_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "vlan_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "subnet_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "direction_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "duplex_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "medium_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "switch_port_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "pci_slot": {
+                                            "type": "string"
+                                        },
+                                        "a_or_b": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "require_route_for_management": {
+                                            "type": "boolean"
+                                        },
+                                        "require_route_for_getronics": {
+                                            "type": "boolean"
+                                        },
+                                        "default_gateway_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "static_routes": {
+                                            "type": "string"
+                                        },
+                                        "interface_type_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "connector_type_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "mac_addr": {
+                                            "type": "string"
+                                        },
+                                        "ip_address_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "switch_ports_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "port_number": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "speed": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "stp": {
+                                            "type": "boolean"
+                                        },
+                                        "direction": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "duplex_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "medium_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "zone_group_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "blade": {
+                                            "type": "string"
+                                        },
+                                        "switch_port_type_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "vlan_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "notes": {
+                                            "type": "string"
+                                        },
+                                        "cc_frame_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "pvlan_edge": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "in_use": {
+                                            "type": "boolean"
+                                        },
+                                        "ether_channel": {
+                                            "type": "boolean"
+                                        },
+                                        "blade_serial_number": {
+                                            "type": "string"
+                                        },
+                                        "trunk_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "stp_port_fast": {
+                                            "type": "boolean"
+                                        },
+                                        "vpc": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "wwn": {
+                                            "type": "string"
+                                        },
+                                        "connected_mac": {
+                                            "type": "string"
+                                        },
+                                        "connected_mac_updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "bottom_ru": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "supports_kvm": {
+                                            "type": "boolean"
+                                        },
+                                        "capability": {
+                                            "type": "string"
+                                        },
+                                        "interface_speed_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "port_channel": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "nat_entries_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "in_ip_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "out_ip_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "load_balancer_entries_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "virtual_ip_address_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "physical_ip_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            "subnet_assignments_attributes": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "device_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "subnet_id": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        },
+                                        "assigns_vips": {
+                                            "type": "boolean"
+                                        },
+                                        "assigns_physical_ips": {
+                                            "type": "boolean"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "_destroy": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "body"
+                ],
+                "description": "Update Nmdb::Device Object."
+            }
+        }
+    }
+}

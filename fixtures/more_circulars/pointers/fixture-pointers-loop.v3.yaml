@@ -1,0 +1,31 @@
+openapi: 3.2.0
+info:
+  version: 0.1.0
+  title: JSON pointers
+paths:
+  /some/where:
+    get:
+      responses:
+        default:
+          description: ""
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/whiteStone/properties/p1"
+components:
+  schemas:
+    whiteStone:
+      type: object
+      properties:
+        p1:
+          $ref: "#/components/schemas/blackStone/properties/p2"
+    blackStone:
+      type: object
+      properties:
+        p2:
+          $ref: "#/components/schemas/redStone/properties/p3"
+    redStone:
+      type: object
+      properties:
+        p3:
+          $ref: "#/components/schemas/whiteStone/properties/p1"

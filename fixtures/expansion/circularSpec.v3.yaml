@@ -1,0 +1,64 @@
+openapi: 3.2.0
+info:
+  title: Swagger Sample
+  description: Sample API Playground.
+  version: 1.0.0
+paths:
+  /books:
+    get:
+      summary: List all books
+      operationId: listBooks
+      tags:
+        - books
+      responses:
+        "200":
+          headers:
+            Link:
+              schema:
+                type: string
+          description: An array of books
+          content:
+            application/vdn.sample.v1+json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+        default:
+          description: generic error response
+          content:
+            application/vdn.sample.v1+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+servers:
+  - url: /v1
+components:
+  schemas:
+    Book:
+      type: object
+      required:
+        - title
+        - summary
+      properties:
+        title:
+          type: string
+          example: Winnie the Pooh
+        summary:
+          type: string
+          example: Famous children's book
+        related_books:
+          type: array
+          items:
+            $ref: "#/components/schemas/Book"
+    Error:
+      type: object
+      readOnly: true
+      properties:
+        code:
+          type: integer
+          format: int64
+          example: 400
+        message:
+          type: string
+          example: Unexpected error
+      required:
+        - message

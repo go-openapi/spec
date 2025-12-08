@@ -18,3 +18,7 @@ func jsonschemaDraft04JSONBytes() ([]byte, error) {
 func v2SchemaJSONBytes() ([]byte, error) {
 	return assets.ReadFile(path.Join("schemas", "v2", "schema.json"))
 }
+
+func v3SchemaJSONBytes() ([]byte, error) {
+	return assets.ReadFile(path.Join("schemas", "v3", "schema.json"))
+}

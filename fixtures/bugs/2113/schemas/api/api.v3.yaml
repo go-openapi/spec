@@ -1,0 +1,23 @@
+openapi: 3.2.0
+info:
+  version: "1"
+  title: sub api
+paths:
+  /dummy:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: ../dummy/dummy.v3.yaml
+  /example:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: ../example/example.v3.yaml

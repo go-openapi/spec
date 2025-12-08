@@ -1,0 +1,38 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "title": "circular schema with ID",
+        "description": "reproduces #92",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/id": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "item detail response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/remote"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "http://id.api.local/v1"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "remote": {
+                "$ref": "http://localhost:1234/tree"
+            }
+        }
+    }
+}

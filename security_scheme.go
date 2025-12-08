@@ -11,13 +11,17 @@ import (
 )
 
 const (
-	basic       = "basic"
-	apiKey      = "apiKey"
-	oauth2      = "oauth2"
-	implicit    = "implicit"
-	password    = "password"
-	application = "application"
-	accessCode  = "accessCode"
+	basic         = "basic" // v2: "basic", v3: use "http" with Scheme="basic"
+	httpScheme    = "http"  // OpenAPI v3 http scheme type
+	apiKey        = "apiKey"
+	oauth2        = "oauth2"
+	implicit      = "implicit"
+	password      = "password"
+	application   = "application"
+	accessCode    = "accessCode"
+	openIDConnect = "openIdConnect"     // New in OpenAPI v3
+	clientCreds   = "clientCredentials" // OpenAPI v3 name for application flow
+	authCode      = "authorizationCode" // OpenAPI v3 name for accessCode flow
 )
 
 // BasicAuth creates a basic auth security scheme
@@ -67,19 +71,42 @@ func OAuth2AccessToken(authorizationURL, tokenURL string) *SecurityScheme {
 	}}
 }
 
+// OAuthFlows represents the OAuth flows configuration for OpenAPI v3
+type OAuthFlows struct {
+	Implicit          *OAuthFlow `json:"implicit,omitempty"`
+	Password          *OAuthFlow `json:"password,omitempty"`
+	ClientCredentials *OAuthFlow `json:"clientCredentials,omitempty"`
+	AuthorizationCode *OAuthFlow `json:"authorizationCode,omitempty"`
+}
+
+// OAuthFlow represents a single OAuth flow configuration
+type OAuthFlow struct {
+	AuthorizationURL string            `json:"authorizationUrl,omitempty"`
+	TokenURL         string            `json:"tokenUrl,omitempty"`
+	RefreshURL       string            `json:"refreshUrl,omitempty"` // New in OpenAPI v3
+	Scopes           map[string]string `json:"scopes"`
+}
+
 // SecuritySchemeProps describes a swagger security scheme in the securityDefinitions section
 type SecuritySchemeProps struct {
 	Description      string            `json:"description,omitempty"`
 	Type             string            `json:"type"`
-	Name             string            `json:"name,omitempty"`     // api key
-	In               string            `json:"in,omitempty"`       // api key
-	Flow             string            `json:"flow,omitempty"`     // oauth2
-	AuthorizationURL string            `json:"authorizationUrl"`   // oauth2
-	TokenURL         string            `json:"tokenUrl,omitempty"` // oauth2
-	Scopes           map[string]string `json:"scopes,omitempty"`   // oauth2
+	Name             string            `json:"name,omitempty"`             // api key
+	In               string            `json:"in,omitempty"`               // api key
+	Flow             string            `json:"flow,omitempty"`             // oauth2
+	AuthorizationURL string            `json:"authorizationUrl"`           // oauth2
+	TokenURL         string            `json:"tokenUrl,omitempty"`         // oauth2
+	Scopes           map[string]string `json:"scopes,omitempty"`           // oauth2
+	Scheme           string            `json:"scheme,omitempty"`           // http (e.g., "basic", "bearer")
+	BearerFormat     string            `json:"bearerFormat,omitempty"`     // http bearer
+	OpenIdConnectURL string            `json:"openIdConnectUrl,omitempty"` // openIdConnect
+	Flows            *OAuthFlows       `json:"flows,omitempty"`            // oauth2
+
 }
 
 // AddScope adds a scope to this security scheme
+// For v2 backward compatibility, it adds to the Scopes field
+// For v3, scopes should be added to the appropriate flow in Flows
 func (s *SecuritySchemeProps) AddScope(scope, description string) {
 	if s.Scopes == nil {
 		s.Scopes = make(map[string]string)
@@ -90,6 +117,19 @@ func (s *SecuritySchemeProps) AddScope(scope, description string) {
 // SecurityScheme allows the definition of a security scheme that can be used by the operations.
 // Supported schemes are basic authentication, an API key (either as a header or as a query parameter)
 // and OAuth2's common flows (implicit, password, application and access code).
+//
+// OpenAPI v3 supported schemes:
+// - http: HTTP authentication (basic, bearer, etc.)
+// - apiKey: API key (header, query, or cookie)
+// - oauth2: OAuth 2.0 flows (implicit, password, clientCredentials, authorizationCode)
+// - openIdConnect: OpenID Connect Discovery
+//
+// For more information: https://spec.openapis.org/oas/v3.0.3#security-scheme-object
+//
+// OpenAPI v2 supported schemes:
+// - basic: Basic authentication (use "http" with scheme="basic" in v3)
+// - apiKey: API key
+// - oauth2: OAuth 2.0 (use Flows in v3)
 //
 // For more information: http://goo.gl/8us55a#securitySchemeObject
 type SecurityScheme struct {

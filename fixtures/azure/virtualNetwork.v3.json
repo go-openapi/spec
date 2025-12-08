@@ -1,0 +1,2056 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "title": "NetworkManagementClient",
+        "description": "The Microsoft Azure Network management API provides a RESTful set of web services that interact with Microsoft Azure Networks service to manage your network resources. The API has entities that capture the relationship between an end user and the Microsoft Azure Networks service.",
+        "version": "2020-04-01"
+    },
+    "security": [
+        {
+            "azure_auth": [
+                "user_impersonation"
+            ]
+        }
+    ],
+    "paths": {
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}": {
+            "delete": {
+                "tags": [
+                    "VirtualNetworks"
+                ],
+                "operationId": "VirtualNetworks_Delete",
+                "description": "Deletes the specified virtual network.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete successful."
+                    },
+                    "202": {
+                        "description": "Accepted and the operation will complete asynchronously."
+                    },
+                    "204": {
+                        "description": "Delete successful."
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "location"
+                }
+            },
+            "get": {
+                "tags": [
+                    "VirtualNetworks"
+                ],
+                "operationId": "VirtualNetworks_Get",
+                "description": "Gets the specified virtual network by resource group.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    },
+                    {
+                        "name": "$expand",
+                        "in": "query",
+                        "required": false,
+                        "description": "Expands referenced resources.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns the resulting VirtualNetwork resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetwork"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "VirtualNetworks"
+                ],
+                "operationId": "VirtualNetworks_CreateOrUpdate",
+                "description": "Creates or updates a virtual network in the specified resource group.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VirtualNetwork"
+                            }
+                        }
+                    },
+                    "description": "Parameters supplied to the create or update virtual network operation.",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update successful. The operation returns the resulting VirtualNetwork resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetwork"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Create successful. The operation returns the resulting VirtualNetwork resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetwork"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "azure-async-operation"
+                }
+            },
+            "patch": {
+                "tags": [
+                    "VirtualNetworks"
+                ],
+                "operationId": "VirtualNetworks_UpdateTags",
+                "description": "Updates a virtual network tags.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "./network.json#/definitions/TagsObject"
+                            }
+                        }
+                    },
+                    "description": "Parameters supplied to update virtual network tags.",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update successful. The operation returns the resulting VirtualNetwork resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetwork"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/providers/Microsoft.Network/virtualNetworks": {
+            "get": {
+                "tags": [
+                    "VirtualNetworks"
+                ],
+                "operationId": "VirtualNetworks_ListAll",
+                "description": "Gets all virtual networks in a subscription.",
+                "parameters": [
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns a list of VirtualNetwork resources.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkListResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks": {
+            "get": {
+                "tags": [
+                    "VirtualNetworks"
+                ],
+                "operationId": "VirtualNetworks_List",
+                "description": "Gets all virtual networks in a resource group.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns a list of VirtualNetwork resources.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkListResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets/{subnetName}": {
+            "delete": {
+                "tags": [
+                    "Subnets"
+                ],
+                "operationId": "Subnets_Delete",
+                "description": "Deletes the specified subnet.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete successful."
+                    },
+                    "202": {
+                        "description": "Accepted and the operation will complete asynchronously."
+                    },
+                    "204": {
+                        "description": "Request successful. Resource does not exist."
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "location"
+                }
+            },
+            "get": {
+                "tags": [
+                    "Subnets"
+                ],
+                "operationId": "Subnets_Get",
+                "description": "Gets the specified subnet by virtual network and resource group.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    },
+                    {
+                        "name": "$expand",
+                        "in": "query",
+                        "required": false,
+                        "description": "Expands referenced resources.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns the resulting Subnet resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subnet"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Subnets"
+                ],
+                "operationId": "Subnets_CreateOrUpdate",
+                "description": "Creates or updates a subnet in the specified virtual network.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Subnet"
+                            }
+                        }
+                    },
+                    "description": "Parameters supplied to the create or update subnet operation.",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update successful. The operation returns the resulting Subnet resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subnet"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Create successful. The operation returns the resulting Subnet resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subnet"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "azure-async-operation"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets/{subnetName}/PrepareNetworkPolicies": {
+            "post": {
+                "operationId": "Subnets_PrepareNetworkPolicies",
+                "description": "Prepares a subnet by applying network intent policies.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PrepareNetworkPoliciesRequest"
+                            }
+                        }
+                    },
+                    "description": "Parameters supplied to prepare subnet by applying network intent policies.",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Preparing subnet by applying network intent policies is successful."
+                    },
+                    "202": {
+                        "description": "Accepted and the operation will complete asynchronously."
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "location"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets/{subnetName}/UnprepareNetworkPolicies": {
+            "post": {
+                "operationId": "Subnets_UnprepareNetworkPolicies",
+                "description": "Unprepares a subnet by removing network intent policies.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UnprepareNetworkPoliciesRequest"
+                            }
+                        }
+                    },
+                    "description": "Parameters supplied to unprepare subnet to remove network intent policies.",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unpreparing subnet by removing network intent policies is successful."
+                    },
+                    "202": {
+                        "description": "Accepted and the operation will complete asynchronously."
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "location"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets/{subnetName}/ResourceNavigationLinks": {
+            "get": {
+                "operationId": "ResourceNavigationLinks_List",
+                "description": "Gets a list of resource navigation links for a subnet.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns a list of resource navigation links for the subnet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNavigationLinksListResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets/{subnetName}/ServiceAssociationLinks": {
+            "get": {
+                "operationId": "ServiceAssociationLinks_List",
+                "description": "Gets a list of service association links for a subnet.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "subnetName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the subnet.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns a list of service association links for the subnet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServiceAssociationLinksListResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets": {
+            "get": {
+                "tags": [
+                    "Subnets"
+                ],
+                "operationId": "Subnets_List",
+                "description": "Gets all subnets in a virtual network.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns a list of Subnet resources.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubnetListResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings/{virtualNetworkPeeringName}": {
+            "delete": {
+                "tags": [
+                    "VirtualNetworkPeerings"
+                ],
+                "operationId": "VirtualNetworkPeerings_Delete",
+                "description": "Deletes the specified virtual network peering.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkPeeringName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network peering.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete successful."
+                    },
+                    "202": {
+                        "description": "Accepted and the operation will complete asynchronously."
+                    },
+                    "204": {
+                        "description": "Delete successful."
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "location"
+                }
+            },
+            "get": {
+                "tags": [
+                    "VirtualNetworkPeerings"
+                ],
+                "operationId": "VirtualNetworkPeerings_Get",
+                "description": "Gets the specified virtual network peering.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkPeeringName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network peering.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns the resulting VirtualNetworkPeering resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkPeering"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "VirtualNetworkPeerings"
+                ],
+                "operationId": "VirtualNetworkPeerings_CreateOrUpdate",
+                "description": "Creates or updates a peering in the specified virtual network.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkPeeringName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the peering.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VirtualNetworkPeering"
+                            }
+                        }
+                    },
+                    "description": "Parameters supplied to the create or update virtual network peering operation.",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update successful. The operation returns the resulting VirtualNetworkPeering resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkPeering"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Create successful. The operation returns the resulting VirtualNetworkPeering resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkPeering"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-long-running-operation": true,
+                "x-ms-long-running-operation-options": {
+                    "final-state-via": "azure-async-operation"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings": {
+            "get": {
+                "tags": [
+                    "VirtualNetworkPeerings"
+                ],
+                "operationId": "VirtualNetworkPeerings_List",
+                "description": "Gets all virtual network peerings in a virtual network.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request successful. The operation returns a list of VirtualNetworkPeering resources.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkPeeringListResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/CheckIPAddressAvailability": {
+            "get": {
+                "operationId": "VirtualNetworks_CheckIPAddressAvailability",
+                "description": "Checks whether a private IP address is available for use.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "ipAddress",
+                        "in": "query",
+                        "required": true,
+                        "description": "The private IP address to be verified.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Private IP address availability and list of other free addresses if the requested one is not available.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IPAddressAvailabilityResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/usages": {
+            "get": {
+                "operationId": "VirtualNetworks_ListUsage",
+                "description": "Lists usage stats.",
+                "parameters": [
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the resource group.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "virtualNetworkName",
+                        "in": "path",
+                        "required": true,
+                        "description": "The name of the virtual network.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/ApiVersionParameter"
+                    },
+                    {
+                        "$ref": "./network.json#/components/parameters/SubscriptionIdParameter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usage stats for vnet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VirtualNetworkListUsageResult"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response describing why the operation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "./network.json#/definitions/CloudError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "https://management.azure.com"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "azure_auth": {
+                "type": "oauth2",
+                "description": "Azure Active Directory OAuth2 Flow.",
+                "flows": {
+                    "implicit": {
+                        "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+                        "scopes": {
+                            "user_impersonation": "impersonate your user account"
+                        }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "ServiceAssociationLinkPropertiesFormat": {
+                "properties": {
+                    "linkedResourceType": {
+                        "type": "string",
+                        "description": "Resource type of the linked resource."
+                    },
+                    "link": {
+                        "type": "string",
+                        "description": "Link to the external resource."
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    },
+                    "allowDelete": {
+                        "type": "boolean",
+                        "description": "If true, the resource can be deleted."
+                    },
+                    "locations": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "A list of locations."
+                    }
+                },
+                "description": "Properties of ServiceAssociationLink."
+            },
+            "ServiceAssociationLink": {
+                "properties": {
+                    "properties": {
+                        "$ref": "#/components/schemas/ServiceAssociationLinkPropertiesFormat"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the resource that is unique within a resource group. This name can be used to access the resource."
+                    },
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    },
+                    "type": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "Resource type."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    }
+                ],
+                "description": "ServiceAssociationLink resource."
+            },
+            "ResourceNavigationLinkFormat": {
+                "properties": {
+                    "linkedResourceType": {
+                        "type": "string",
+                        "description": "Resource type of the linked resource."
+                    },
+                    "link": {
+                        "type": "string",
+                        "description": "Link to the external resource."
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    }
+                },
+                "description": "Properties of ResourceNavigationLink."
+            },
+            "ResourceNavigationLink": {
+                "properties": {
+                    "properties": {
+                        "$ref": "#/components/schemas/ResourceNavigationLinkFormat"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the resource that is unique within a resource group. This name can be used to access the resource."
+                    },
+                    "id": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Resource navigation link identifier."
+                    },
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    },
+                    "type": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "Resource type."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    }
+                ],
+                "description": "ResourceNavigationLink resource."
+            },
+            "ServiceDelegationPropertiesFormat": {
+                "properties": {
+                    "serviceName": {
+                        "type": "string",
+                        "description": "The name of the service to whom the subnet should be delegated (e.g. Microsoft.Sql/servers)."
+                    },
+                    "actions": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "The actions permitted to the service upon delegation."
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    }
+                },
+                "description": "Properties of a service delegation."
+            },
+            "Delegation": {
+                "properties": {
+                    "properties": {
+                        "$ref": "#/components/schemas/ServiceDelegationPropertiesFormat"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the resource that is unique within a subnet. This name can be used to access the resource."
+                    },
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    }
+                ],
+                "description": "Details the service to which the subnet is delegated."
+            },
+            "SubnetPropertiesFormat": {
+                "properties": {
+                    "addressPrefix": {
+                        "type": "string",
+                        "description": "The address prefix for the subnet."
+                    },
+                    "addressPrefixes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of address prefixes for the subnet."
+                    },
+                    "networkSecurityGroup": {
+                        "$ref": "./networkSecurityGroup.json#/definitions/NetworkSecurityGroup"
+                    },
+                    "routeTable": {
+                        "$ref": "./routeTable.json#/definitions/RouteTable"
+                    },
+                    "natGateway": {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    },
+                    "serviceEndpoints": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceEndpointPropertiesFormat"
+                        },
+                        "description": "An array of service endpoints."
+                    },
+                    "serviceEndpointPolicies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "./serviceEndpointPolicy.json#/definitions/ServiceEndpointPolicy"
+                        },
+                        "description": "An array of service endpoint policies."
+                    },
+                    "privateEndpoints": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "./privateEndpoint.json#/definitions/PrivateEndpoint"
+                        },
+                        "description": "An array of references to private endpoints."
+                    },
+                    "ipConfigurations": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "./networkInterface.json#/definitions/IPConfiguration"
+                        },
+                        "description": "An array of references to the network interface IP configurations using subnet."
+                    },
+                    "ipConfigurationProfiles": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "./networkProfile.json#/definitions/IPConfigurationProfile"
+                        },
+                        "description": "Array of IP configuration profiles which reference this subnet."
+                    },
+                    "ipAllocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "./network.json#/definitions/SubResource"
+                        },
+                        "description": "Array of IpAllocation which reference this subnet."
+                    },
+                    "resourceNavigationLinks": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ResourceNavigationLink"
+                        },
+                        "description": "An array of references to the external resources using subnet."
+                    },
+                    "serviceAssociationLinks": {
+                        "readOnly": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceAssociationLink"
+                        },
+                        "description": "An array of references to services injecting into this subnet."
+                    },
+                    "delegations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Delegation"
+                        },
+                        "description": "An array of references to the delegations on the subnet."
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "A read-only string identifying the intention of use for this subnet based on delegations and other user-defined properties."
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    },
+                    "privateEndpointNetworkPolicies": {
+                        "type": "string",
+                        "description": "Enable or Disable apply network policies on private end point in the subnet."
+                    },
+                    "privateLinkServiceNetworkPolicies": {
+                        "type": "string",
+                        "description": "Enable or Disable apply network policies on private link service in the subnet."
+                    }
+                },
+                "description": "Properties of the subnet."
+            },
+            "ServiceEndpointPropertiesFormat": {
+                "properties": {
+                    "service": {
+                        "type": "string",
+                        "description": "The type of the endpoint service."
+                    },
+                    "locations": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "A list of locations."
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    }
+                },
+                "description": "The service endpoint properties."
+            },
+            "VirtualNetworkPeeringPropertiesFormat": {
+                "properties": {
+                    "allowVirtualNetworkAccess": {
+                        "type": "boolean",
+                        "description": "Whether the VMs in the local virtual network space would be able to access the VMs in remote virtual network space."
+                    },
+                    "allowForwardedTraffic": {
+                        "type": "boolean",
+                        "description": "Whether the forwarded traffic from the VMs in the local virtual network will be allowed/disallowed in remote virtual network."
+                    },
+                    "allowGatewayTransit": {
+                        "type": "boolean",
+                        "description": "If gateway links can be used in remote virtual networking to link to this virtual network."
+                    },
+                    "useRemoteGateways": {
+                        "type": "boolean",
+                        "description": "If remote gateways can be used on this virtual network. If the flag is set to true, and allowGatewayTransit on remote peering is also true, virtual network will use gateways of remote virtual network for transit. Only one peering can have this flag set to true. This flag cannot be set if virtual network already has a gateway."
+                    },
+                    "remoteVirtualNetwork": {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    },
+                    "remoteAddressSpace": {
+                        "$ref": "#/components/schemas/AddressSpace"
+                    },
+                    "peeringState": {
+                        "type": "string",
+                        "description": "The status of the virtual network peering.",
+                        "enum": [
+                            "Initiated",
+                            "Connected",
+                            "Disconnected"
+                        ],
+                        "x-ms-enum": {
+                            "name": "VirtualNetworkPeeringState",
+                            "modelAsString": true
+                        }
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    }
+                },
+                "description": "Properties of the virtual network peering."
+            },
+            "Subnet": {
+                "properties": {
+                    "properties": {
+                        "$ref": "#/components/schemas/SubnetPropertiesFormat"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the resource that is unique within a resource group. This name can be used to access the resource."
+                    },
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    }
+                ],
+                "description": "Subnet in a virtual network resource."
+            },
+            "VirtualNetworkPeering": {
+                "properties": {
+                    "properties": {
+                        "$ref": "#/components/schemas/VirtualNetworkPeeringPropertiesFormat"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the resource that is unique within a resource group. This name can be used to access the resource."
+                    },
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    }
+                ],
+                "description": "Peerings in a virtual network resource."
+            },
+            "SubnetListResult": {
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subnet"
+                        },
+                        "description": "The subnets in a virtual network."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "description": "The URL to get the next set of results."
+                    }
+                },
+                "description": "Response for ListSubnets API service callRetrieves all subnet that belongs to a virtual network."
+            },
+            "ResourceNavigationLinksListResult": {
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ResourceNavigationLink"
+                        },
+                        "description": "The resource navigation links in a subnet."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "The URL to get the next set of results."
+                    }
+                },
+                "description": "Response for ResourceNavigationLinks_List operation."
+            },
+            "ServiceAssociationLinksListResult": {
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceAssociationLink"
+                        },
+                        "description": "The service association links in a subnet."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "The URL to get the next set of results."
+                    }
+                },
+                "description": "Response for ServiceAssociationLinks_List operation."
+            },
+            "VirtualNetworkPeeringListResult": {
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VirtualNetworkPeering"
+                        },
+                        "description": "The peerings in a virtual network."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "description": "The URL to get the next set of results."
+                    }
+                },
+                "description": "Response for ListSubnets API service call. Retrieves all subnets that belong to a virtual network."
+            },
+            "VirtualNetworkPropertiesFormat": {
+                "properties": {
+                    "addressSpace": {
+                        "$ref": "#/components/schemas/AddressSpace"
+                    },
+                    "dhcpOptions": {
+                        "$ref": "#/components/schemas/DhcpOptions"
+                    },
+                    "subnets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Subnet"
+                        },
+                        "description": "A list of subnets in a Virtual Network."
+                    },
+                    "virtualNetworkPeerings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VirtualNetworkPeering"
+                        },
+                        "description": "A list of peerings in a Virtual Network."
+                    },
+                    "resourceGuid": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "The resourceGuid property of the Virtual Network resource."
+                    },
+                    "provisioningState": {
+                        "$ref": "./network.json#/definitions/ProvisioningState"
+                    },
+                    "enableDdosProtection": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Indicates if DDoS protection is enabled for all the protected resources in the virtual network. It requires a DDoS protection plan associated with the resource."
+                    },
+                    "enableVmProtection": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Indicates if VM protection is enabled for all the subnets in the virtual network."
+                    },
+                    "ddosProtectionPlan": {
+                        "$ref": "./network.json#/definitions/SubResource"
+                    },
+                    "bgpCommunities": {
+                        "$ref": "#/components/schemas/VirtualNetworkBgpCommunities"
+                    },
+                    "ipAllocations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "./network.json#/definitions/SubResource"
+                        },
+                        "description": "Array of IpAllocation which reference this VNET."
+                    }
+                },
+                "description": "Properties of the virtual network."
+            },
+            "VirtualNetwork": {
+                "properties": {
+                    "properties": {
+                        "$ref": "#/components/schemas/VirtualNetworkPropertiesFormat"
+                    },
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/Resource"
+                    }
+                ],
+                "description": "Virtual Network resource."
+            },
+            "VirtualNetworkListResult": {
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VirtualNetwork"
+                        },
+                        "description": "A list of VirtualNetwork resources in a resource group."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "description": "The URL to get the next set of results."
+                    }
+                },
+                "description": "Response for the ListVirtualNetworks API service call."
+            },
+            "AddressSpace": {
+                "properties": {
+                    "addressPrefixes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "A list of address blocks reserved for this virtual network in CIDR notation."
+                    }
+                },
+                "description": "AddressSpace contains an array of IP address ranges that can be used by subnets of the virtual network."
+            },
+            "DhcpOptions": {
+                "properties": {
+                    "dnsServers": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "The list of DNS servers IP addresses."
+                    }
+                },
+                "description": "DhcpOptions contains an array of DNS servers available to VMs deployed in the virtual network. Standard DHCP option for a subnet overrides VNET DHCP options."
+            },
+            "VirtualNetworkBgpCommunities": {
+                "properties": {
+                    "virtualNetworkCommunity": {
+                        "type": "string",
+                        "description": "The BGP community associated with the virtual network."
+                    },
+                    "regionalCommunity": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "The BGP community associated with the region of the virtual network."
+                    }
+                },
+                "required": [
+                    "virtualNetworkCommunity"
+                ],
+                "description": "Bgp Communities sent over ExpressRoute with each route corresponding to a prefix in this VNET."
+            },
+            "IPAddressAvailabilityResult": {
+                "properties": {
+                    "available": {
+                        "type": "boolean",
+                        "description": "Private IP address availability."
+                    },
+                    "availableIPAddresses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Contains other available private IP addresses if the asked for address is taken."
+                    }
+                },
+                "description": "Response for CheckIPAddressAvailability API service call."
+            },
+            "VirtualNetworkListUsageResult": {
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "readOnly": true,
+                        "items": {
+                            "$ref": "#/components/schemas/VirtualNetworkUsage"
+                        },
+                        "description": "VirtualNetwork usage stats."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "description": "The URL to get the next set of results."
+                    }
+                },
+                "description": "Response for the virtual networks GetUsage API service call."
+            },
+            "VirtualNetworkUsage": {
+                "properties": {
+                    "currentValue": {
+                        "type": "number",
+                        "format": "double",
+                        "readOnly": true,
+                        "description": "Indicates number of IPs used from the Subnet."
+                    },
+                    "id": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Subnet identifier."
+                    },
+                    "limit": {
+                        "type": "number",
+                        "format": "double",
+                        "readOnly": true,
+                        "description": "Indicates the size of the subnet."
+                    },
+                    "name": {
+                        "$ref": "#/components/schemas/VirtualNetworkUsageName"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Usage units. Returns 'Count'."
+                    }
+                },
+                "description": "Usage details for subnet."
+            },
+            "VirtualNetworkUsageName": {
+                "properties": {
+                    "localizedValue": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Localized subnet size and usage string."
+                    },
+                    "value": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "Subnet size and usage string."
+                    }
+                },
+                "description": "Usage strings container."
+            },
+            "PrepareNetworkPoliciesRequest": {
+                "properties": {
+                    "serviceName": {
+                        "type": "string",
+                        "description": "The name of the service for which subnet is being prepared for."
+                    },
+                    "networkIntentPolicyConfigurations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NetworkIntentPolicyConfiguration"
+                        },
+                        "description": "A list of NetworkIntentPolicyConfiguration."
+                    }
+                },
+                "description": "Details of PrepareNetworkPolicies for Subnet."
+            },
+            "UnprepareNetworkPoliciesRequest": {
+                "properties": {
+                    "serviceName": {
+                        "type": "string",
+                        "description": "The name of the service for which subnet is being unprepared for."
+                    }
+                },
+                "description": "Details of UnprepareNetworkPolicies for Subnet."
+            },
+            "NetworkIntentPolicyConfiguration": {
+                "properties": {
+                    "networkIntentPolicyName": {
+                        "type": "string",
+                        "description": "The name of the Network Intent Policy for storing in target subscription."
+                    },
+                    "sourceNetworkIntentPolicy": {
+                        "$ref": "#/components/schemas/NetworkIntentPolicy"
+                    }
+                },
+                "description": "Details of NetworkIntentPolicyConfiguration for PrepareNetworkPoliciesRequest."
+            },
+            "NetworkIntentPolicy": {
+                "properties": {
+                    "etag": {
+                        "readOnly": true,
+                        "type": "string",
+                        "description": "A unique read-only string that changes whenever the resource is updated."
+                    }
+                },
+                "allOf": [
+                    {
+                        "$ref": "./network.json#/definitions/Resource"
+                    }
+                ],
+                "description": "Network Intent Policy resource."
+            }
+        }
+    }
+}
