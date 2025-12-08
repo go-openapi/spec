@@ -1,0 +1,69 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "version": "0.0.1",
+        "title": ""
+    },
+    "paths": {
+        "/cycles": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/node0"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "/"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "node0": {
+                "type": "object",
+                "properties": {
+                    "p00": {
+                        "$ref": "#/components/schemas/node1"
+                    },
+                    "p01": {
+                        "$ref": "#/components/schemas/node3"
+                    }
+                }
+            },
+            "node1": {
+                "type": "object",
+                "properties": {
+                    "p1": {
+                        "$ref": "#/components/schemas/node2"
+                    }
+                }
+            },
+            "node2": {
+                "type": "object",
+                "properties": {
+                    "p2": {
+                        "$ref": "#/components/schemas/node0"
+                    }
+                }
+            },
+            "node3": {
+                "type": "object",
+                "properties": {
+                    "p3": {
+                        "$ref": "#/components/schemas/node1"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,39 @@
+openapi: 3.2.0
+info:
+  title: Object
+  version: 0.1.0
+paths:
+  /:
+    get:
+      summary: GET
+      operationId: getAll
+      parameters:
+        - $ref: responses.v3.yaml#/components/parameters/BadRequest
+        - $ref: responses.v3.yaml#/components/parameters/GoodRequest
+        - $ref: responses.v3.yaml#/components/parameters/PlainRequest
+        - $ref: responses.v3.yaml#/components/parameters/StrangeRequest
+        - $ref: responses.v3.yaml#/components/parameters/RemoteRequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/nestedRefDefinition"
+      responses:
+        "200":
+          description: Ok
+        "204":
+          $ref: responses.v3.yaml#/components/responses/RemoteRequest
+        "304":
+          $ref: responses.v3.yaml#/components/responses/StrangeRequest
+        "400":
+          $ref: responses.v3.yaml#/components/responses/BadRequest
+        "403":
+          $ref: responses.v3.yaml#/components/responses/GoodRequest
+        "404":
+          $ref: responses.v3.yaml#/components/responses/PlainRequest
+components:
+  schemas:
+    badDefinition:
+      $ref: responses.v3.yaml#/components/schemas/Error
+    nestedRefDefinition:
+      $ref: responses.v3.yaml#/components/schemas/myArray

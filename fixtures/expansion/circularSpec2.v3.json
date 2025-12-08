@@ -1,0 +1,330 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "title": "swagger.yaml for investigating an issue with spec.expandSchema",
+        "version": "0.0.1",
+        "description": "expander.go test for issue analysis, the spec derived from ODataWebV3.Northwind.Model and simplified for the analysis"
+    },
+    "paths": {
+        "/Employees": {
+            "get": {
+                "summary": "Get entities from Employees",
+                "responses": {
+                    "200": {
+                        "description": "Retrieved entities",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Collection of Employee",
+                                    "type": "object",
+                                    "properties": {
+                                        "value": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Employee"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "$ref": "#/components/responses/error"
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "http://localhost/modified_from_Northwind.svc"
+        }
+    ],
+    "components": {
+        "responses": {
+            "error": {
+                "description": "Error"
+            }
+        },
+        "schemas": {
+            "Category": {
+                "type": "object",
+                "properties": {
+                    "CategoryID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "CategoryName": {
+                        "type": "string",
+                        "maxLength": 15
+                    },
+                    "Products": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Product"
+                        }
+                    }
+                },
+                "title": "Category"
+            },
+            "CustomerDemographic": {
+                "type": "object",
+                "properties": {
+                    "CustomerTypeID": {
+                        "type": "string",
+                        "maxLength": 10
+                    },
+                    "CustomerDesc": {
+                        "type": "string",
+                        "example": "string"
+                    },
+                    "Customers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Customer"
+                        }
+                    }
+                },
+                "title": "CustomerDemographic"
+            },
+            "Customer": {
+                "type": "object",
+                "properties": {
+                    "CustomerID": {
+                        "type": "string",
+                        "maxLength": 5
+                    },
+                    "CompanyName": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "Orders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Order"
+                        }
+                    },
+                    "CustomerDemographics": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomerDemographic"
+                        }
+                    }
+                },
+                "title": "Customer"
+            },
+            "Employee": {
+                "type": "object",
+                "properties": {
+                    "EmployeeID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "LastName": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "FirstName": {
+                        "type": "string",
+                        "maxLength": 10
+                    },
+                    "Employees1": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Employee"
+                        }
+                    },
+                    "Employee1": {
+                        "$ref": "#/components/schemas/Employee"
+                    },
+                    "Orders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Order"
+                        }
+                    },
+                    "Territories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Territory"
+                        }
+                    }
+                },
+                "title": "Employee"
+            },
+            "Order_Detail": {
+                "type": "object",
+                "properties": {
+                    "OrderID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ProductID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "UnitPrice": {
+                        "type": "number",
+                        "format": "decimal",
+                        "multipleOf": 0.0001
+                    },
+                    "Quantity": {
+                        "type": "integer",
+                        "format": "int16"
+                    },
+                    "Order": {
+                        "$ref": "#/components/schemas/Order"
+                    },
+                    "Product": {
+                        "$ref": "#/components/schemas/Product"
+                    }
+                },
+                "title": "Order_Detail"
+            },
+            "Order": {
+                "type": "object",
+                "properties": {
+                    "OrderID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "CustomerID": {
+                        "type": "string",
+                        "maxLength": 5,
+                        "example": "string"
+                    },
+                    "Customer": {
+                        "$ref": "#/components/schemas/Customer"
+                    },
+                    "Employee": {
+                        "$ref": "#/components/schemas/Employee"
+                    },
+                    "Order_Details": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Order_Detail"
+                        }
+                    },
+                    "Shipper": {
+                        "$ref": "#/components/schemas/Shipper"
+                    }
+                },
+                "title": "Order"
+            },
+            "Product": {
+                "type": "object",
+                "properties": {
+                    "ProductID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ProductName": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "Category": {
+                        "$ref": "#/components/schemas/Category"
+                    },
+                    "Order_Details": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Order_Detail"
+                        }
+                    },
+                    "Supplier": {
+                        "$ref": "#/components/schemas/Supplier"
+                    }
+                },
+                "title": "Product"
+            },
+            "Region": {
+                "type": "object",
+                "properties": {
+                    "RegionID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "RegionDescription": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "Territories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Territory"
+                        }
+                    }
+                },
+                "title": "Region"
+            },
+            "Shipper": {
+                "type": "object",
+                "properties": {
+                    "ShipperID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "CompanyName": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "Orders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Order"
+                        }
+                    }
+                },
+                "title": "Shipper"
+            },
+            "Supplier": {
+                "type": "object",
+                "properties": {
+                    "SupplierID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "CompanyName": {
+                        "type": "string",
+                        "maxLength": 40
+                    },
+                    "Products": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Product"
+                        }
+                    }
+                },
+                "title": "Supplier"
+            },
+            "Territory": {
+                "type": "object",
+                "properties": {
+                    "TerritoryID": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "TerritoryDescription": {
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "RegionID": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Region": {
+                        "$ref": "#/components/schemas/Region"
+                    },
+                    "Employees": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Employee"
+                        }
+                    }
+                },
+                "title": "Territory"
+            }
+        }
+    }
+}

@@ -1,0 +1,70 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "version": "2.1.0",
+        "title": "Supported, but non Swagger 20 compliant $ref constructs"
+    },
+    "paths": {
+        "/employees": {
+            "get": {
+                "operationId": "LIST-Employees",
+                "summary": "List Employee Types",
+                "parameters": [
+                    {
+                        "description": "unsupported $ref in simple param",
+                        "name": "myQueryParam",
+                        "in": "query",
+                        "style": "form",
+                        "explode": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/arrayType"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "unsupported $ref in header",
+                        "headers": {
+                            "X-header": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/headerType"
+                                    }
+                                },
+                                "style": "simple"
+                            }
+                        },
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "http://item.com/extraRefs"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "arrayType": {
+                "type": "integer",
+                "format": "int32"
+            },
+            "headerType": {
+                "type": "string",
+                "format": "uuid"
+            }
+        }
+    }
+}

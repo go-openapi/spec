@@ -1,0 +1,9 @@
+openapi: 3.2.0
+info:
+  version: "1"
+  title: nested $ref fixture
+paths:
+  /dummy:
+    $ref: ./schemas/api/api.v3.yaml#/paths/~1dummy
+  /example:
+    $ref: ./schemas/api/api.v3.yaml#/paths/~1example

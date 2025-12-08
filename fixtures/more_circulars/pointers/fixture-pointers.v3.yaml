@@ -1,0 +1,228 @@
+openapi: 3.2.0
+info:
+  version: 0.1.0
+  title: JSON pointers
+paths:
+  /some/where:
+    parameters:
+      - $ref: "#/components/parameters/someParam"
+    get:
+      parameters:
+        - name: other
+          in: query
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/responses/notFound/schema"
+      responses:
+        "200":
+          description: RecordHolder
+          content:
+            "*/*":
+              schema:
+                type: object
+                properties:
+                  prop0:
+                    $ref: "#/components/schemas/myBody"
+        "404":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/myResponse"
+        default:
+          $ref: "#/components/responses/notFound"
+    post:
+      responses:
+        "203":
+          description: funny
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/responses/funnyResponse/schema"
+        "204":
+          $ref: "#/components/responses/funnyResponse"
+        default:
+          description: default
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/myDefaultResponse/properties/zzz"
+  /some/where/else:
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/myDefaultResponse"
+        default:
+          description: default
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/notFound"
+  /with/slice/container:
+    get:
+      responses:
+        default:
+          description: default
+          content:
+            "*/*":
+              schema:
+                allOf:
+                  - $ref: remote.yaml#/remotes/u64
+                  - $ref: remote.yaml#/remotes/u32
+                  - $ref: "#/components/schemas/myBody/properties/prop3"
+  /with/tuple/container:
+    get:
+      responses:
+        default:
+          description: default
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - $ref: "#/components/schemas/myBody/properties/prop2"
+                    - $ref: "#/components/schemas/myBody/properties/prop3"
+                    - $ref: remote.yaml#/remotes/i32
+  /with/array/container:
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/anArray"
+        default:
+          description: default
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/anArray/items"
+  /with/boolable/container:
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - type: integer
+                    - type: string
+                additionalItems:
+                  $ref: "#/components/schemas/myBody/properties/prop3"
+        default:
+          description: default
+          content:
+            "*/*":
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: "#/components/schemas/myBody/properties/prop3"
+  /with/ZcomesFirstInOrder/container:
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - type: integer
+                    - type: string
+                additionalItems:
+                  $ref: "#/components/schemas/myBody/properties/prop3"
+        "203":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/anExtensible/additionalProperties"
+        "204":
+          description: ok
+          content:
+            "*/*":
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/anExtensible/additionalProperties"
+components:
+  parameters:
+    someParam:
+      name: some
+      in: query
+      schema:
+        type: string
+  responses:
+    notFound:
+      description: Not Found
+      content:
+        "*/*":
+          schema:
+            $ref: "#/components/schemas/notFound"
+    funnyResponse:
+      description: ok
+      content:
+        "*/*":
+          schema:
+            $ref: "#/components/parameters/bodyParam/schema"
+    remoteResponse:
+      description: ok
+      content:
+        "*/*":
+          schema:
+            type: object
+            properties:
+              prop0:
+                $ref: remote.yaml#/remotes/u64
+  schemas:
+    anExtensible:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          addProp1:
+            type: string
+    anArray:
+      type: array
+      items:
+        type: string
+        format: uuid
+    notFound:
+      type: object
+      properties:
+        prop1:
+          $ref: "#/components/schemas/myDefaultResponse/properties/zzz"
+    myDefaultResponse:
+      type: object
+      properties:
+        zzz:
+          type: integer
+    myResponse:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/notFound/properties/prop1"
+    myBody:
+      type: object
+      properties:
+        prop2:
+          type: integer
+        prop3:
+          $ref: "#/components/schemas/myDefaultResponse/properties/zzz"
