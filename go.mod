@@ -1,8 +1,8 @@
 module github.com/go-openapi/spec
 
 require (
-	github.com/go-openapi/jsonpointer v0.22.3
-	github.com/go-openapi/jsonreference v0.21.3
+	github.com/go-openapi/jsonpointer v0.22.4
+	github.com/go-openapi/jsonreference v0.21.4
 	github.com/go-openapi/swag/conv v0.25.4
 	github.com/go-openapi/swag/jsonname v0.25.4
 	github.com/go-openapi/swag/jsonutils v0.25.4
