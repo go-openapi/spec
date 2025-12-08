@@ -64,7 +64,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "pet/pet.json#/definitions/pet"
+                                        "$ref": "pet/pet.v3.json#/components/schemas/pet"
                                     }
                                 }
                             },
@@ -72,7 +72,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "pet/pet.json#/definitions/pet"
+                                        "$ref": "pet/pet.v3.json#/components/schemas/pet"
                                     }
                                 }
                             },
@@ -80,7 +80,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "pet/pet.json#/definitions/pet"
+                                        "$ref": "pet/pet.v3.json#/components/schemas/pet"
                                     }
                                 }
                             },
@@ -88,7 +88,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "pet/pet.json#/definitions/pet"
+                                        "$ref": "pet/pet.v3.json#/components/schemas/pet"
                                     }
                                 }
                             }
@@ -252,7 +252,7 @@
                 "content": {
                     "application/json": {
                         "schema": {
-                            "$ref": "pet/pet.json#/definitions/pet"
+                            "$ref": "pet/pet.v3.json#/components/schemas/pet"
                         }
                     }
                 }
@@ -269,13 +269,13 @@
                 }
             },
             "anotherPet": {
-                "$ref": "pet/pet.json#/responses/anotherPet"
+                "$ref": "pet/pet.v3.json#/components/responses/anotherPet"
             },
             "circularA": {
-                "$ref": "pet/pet.json#/responses/circularB"
+                "$ref": "pet/pet.v3.json#/components/responses/circularB"
             },
             "backRef": {
-                "$ref": "pet/pet.json#/responses/backRef"
+                "$ref": "pet/pet.v3.json#/components/responses/backRef"
             }
         },
         "schemas": {
@@ -300,7 +300,7 @@
             "petInput": {
                 "allOf": [
                     {
-                        "$ref": "pet/pet.json#/definitions/pet"
+                        "$ref": "pet/pet.v3.json#/components/schemas/pet"
                     },
                     {
                         "required": [
