@@ -1,0 +1,46 @@
+name: Bump Release
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump-patch:
+        description: Bump a patch version release
+        type: boolean
+        required: false
+        default: true
+      bump-minor:
+        description: Bump a minor version release
+        type: boolean
+        required: false
+        default: false
+      bump-major:
+        description: Bump a major version release
+        type: boolean
+        required: false
+        default: false
+      tag-message-title:
+        description: Tag message title to prepend to the release notes
+        required: false
+        type: string
+      tag-message-body:
+        description: |
+          Tag message body to prepend to the release notes.
+          (use "|" to replace end of line).
+        required: false
+        type: string
+
+jobs:
+  bump-release:
+    permissions:
+      contents: write
+    uses: go-openapi/ci-workflows/.github/workflows/bump-release.yml@d0b50195d14745b9a9a8a41cf3bb7ecd874af37a # v0.1.1
+    with:
+      bump-patch: ${{ inputs.bump-patch }}
+      bump-minor: ${{ inputs.bump-minor }}
+      bump-major: ${{ inputs.bump-major }}
+      tag-message-title: ${{ inputs.tag-message-title }}
+      tag-message-body: ${{ inputs.tag-message-body }}
+    secrets: inherit
