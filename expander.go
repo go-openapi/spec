@@ -254,7 +254,7 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader, bas
 	return &target, nil
 }
 
-func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
+func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) { //nolint:gocyclo
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
 		newRef := normalizeRef(&target.Ref, basePath)
 		target.Ref = *newRef

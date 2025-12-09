@@ -51,14 +51,6 @@ func (v schemaVersion) String() string {
 	}
 }
 
-// definitionsRef returns the appropriate $ref prefix for definitions/schemas
-func (v schemaVersion) definitionsRef() string {
-	if v == openAPI3 {
-		return "#/components/schemas/"
-	}
-	return "#/definitions/"
-}
-
 // testFixture holds information about a test fixture file
 type testFixture struct {
 	Version schemaVersion

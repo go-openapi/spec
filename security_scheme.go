@@ -99,7 +99,7 @@ type SecuritySchemeProps struct {
 	Scopes           map[string]string `json:"scopes,omitempty"`           // oauth2
 	Scheme           string            `json:"scheme,omitempty"`           // http (e.g., "basic", "bearer")
 	BearerFormat     string            `json:"bearerFormat,omitempty"`     // http bearer
-	OpenIdConnectURL string            `json:"openIdConnectUrl,omitempty"` // openIdConnect
+	OpenIDConnectURL string            `json:"openIdConnectUrl,omitempty"` // openIdConnect
 	Flows            *OAuthFlows       `json:"flows,omitempty"`            // oauth2
 
 }

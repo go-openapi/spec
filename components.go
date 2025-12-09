@@ -141,7 +141,8 @@ func (c Callback) JSONLookup(token string) (any, error) {
 	if pi, ok := c.Expressions[token]; ok {
 		return pi, nil
 	}
-	return nil, nil
+	r, _, err := jsonpointer.GetForToken(c.CallbackProps, token)
+	return r, err
 }
 
 // MarshalJSON marshals this to JSON
