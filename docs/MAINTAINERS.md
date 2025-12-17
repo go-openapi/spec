@@ -138,20 +138,22 @@ Standard documentation:
 * [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md)
 * [`SECURIY.md`](../SECURITY.md) policy: how to report vulnerabilities privately
 * [`LICENSE`](../LICENSE) terms
+<!--
 * [`NOTICE`](../NOTICE) on supplementary license terms (original authors, copied code etc)
+-->
 
 Reference documentation (released):
 
-* [godoc](https://pkg.go/dev/go-openapi/jsonpointer)
+* [godoc](https://pkg.go.dev/github.com/go-openapi/spec)
 
 ## TODOs & other ideas
 
 A few things remain ahead to ease a bit a maintainer's job:
 
-* reuse CI workflows (e.g. in `github.com/go-openapi/workflows`)
-* reusable actions with custom tools pinned  (e.g. in `github.com/go-openapi/gh-actions`)
+* [x] reuse CI workflows (e.g. in `github.com/go-openapi/workflows`)
+* [x] reusable actions with custom tools pinned  (e.g. in `github.com/go-openapi/gh-actions`)
 * open-source license checks
-* auto-merge for CONTRIBUTORS.md (requires a github app to produce tokens)
-* more automated code renovation / relinting work (possibly built with CLAUDE)
+* [x] auto-merge for CONTRIBUTORS.md (requires a github app to produce tokens)
+* [ ] more automated code renovation / relinting work (possibly built with CLAUDE) (ongoing)
 * organization-level documentation web site
 * ...
