@@ -8,7 +8,7 @@ require (
 	github.com/go-openapi/swag/jsonutils v0.25.4
 	github.com/go-openapi/swag/loading v0.25.4
 	github.com/go-openapi/swag/stringutils v0.25.4
-	github.com/go-openapi/testify/v2 v2.0.2
+	github.com/go-openapi/testify/v2 v2.1.8
 	go.yaml.in/yaml/v3 v3.0.4
 )
 
