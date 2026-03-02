@@ -17,10 +17,10 @@ import (
 
 const windowsOS = "windows"
 
-// only used for windows
-var currentDriveLetter = getCurrentDrive()
+// only used for windows.
+var currentDriveLetter = getCurrentDrive() //nolint:gochecknoglobals // test fixture
 
-// get the current drive letter in lowercase on windows that the test is running
+// get the current drive letter in lowercase on windows that the test is running.
 func getCurrentDrive() string {
 	if runtime.GOOS != windowsOS {
 		return ""
@@ -260,7 +260,7 @@ func TestNormalizer_NormalizeURI(t *testing.T) {
 		t.Run(testCase.refPath, func(t *testing.T) {
 			t.Parallel()
 			out := normalizeURI(testCase.refPath, testCase.base)
-			assert.Equalf(t, testCase.expOutput, out,
+			assert.EqualTf(t, testCase.expOutput, out,
 				"unexpected normalized URL with $ref %q and base %q", testCase.refPath, testCase.base)
 		})
 	}
@@ -295,7 +295,7 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 			Base:     ".",
 			Expected: "file://$cwd", // edge case: this won't work because a document is a file
 		},
-		{
+		{ //nolint:gosec // test data, not real credentials
 			Base:     "https://user:password@www.example.com:123/base/sub/file.json",
 			Expected: "https://user:password@www.example.com:123/base/sub/file.json",
 		},
@@ -466,10 +466,10 @@ func TestNormalizer_NormalizeBase(t *testing.T) {
 		t.Run(testCase.Base, func(t *testing.T) {
 			t.Parallel()
 			expected := strings.ReplaceAll(strings.ReplaceAll(testCase.Expected, "$cwd", cwd), "$dir", path.Dir(cwd))
-			require.Equalf(t, expected, normalizeBase(testCase.Base), "for base %q", testCase.Base)
+			require.EqualTf(t, expected, normalizeBase(testCase.Base), "for base %q", testCase.Base)
 
 			// check for idempotence
-			require.Equalf(t, expected, normalizeBase(normalizeBase(testCase.Base)),
+			require.EqualTf(t, expected, normalizeBase(normalizeBase(testCase.Base)),
 				"expected idempotent behavior on base %q", testCase.Base)
 		})
 	}
@@ -494,7 +494,7 @@ func TestNormalizer_Denormalize(t *testing.T) {
 			Ref:          "#/definitions/X",
 			Expected:     "#/definitions/X",
 		},
-		{
+		{ //nolint:gosec // test data, not real credentials
 			OriginalBase: "https://user:password@example.com/a/b/c/file.json",
 			Ref:          "https://user:password@example.com/a/b/c/other.json#/definitions/X",
 			Expected:     "other.json#/definitions/X",
@@ -609,7 +609,7 @@ func TestNormalizer_Denormalize(t *testing.T) {
 			ref := MustCreateRef(testCase.Ref)
 			newRef := denormalizeRef(&ref, testCase.OriginalBase, testCase.ID)
 			require.NotNil(t, newRef)
-			require.Equalf(t, expected, newRef.String(),
+			require.EqualTf(t, expected, newRef.String(),
 				"expected %s, but got %s", testCase.Expected, newRef.String())
 		})
 	}

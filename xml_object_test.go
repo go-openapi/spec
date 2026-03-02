@@ -15,7 +15,7 @@ func TestXmlObject_Serialize(t *testing.T) {
 	obj1 := XMLObject{}
 	actual, err := json.Marshal(obj1)
 	require.NoError(t, err)
-	assert.Equal(t, "{}", string(actual))
+	assert.EqualT(t, "{}", string(actual))
 
 	obj2 := XMLObject{
 		Name:      "the name",
@@ -33,15 +33,19 @@ func TestXmlObject_Serialize(t *testing.T) {
 	assert.Equal(t, obj2.Name, ad["name"])
 	assert.Equal(t, obj2.Namespace, ad["namespace"])
 	assert.Equal(t, obj2.Prefix, ad["prefix"])
-	assert.True(t, ad["attribute"].(bool))
-	assert.True(t, ad["wrapped"].(bool))
+	attrVal, ok := ad["attribute"].(bool)
+	require.TrueT(t, ok, "expected bool for attribute")
+	assert.TrueT(t, attrVal)
+	wrappedVal, ok := ad["wrapped"].(bool)
+	require.TrueT(t, ok, "expected bool for wrapped")
+	assert.TrueT(t, wrappedVal)
 }
 
 func TestXmlObject_Deserialize(t *testing.T) {
 	expected := XMLObject{}
 	actual := XMLObject{}
 	require.NoError(t, json.Unmarshal([]byte("{}"), &actual))
-	assert.Equal(t, expected, actual)
+	assert.EqualT(t, expected, actual)
 
 	completed := `{"name":"the name","namespace":"the namespace","prefix":"the prefix","attribute":true,"wrapped":true}`
 	expected = XMLObject{
@@ -54,5 +58,5 @@ func TestXmlObject_Deserialize(t *testing.T) {
 
 	actual = XMLObject{}
 	require.NoError(t, json.Unmarshal([]byte(completed), &actual))
-	assert.Equal(t, expected, actual)
+	assert.EqualT(t, expected, actual)
 }

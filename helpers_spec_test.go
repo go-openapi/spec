@@ -18,10 +18,10 @@ import (
 
 var (
 	rex        = regexp.MustCompile(`"\$ref":\s*"(.*?)"`)
-	testLoader func(string) (json.RawMessage, error)
+	testLoader func(string) (json.RawMessage, error) //nolint:gochecknoglobals // test fixture
 )
 
-func init() {
+func init() { //nolint:gochecknoinits // sets up test loader for spec loading fixtures
 	// mimics what the go-openapi/load does
 	testLoader = func(path string) (json.RawMessage, error) {
 		if loading.YAMLMatcher(path) {
@@ -51,7 +51,7 @@ func assertRefInJSON(t testing.TB, jazon, prefix string) {
 
 	for _, matched := range m {
 		subMatch := matched[1]
-		assert.True(t, strings.HasPrefix(subMatch, prefix),
+		assert.TrueT(t, strings.HasPrefix(subMatch, prefix),
 			"expected $ref to match %q, got: %s", prefix, matched[0])
 	}
 }
@@ -66,7 +66,7 @@ func assertRefInJSONRegexp(t testing.TB, jazon, match string) {
 
 	for _, matched := range m {
 		subMatch := matched[1]
-		assert.True(t, refMatch.MatchString(subMatch),
+		assert.TrueT(t, refMatch.MatchString(subMatch),
 			"expected $ref to match %q, got: %s", match, matched[0])
 	}
 }
@@ -146,7 +146,7 @@ func asJSON(t testing.TB, sp any) string {
 	return string(bbb)
 }
 
-// assertNoRef ensures that no $ref is remaining in json doc
+// assertNoRef ensures that no $ref is remaining in json doc.
 func assertNoRef(t testing.TB, jazon string) {
 	m := rex.FindAllStringSubmatch(jazon, -1)
 	require.Nil(t, m)

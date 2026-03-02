@@ -29,13 +29,13 @@ const (
 
 //nolint:gochecknoglobals // it's okay to have embedded test fixtures as globals
 var (
-	//go:embed fixtures/*/*.json fixtures/*/*.yaml fixtures/*/*.yml
+	//go:embed all:fixtures
 	fixtureAssets embed.FS
 
 	// PetStore20 json doc for swagger 2.0 pet store.
 	PetStore20 []byte
 
-	// PetStoreJSONMessage json raw message for Petstore20
+	// PetStoreJSONMessage json raw message for Petstore20.
 	PetStoreJSONMessage json.RawMessage
 	expectedExtraRef    []byte
 	expectedPathItem    []byte
@@ -73,17 +73,17 @@ func TestExpand_Issue148(t *testing.T) {
 		return func(t *testing.T) {
 			require.Len(t, sp.Definitions, 2)
 
-			require.Contains(t, sp.Definitions, "empty")
+			require.MapContainsT(t, sp.Definitions, "empty")
 			empty := sp.Definitions["empty"]
 			require.NotNil(t, empty.AdditionalProperties)
 			require.NotNil(t, empty.AdditionalProperties.Schema)
-			require.True(t, empty.AdditionalProperties.Allows)
+			require.TrueT(t, empty.AdditionalProperties.Allows)
 
-			require.Contains(t, sp.Definitions, "false")
+			require.MapContainsT(t, sp.Definitions, "false")
 			additionalIsFalse := sp.Definitions["false"]
 			require.NotNil(t, additionalIsFalse.AdditionalProperties)
 			require.Nil(t, additionalIsFalse.AdditionalProperties.Schema)
-			require.False(t, additionalIsFalse.AdditionalProperties.Allows)
+			require.FalseT(t, additionalIsFalse.AdditionalProperties.Allows)
 		}
 	}
 
@@ -100,7 +100,7 @@ func TestExpand_KnownRef(t *testing.T) {
 	schema := RefProperty("http://json-schema.org/draft-04/schema#")
 	require.NoError(t, ExpandSchema(schema, nil, nil))
 
-	assert.Equal(t, "Core schema meta-schema", schema.Description)
+	assert.EqualT(t, "Core schema meta-schema", schema.Description)
 
 	// from the expanded schema, verify that all remaining $ref actually resolve
 	jazon := asJSON(t, schema)
@@ -126,7 +126,7 @@ func TestExpand_ResponseSchema(t *testing.T) {
 	require.NotNil(t, sch)
 
 	assert.Empty(t, sch.Ref.String())
-	assert.Contains(t, sch.Type, "object")
+	assert.SliceContainsT(t, sch.Type, "object")
 	assert.Len(t, sch.Properties, 2)
 }
 
@@ -151,7 +151,6 @@ func TestExpand_EmptySpec(t *testing.T) {
 }
 
 func TestExpand_Spec(t *testing.T) {
-
 	// expansion of a rich spec
 	specPath := filepath.Join("fixtures", "expansion", "all-the-things.json")
 	specDoc, err := jsonDoc(specPath)
@@ -214,7 +213,7 @@ func TestExpand_InternalResponse(t *testing.T) {
 
 	jazon := asJSON(t, expectedPet)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
          "description": "pet response",
          "schema": {
           "required": [
@@ -253,7 +252,7 @@ func TestExpand_InternalResponse(t *testing.T) {
 
 	jazon = asJSON(t, successResponse)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
 		"$ref": "#/responses/anotherPet"
   }`, jazon)
 
@@ -467,8 +466,8 @@ func TestExpand_InternalSchemas2(t *testing.T) {
 	require.NotNil(t, s)
 
 	schema = *s
-	assert.Empty(t, schema.Items.Schema.Ref.String()) // no more a $ref
-	assert.False(t, schema.Items.Schema.Ref.IsRoot()) // no more a $ref
+	assert.Empty(t, schema.Items.Schema.Ref.String())  // no more a $ref
+	assert.FalseT(t, schema.Items.Schema.Ref.IsRoot()) // no more a $ref
 	assert.Equal(t, spec.Definitions["car"], *schema.Items.Schema)
 
 	sch := new(Schema)
@@ -750,8 +749,7 @@ func TestExpand_InternalSchemas1(t *testing.T) {
 }
 
 func TestExpand_RelativeBaseURI(t *testing.T) {
-	server := httptest.NewServer(http.FileServer(http.Dir("fixtures/remote")))
-	defer server.Close()
+	server := fixtureServer(t, "fixtures/remote")
 
 	spec := new(Swagger)
 
@@ -802,7 +800,7 @@ func TestExpand_RelativeBaseURI(t *testing.T) {
 	// backRef navigates back to the root document (relative $ref)
 	backRef := spec.Responses["backRef"]
 	require.NoError(t, ExpandResponse(&backRef, opts.RelativeBase))
-	assert.Equal(t, "pet response", backRef.Description)
+	assert.EqualT(t, "pet response", backRef.Description)
 	assert.NotEmpty(t, backRef.Schema)
 	assert.Empty(t, backRef.Ref)
 
@@ -918,7 +916,7 @@ func TestExpandRemoteRef_WithNestedResolutionContext(t *testing.T) {
 	require.Empty(t, tgt.Ref)
 	require.NotNil(t, tgt.Items)
 	require.NotNil(t, tgt.Schema)
-	assert.Equal(t, "deeper/", tgt.ID) // schema id is preserved
+	assert.EqualT(t, "deeper/", tgt.ID) // schema id is preserved
 
 	assert.Equal(t, StringOrArray([]string{"string"}), tgt.Items.Schema.Type)
 	assert.Empty(t, tgt.Items.Schema.Ref)
@@ -949,7 +947,7 @@ func TestExpand_RemoteRefWithNestedResolutionContextWithFragment(t *testing.T) {
 	require.Empty(t, tgt.Ref)
 	require.NotNil(t, tgt.Items)
 	require.NotNil(t, tgt.Schema)
-	assert.Equal(t, "deeper/", tgt.ID) // schema id is preserved
+	assert.EqualT(t, "deeper/", tgt.ID) // schema id is preserved
 
 	assert.Equal(t, StringOrArray([]string{"file"}), tgt.Items.Schema.Type)
 	assert.Empty(t, tgt.Items.Schema.Ref)
@@ -970,7 +968,7 @@ func TestExpand_TransitiveRefs(t *testing.T) {
 
 	require.NoError(t, ExpandSpec(spec, opts))
 
-	assert.Equal(t, "todos.stoplight.io", spec.Host) // i.e. not empty
+	assert.EqualT(t, "todos.stoplight.io", spec.Host) // i.e. not empty
 	jazon := asJSON(t, spec)
 
 	// verify that the spec has been fully expanded
@@ -1030,12 +1028,12 @@ func expandRootWithID(t testing.TB, root *Swagger, testcase string) {
 
 func TestExpand_PathItem(t *testing.T) {
 	jazon, _ := expandThisOrDieTrying(t, pathItemsFixture)
-	assert.JSONEq(t, string(expectedPathItem), jazon)
+	assert.JSONEqT(t, string(expectedPathItem), jazon)
 }
 
 func TestExpand_ExtraItems(t *testing.T) {
 	jazon, _ := expandThisOrDieTrying(t, extraRefFixture)
-	assert.JSONEq(t, string(expectedExtraRef), jazon)
+	assert.JSONEqT(t, string(expectedExtraRef), jazon)
 }
 
 func TestExpand_Issue145(t *testing.T) {
@@ -1046,39 +1044,39 @@ func TestExpand_Issue145(t *testing.T) {
 	// assert the internal behavior of baseForRoot()
 	t.Run("with nil root, empty cache", func(t *testing.T) {
 		cache := defaultResolutionCache()
-		require.Equal(t, pseudoRoot, baseForRoot(nil, cache))
+		require.EqualT(t, pseudoRoot, baseForRoot(nil, cache))
 
 		t.Run("empty root is cached", func(t *testing.T) {
 			value, ok := cache.Get(pseudoRoot)
-			require.True(t, ok) // found in cache
+			require.TrueT(t, ok) // found in cache
 			asMap, ok := value.(map[string]any)
-			require.True(t, ok)
+			require.TrueT(t, ok)
 			require.Empty(t, asMap)
 		})
 	})
 
 	t.Run("with non-nil root, empty cache", func(t *testing.T) {
 		cache := defaultResolutionCache()
-		require.Equal(t, pseudoRoot, baseForRoot(map[string]any{"key": "arbitrary"}, cache))
+		require.EqualT(t, pseudoRoot, baseForRoot(map[string]any{"key": "arbitrary"}, cache))
 
 		t.Run("non-empty root is cached", func(t *testing.T) {
 			value, ok := cache.Get(pseudoRoot)
-			require.True(t, ok) // found in cache
+			require.TrueT(t, ok) // found in cache
 			asMap, ok := value.(map[string]any)
-			require.True(t, ok)
-			require.Contains(t, asMap, "key")
+			require.TrueT(t, ok)
+			require.MapContainsT(t, asMap, "key")
 			require.Equal(t, "arbitrary", asMap["key"])
 		})
 
 		t.Run("with nil root, non-empty cache", func(t *testing.T) {
-			require.Equal(t, pseudoRoot, baseForRoot(nil, cache))
+			require.EqualT(t, pseudoRoot, baseForRoot(nil, cache))
 
 			t.Run("non-empty root is kept", func(t *testing.T) {
 				value, ok := cache.Get(pseudoRoot)
-				require.True(t, ok) // found in cache
+				require.TrueT(t, ok) // found in cache
 				asMap, ok := value.(map[string]any)
-				require.True(t, ok)
-				require.Contains(t, asMap, "key")
+				require.TrueT(t, ok)
+				require.MapContainsT(t, asMap, "key")
 				require.Equal(t, "arbitrary", asMap["key"])
 			})
 		})

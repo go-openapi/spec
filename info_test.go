@@ -28,7 +28,7 @@ const infoJSON = `{
 	"x-framework": "go-swagger"
 }`
 
-var testInfo = Info{
+var testInfo = Info{ //nolint:gochecknoglobals // test fixture
 	InfoProps: InfoProps{
 		Version: "1.0.9-abcd",
 		Title:   "Swagger Sample API",
@@ -36,10 +36,11 @@ var testInfo = Info{
 			"the swagger-2.0 specification",
 		TermsOfService: "http://helloreverb.com/terms/",
 		Contact:        &ContactInfo{ContactInfoProps: ContactInfoProps{Name: "wordnik api team", URL: "http://developer.wordnik.com"}},
-		License: &License{LicenseProps: LicenseProps{
-			Name: "Creative Commons 4.0 International",
-			URL:  "http://creativecommons.org/licenses/by/4.0/",
-		},
+		License: &License{
+			LicenseProps: LicenseProps{
+				Name: "Creative Commons 4.0 International",
+				URL:  "http://creativecommons.org/licenses/by/4.0/",
+			},
 		},
 	},
 	VendorExtensible: VendorExtensible{Extensions: map[string]any{"x-framework": "go-swagger"}},
@@ -47,15 +48,11 @@ var testInfo = Info{
 
 func TestInfo(t *testing.T) {
 	t.Run("should marshal Info", func(t *testing.T) {
-		b, err := json.MarshalIndent(testInfo, "", "\t")
-		require.NoError(t, err)
-		assert.JSONEq(t, infoJSON, string(b))
+		assert.JSONMarshalAsT(t, infoJSON, testInfo)
 	})
 
 	t.Run("should unmarshal Info", func(t *testing.T) {
-		actual := Info{}
-		require.NoError(t, json.Unmarshal([]byte(infoJSON), &actual))
-		assert.Equal(t, testInfo, actual)
+		assert.JSONUnmarshalAsT(t, testInfo, infoJSON)
 	})
 
 	t.Run("should GobEncode Info", func(t *testing.T) {

@@ -5,14 +5,17 @@ package spec
 
 import (
 	"testing"
+
+	_ "github.com/go-openapi/testify/enable/yaml/v2"
+	"github.com/go-openapi/testify/v2/assert"
 )
 
 func TestIntegrationExternalDocs(t *testing.T) {
-	var extDocs = ExternalDocumentation{Description: "the name", URL: "the url"}
+	extDocs := ExternalDocumentation{Description: "the name", URL: "the url"}
 	const extDocsYAML = "description: the name\nurl: the url\n"
 	const extDocsJSON = `{"description":"the name","url":"the url"}`
-	assertSerializeJSON(t, extDocs, extDocsJSON)
-	assertSerializeYAML(t, extDocs, extDocsYAML)
-	assertParsesJSON(t, extDocsJSON, extDocs)
-	assertParsesYAML(t, extDocsYAML, extDocs)
+	assert.JSONMarshalAsT(t, extDocsJSON, extDocs)
+	assert.YAMLMarshalAsT(t, extDocsYAML, extDocs)
+	assert.JSONUnmarshalAsT(t, extDocs, extDocsJSON)
+	assert.YAMLUnmarshalAsT(t, extDocs, extDocsYAML)
 }

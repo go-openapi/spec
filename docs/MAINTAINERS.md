@@ -1,37 +1,33 @@
-# Maintainer's guide
+> [!NOTE]
+> Comprehensive guide for maintainers covering repository structure, CI/CD workflows, release procedures, and development practices.
+> Essential reading for anyone contributing to or maintaining this project.
 
 ## Repo structure
 
-Single go module.
-
-> **NOTE**
->
-> Some `go-openapi` repos are mono-repos with multiple modules,
-> with adapted CI workflows.
+This project is organized as a repo with a single go module.
 
 ## Repo configuration
 
-* default branch: master
-* protected branches: master
-* branch protection rules:
+* Default branch: master
+* Protected branches: master
+* Branch protection rules:
   * require pull requests and approval
-  * required status checks: 
-    - DCO (simple email sign-off)
-    - Lint
-    - tests completed
-* auto-merge enabled (used for dependabot updates)
+  * required status checks:
+    * DCO (simple email sign-off)
+    * Lint
+    * All tests completed
+* Auto-merge enabled (used for dependabot updates and other auto-merged PR's, e.g. contributors update)
 
 ## Continuous Integration
 
 ### Code Quality checks
 
-* meta-linter: golangci-lint
-* linter config: [`.golangci.yml`](../.golangci.yml) (see our [posture](./STYLE.md) on linters)
-
-* Code quality assessment: [CodeFactor](https://www.codefactor.io/dashboard)
+* meta-linter: [golangci-lint][golangci-url]
+* linter config: [`.golangci.yml`][linter-config] (see our [posture][style-doc] on linters)
+* Code quality assessment: [CodeFactor][codefactor-url]
 * Code quality badges
-  * go report card: <https://goreportcard.com/>
-  * CodeFactor: <https://goreportcard.com/>
+  * [go report card][gocard-url]
+  * [CodeFactor][codefactor-url]
 
 > **NOTES**
 >
@@ -58,7 +54,7 @@ Coverage threshold status is informative and not blocking.
 This is because the thresholds are difficult to tune and codecov oftentimes reports false negatives
 or may fail to upload coverage.
 
-All tests use our fork of `stretchr/testify`: `github.com/go-openapi/testify`.
+All tests across `go-openapi` use our fork of `stretchr/spec` (this repo): `github.com/go-openapi/spec`.
 This allows for minimal test dependencies.
 
 > **NOTES**
@@ -76,7 +72,7 @@ This allows for minimal test dependencies.
 ### Automated updates
 
 * dependabot
-  * configuration: [`dependabot.yaml`](../.github/dependabot.yaml)
+  * configuration: [`dependabot.yaml`][dependabot-config]
 
   Principle:
 
@@ -84,7 +80,7 @@ This allows for minimal test dependencies.
   * all updates from "trusted" dependencies (github actions, golang.org packages, go-openapi packages
     are auto-merged if they successfully pass CI.
 
-* go version udpates
+* go version updates
 
   Principle:
 
@@ -92,8 +88,14 @@ This allows for minimal test dependencies.
   * `go.mod` should be updated (manually) whenever there is a new go minor release
     (e.g. every 6 months).
 
+  > This means that our projects always have a 6 months lag to enforce new features from the go compiler.
+  >
+  > However, new features of go may be used with a "go:build" tag: this allows users of the newer
+  > version to benefit the new feature while users still running with `oldstable` use another version
+  > that still builds.
+
 * contributors
-  * a [`CONTRIBUTORS.md`](../CONTRIBUTORS.md) file is updated weekly, with all-time contributors to the repository
+  * a [`CONTRIBUTORS.md`][contributors-doc] file is updated weekly, with all-time contributors to the repository
   * the `github-actions[bot]` posts a pull request to do that automatically
   * at this moment, this pull request is not auto-approved/auto-merged (bot cannot approve its own PRs)
 
@@ -101,7 +103,7 @@ This allows for minimal test dependencies.
 
 There are 3 complementary scanners - obviously, there is some overlap, but each has a different focus.
 
-* github `CodeQL`
+* GitHub `CodeQL` <https://github.com/github/codeql>
 * `trivy` <https://trivy.dev/docs/latest/getting-started>
 * `govulnscan` <https://go.dev/blog/govulncheck>
 
@@ -115,45 +117,70 @@ Reports are centralized in github security reports for code scanning tools.
 
 ## Releases
 
+**For single module repos:**
+
+A bump release workflow can be triggered from the github actions UI to cut a release with a few clicks.
+
 The release process is minimalist:
 
 * push a semver tag (i.e v{major}.{minor}.{patch}) to the master branch.
 * the CI handles this to generate a github release with release notes
 
 * release notes generator: git-cliff <https://git-cliff.org/docs/>
-* configuration: [`cliff.toml`](../.cliff.toml)
+* configuration: the `.cliff.toml` is defined as a share configuration on
+  remote repo [`ci-workflows/.cliff.toml`][remote-cliff-config]
+
+Commits from maintainers are preferably PGP-signed.
 
 Tags are preferably PGP-signed.
+
+We want our releases to show as "verified" on github.
 
 The tag message introduces the release notes (e.g. a summary of this release).
 
 The release notes generator does not assume that commits are necessarily "conventional commits".
 
+**For mono-repos with multiple modules:**
+
+The release process is slightly different because we need to update cross-module dependencies
+before pushing a tag.
+
+A bump release workflow (mono-repo) can be triggered from the github actions UI to cut a release with a few clicks.
+
+It works with the same input as the one for single module repos, and first creates a PR (auto-merged)
+that updates the different go.mod files _before_ pushing the desired git tag.
+
+Commits and tags pushed by the workflow bot are PGP-signed ("go-openapi[bot]").
+
 ## Other files
 
 Standard documentation:
 
-* [`CONTRIBUTING.md`](../.github/CONTRIBUTING.md) guidelines
-* [`DCO.md`](../.github/DCO.md) terms for first-time contributors to read
-* [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md)
-* [`SECURIY.md`](../SECURITY.md) policy: how to report vulnerabilities privately
-* [`LICENSE`](../LICENSE) terms
-<!--
-* [`NOTICE`](../NOTICE) on supplementary license terms (original authors, copied code etc)
--->
+* [CONTRIBUTING.md][contributing-doc] guidelines
+* [DCO.md][dco-doc] terms for first-time contributors to read
+* [CODE_OF_CONDUCT.md][coc-doc]
+* [SECURITY.md][security-doc] policy: how to report vulnerabilities privately
+* [LICENSE][license-doc] terms
+
+<!-- * [NOTICE][notice-doc] on supplementary license terms (original authors, copied code etc) -->
 
 Reference documentation (released):
 
-* [godoc](https://pkg.go.dev/github.com/go-openapi/spec)
+* [pkg.go.dev (fka godoc)][godoc-url]
 
-## TODOs & other ideas
-
-A few things remain ahead to ease a bit a maintainer's job:
-
-* [x] reuse CI workflows (e.g. in `github.com/go-openapi/workflows`)
-* [x] reusable actions with custom tools pinned  (e.g. in `github.com/go-openapi/gh-actions`)
-* open-source license checks
-* [x] auto-merge for CONTRIBUTORS.md (requires a github app to produce tokens)
-* [ ] more automated code renovation / relinting work (possibly built with CLAUDE) (ongoing)
-* organization-level documentation web site
-* ...
+<!-- links to references -->
+[linter-config]: https://github.com/go-openapi/spec/blob/master/.golangci.yml
+[remote-cliff-config]: https://github.com/go-openapi/ci-workflows/blob/master/.cliff.toml
+[dependabot-config]: https://github.com/go-openapi/spec/blob/master/.github/dependabot.yaml
+[gocard-url]: https://goreportcard.com/report/github.com/go-openapi/spec
+[codefactor-url]: https://www.codefactor.io/repository/github/go-openapi/spec
+[golangci-url]: https://golangci-lint.run/
+[godoc-url]: https://pkg.go.dev/github.com/go-openapi/spec
+[contributors-doc]: ../CONTRIBUTORS.md
+[contributing-doc]: ../.github/CONTRIBUTING.md
+[dco-doc]: ../.github/DCO.md
+[style-doc]: STYLE.md
+[coc-doc]: ../CODE_OF_CONDUCT.md
+[security-doc]: ../SECURITY.md
+[license-doc]: ../LICENSE
+<!-- [notice-doc]: ../NOTICE -->

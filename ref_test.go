@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
-// pin pointing go-swagger/go-swagger#1816 issue with cloning ref's
+// pin pointing go-swagger/go-swagger#1816 issue with cloning ref's.
 func TestCloneRef(t *testing.T) {
 	var b bytes.Buffer
 	src := MustCreateRef("#/definitions/test")
@@ -29,5 +29,5 @@ func TestCloneRef(t *testing.T) {
 	jazon, err := json.Marshal(dst)
 	require.NoError(t, err)
 
-	assert.JSONEq(t, `{"$ref":"#/definitions/test"}`, string(jazon))
+	assert.JSONEqT(t, `{"$ref":"#/definitions/test"}`, string(jazon))
 }

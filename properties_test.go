@@ -6,6 +6,7 @@ package spec
 import (
 	"testing"
 
+	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
 )
 
@@ -20,7 +21,7 @@ func TestPropertySerialization(t *testing.T) {
 		}},
 	}}
 
-	var propSerData = []struct {
+	propSerData := []struct {
 		Schema *Schema
 		JSON   string
 	}{
@@ -42,10 +43,9 @@ func TestPropertySerialization(t *testing.T) {
 
 	for _, v := range propSerData {
 		t.Log("roundtripping for", v.JSON)
-		assertSerializeJSON(t, v.Schema, v.JSON)
-		assertParsesJSON(t, v.JSON, v.Schema)
+		assert.JSONMarshalAsT(t, v.JSON, v.Schema)
+		assert.JSONUnmarshalAsT(t, v.Schema, v.JSON)
 	}
-
 }
 
 func TestOrderedSchemaItem_Issue216(t *testing.T) {

@@ -16,19 +16,19 @@ func TestDefaultResolutionCache(t *testing.T) {
 	cache := defaultResolutionCache()
 
 	sch, ok := cache.Get("not there")
-	assert.False(t, ok)
+	assert.FalseT(t, ok)
 	assert.Nil(t, sch)
 
 	sch, ok = cache.Get("http://swagger.io/v2/schema.json")
-	assert.True(t, ok)
+	assert.TrueT(t, ok)
 	assert.Equal(t, swaggerSchema, sch)
 
 	sch, ok = cache.Get("http://json-schema.org/draft-04/schema")
-	assert.True(t, ok)
+	assert.TrueT(t, ok)
 	assert.Equal(t, jsonSchema, sch)
 
 	cache.Set("something", "here")
 	sch, ok = cache.Get("something")
-	assert.True(t, ok)
+	assert.TrueT(t, ok)
 	assert.Equal(t, "here", sch)
 }

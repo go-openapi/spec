@@ -6,7 +6,6 @@ package spec
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,7 +72,7 @@ func TestExpandCircular_Spec2Expansion(t *testing.T) {
 	assertRefResolve(t, jazon, "", root)
 
 	// assert stripped $ref in result
-	assert.NotContainsf(t, jazon, "circular-minimal.json#/",
+	assert.StringNotContainsTf(t, jazon, "circular-minimal.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
 	fixturePath = filepath.Join("fixtures", "expansion", "circularSpec2.json")
@@ -89,7 +88,7 @@ func TestExpandCircular_Spec2Expansion(t *testing.T) {
 	// circular $ref can always be further expanded against the root
 	assertRefExpand(t, jazon, "", root)
 
-	assert.NotContainsf(t, jazon, "circularSpec.json#/",
+	assert.StringNotContainsTf(t, jazon, "circularSpec.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
 	/*
@@ -152,7 +151,7 @@ func TestExpandCircular_Issue957(t *testing.T) {
 	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
-	require.NotContainsf(t, jazon, "fixture-957.json#/",
+	require.StringNotContainsTf(t, jazon, "fixture-957.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
 	assertRefInJSON(t, jazon, "#/definitions/")
@@ -253,9 +252,9 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 }
 
 func TestCircular_RemoteExpandAzure(t *testing.T) {
-	// local copy of : https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/network/resource-manager/Microsoft.Network/stable/2020-04-01/publicIpAddress.json
-	server := httptest.NewServer(http.FileServer(http.Dir("fixtures/azure")))
-	defer server.Close()
+	// local copy of Azure publicIpAddress.json from azure-rest-api-specs
+	// (Microsoft.Network/stable/2020-04-01)
+	server := fixtureServer(t, "fixtures/azure")
 
 	basePath := server.URL + "/publicIpAddress.json"
 	jazon, sch := expandThisOrDieTrying(t, basePath)

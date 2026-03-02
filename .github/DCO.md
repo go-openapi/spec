@@ -1,4 +1,4 @@
- # Developer's Certificate of Origin
+# Developer's Certificate of Origin
 
 ```
 Developer Certificate of Origin
