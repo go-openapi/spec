@@ -18,14 +18,13 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
 )
 
-var response = Response{
+var response = Response{ //nolint:gochecknoglobals // test fixture
 	Refable: Refable{Ref: MustCreateRef("Dog")},
 	VendorExtensible: VendorExtensible{
 		Extensions: map[string]any{
@@ -48,11 +47,7 @@ const responseJSON = `{
 }`
 
 func TestIntegrationResponse(t *testing.T) {
-	var actual Response
-	require.NoError(t, json.Unmarshal([]byte(responseJSON), &actual))
-	assert.Equal(t, actual, response)
-
-	assertParsesJSON(t, responseJSON, response)
+	assert.JSONUnmarshalAsT(t, response, responseJSON)
 }
 
 func TestJSONLookupResponse(t *testing.T) {
@@ -63,7 +58,7 @@ func TestJSONLookupResponse(t *testing.T) {
 
 	var ok bool
 	ref, ok := res.(*Ref)
-	require.True(t, ok)
+	require.TrueT(t, ok)
 	assert.Equal(t, MustCreateRef("Dog"), *ref)
 
 	var def string
@@ -73,8 +68,8 @@ func TestJSONLookupResponse(t *testing.T) {
 	require.IsType(t, def, res)
 
 	def, ok = res.(string)
-	require.True(t, ok)
-	assert.Equal(t, "Dog exists", def)
+	require.TrueT(t, ok)
+	assert.EqualT(t, "Dog exists", def)
 
 	var x *any
 	res, err = response.JSONLookup("x-go-name")
@@ -83,7 +78,7 @@ func TestJSONLookupResponse(t *testing.T) {
 	require.IsType(t, x, res)
 
 	x, ok = res.(*any)
-	require.True(t, ok)
+	require.TrueT(t, ok)
 	assert.EqualValues(t, "PutDogExists", *x)
 
 	res, err = response.JSONLookup("unknown")
@@ -97,10 +92,7 @@ func TestResponseBuild(t *testing.T) {
 		WithSchema(new(Schema).Typed("object", "")).
 		AddHeader("x-header", ResponseHeader().Typed("string", "")).
 		AddExample("application/json", `{"key":"value"}`)
-	jazon, err := json.MarshalIndent(resp, "", " ")
-	require.NoError(t, err)
-
-	assert.JSONEq(t, `{
+	assert.JSONMarshalAsT(t, `{
          "description": "some response",
          "schema": {
           "type": "object"
@@ -113,5 +105,5 @@ func TestResponseBuild(t *testing.T) {
          "examples": {
           "application/json": "{\"key\":\"value\"}"
          }
-			 }`, string(jazon))
+			 }`, resp)
 }

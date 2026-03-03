@@ -5,8 +5,6 @@ package spec
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,7 +16,7 @@ import (
 
 func TestResolveRef(t *testing.T) {
 	var root any
-	require.NoError(t, json.Unmarshal([]byte(PetStore20), &root))
+	require.NoError(t, json.Unmarshal(PetStore20, &root))
 
 	ref, err := NewRef("#/definitions/Category")
 	require.NoError(t, err)
@@ -29,7 +27,7 @@ func TestResolveRef(t *testing.T) {
 	b, err := sch.MarshalJSON()
 	require.NoError(t, err)
 
-	assert.JSONEq(t, `{"id":"Category","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string"}}}`, string(b))
+	assert.JSONEqT(t, `{"id":"Category","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string"}}}`, string(b))
 
 	// WithBase variant
 	sch, err = ResolveRefWithBase(root, &ref, &ExpandOptions{
@@ -40,7 +38,7 @@ func TestResolveRef(t *testing.T) {
 	b, err = sch.MarshalJSON()
 	require.NoError(t, err)
 
-	assert.JSONEq(t, `{"id":"Category","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string"}}}`, string(b))
+	assert.JSONEqT(t, `{"id":"Category","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string"}}}`, string(b))
 }
 
 func TestResolveResponse(t *testing.T) {
@@ -58,7 +56,7 @@ func TestResolveResponse(t *testing.T) {
 	// resolve resolves the ref, but dos not expand
 	jazon := asJSON(t, resp2)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
          "$ref": "#/responses/petResponse"
         }`, jazon)
 }
@@ -78,7 +76,7 @@ func TestResolveResponseWithBase(t *testing.T) {
 	// resolve resolves the ref, but dos not expand
 	jazon := asJSON(t, resp2)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
          "$ref": "#/responses/petResponse"
         }`, jazon)
 }
@@ -96,7 +94,7 @@ func TestResolveParam(t *testing.T) {
 
 	jazon := asJSON(t, par)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
       "name": "id",
       "in": "path",
       "description": "ID of pet to fetch",
@@ -119,7 +117,7 @@ func TestResolveParamWithBase(t *testing.T) {
 
 	jazon := asJSON(t, par)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
 "description":"ID of pet to fetch",
 "format":"int64",
 "in":"path",
@@ -130,9 +128,7 @@ func TestResolveParamWithBase(t *testing.T) {
 }
 
 func TestResolveRemoteRef_RootSame(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	server := fixtureServer(t, specs)
 
 	rootDoc := new(Swagger)
 	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
@@ -158,9 +154,7 @@ func TestResolveRemoteRef_RootSame(t *testing.T) {
 }
 
 func TestResolveRemoteRef_FromFragment(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	server := fixtureServer(t, specs)
 
 	rootDoc := new(Swagger)
 	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
@@ -178,9 +172,7 @@ func TestResolveRemoteRef_FromFragment(t *testing.T) {
 }
 
 func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	server := fixtureServer(t, specs)
 
 	rootDoc := new(Swagger)
 	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
@@ -215,9 +207,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 // }
 
 func TestResolveRemoteRef_ToParameter(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	server := fixtureServer(t, specs)
 
 	rootDoc := new(Swagger)
 	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
@@ -231,18 +221,16 @@ func TestResolveRemoteRef_ToParameter(t *testing.T) {
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
 
-	assert.Equal(t, "id", tgt.Name)
-	assert.Equal(t, "path", tgt.In)
-	assert.Equal(t, "ID of pet to fetch", tgt.Description)
-	assert.True(t, tgt.Required)
-	assert.Equal(t, "integer", tgt.Type)
-	assert.Equal(t, "int64", tgt.Format)
+	assert.EqualT(t, "id", tgt.Name)
+	assert.EqualT(t, "path", tgt.In)
+	assert.EqualT(t, "ID of pet to fetch", tgt.Description)
+	assert.TrueT(t, tgt.Required)
+	assert.EqualT(t, "integer", tgt.Type)
+	assert.EqualT(t, "int64", tgt.Format)
 }
 
 func TestResolveRemoteRef_ToPathItem(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	server := fixtureServer(t, specs)
 
 	rootDoc := new(Swagger)
 	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
@@ -259,9 +247,7 @@ func TestResolveRemoteRef_ToPathItem(t *testing.T) {
 }
 
 func TestResolveRemoteRef_ToResponse(t *testing.T) {
-	fileserver := http.FileServer(http.Dir(specs))
-	server := httptest.NewServer(fileserver)
-	defer server.Close()
+	server := fixtureServer(t, specs)
 
 	rootDoc := new(Swagger)
 	b, err := os.ReadFile(filepath.Join(specs, "refed.json"))
@@ -298,7 +284,7 @@ func TestResolveLocalRef_FromFragment(t *testing.T) {
 
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, ""))
-	assert.Equal(t, "Category", tgt.ID)
+	assert.EqualT(t, "Category", tgt.ID)
 }
 
 func TestResolveLocalRef_FromInvalidFragment(t *testing.T) {
@@ -328,12 +314,12 @@ func TestResolveLocalRef_Parameter(t *testing.T) {
 	resolver := defaultSchemaLoader(rootDoc, nil, nil, nil)
 	require.NoError(t, resolver.Resolve(&ref, &tgt, basePath))
 
-	assert.Equal(t, "id", tgt.Name)
-	assert.Equal(t, "path", tgt.In)
-	assert.Equal(t, "ID of pet to fetch", tgt.Description)
-	assert.True(t, tgt.Required)
-	assert.Equal(t, "integer", tgt.Type)
-	assert.Equal(t, "int64", tgt.Format)
+	assert.EqualT(t, "id", tgt.Name)
+	assert.EqualT(t, "path", tgt.In)
+	assert.EqualT(t, "ID of pet to fetch", tgt.Description)
+	assert.TrueT(t, tgt.Required)
+	assert.EqualT(t, "integer", tgt.Type)
+	assert.EqualT(t, "int64", tgt.Format)
 }
 
 func TestResolveLocalRef_PathItem(t *testing.T) {
@@ -384,7 +370,7 @@ func TestResolvePathItem(t *testing.T) {
 
 	jazon := asJSON(t, pathItem)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
          "get": {
           "responses": {
            "200": {
@@ -419,7 +405,7 @@ func TestResolveExtraItem(t *testing.T) {
 
 	jazon := asJSON(t, parmItem)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
          "type": "integer",
          "format": "int32"
 			 }`, jazon)
@@ -431,7 +417,7 @@ func TestResolveExtraItem(t *testing.T) {
 
 	jazon = asJSON(t, hdrItem)
 
-	assert.JSONEq(t, `{
+	assert.JSONEqT(t, `{
          "type": "string",
          "format": "uuid"
 			 }`, jazon)

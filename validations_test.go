@@ -36,7 +36,6 @@ func mkVal() SchemaValidations {
 }
 
 func TestValidations(t *testing.T) {
-
 	var cv CommonValidations
 	val := mkVal()
 	cv.SetValidations(val)
@@ -44,34 +43,34 @@ func TestValidations(t *testing.T) {
 	expectedCV := val.CommonValidations
 	require.Equal(t, expectedCV, cv)
 
-	require.True(t, cv.HasArrayValidations())
-	require.True(t, cv.HasNumberValidations())
-	require.True(t, cv.HasStringValidations())
-	require.True(t, cv.HasEnum())
+	require.TrueT(t, cv.HasArrayValidations())
+	require.TrueT(t, cv.HasNumberValidations())
+	require.TrueT(t, cv.HasStringValidations())
+	require.TrueT(t, cv.HasEnum())
 
 	cv.Enum = nil
-	require.False(t, cv.HasEnum())
+	require.FalseT(t, cv.HasEnum())
 
 	cv.MaxLength = nil
-	require.True(t, cv.HasStringValidations())
+	require.TrueT(t, cv.HasStringValidations())
 	cv.MinLength = nil
-	require.True(t, cv.HasStringValidations())
+	require.TrueT(t, cv.HasStringValidations())
 	cv.Pattern = ""
-	require.False(t, cv.HasStringValidations())
+	require.FalseT(t, cv.HasStringValidations())
 
 	cv.Minimum = nil
-	require.True(t, cv.HasNumberValidations())
+	require.TrueT(t, cv.HasNumberValidations())
 	cv.Maximum = nil
-	require.True(t, cv.HasNumberValidations())
+	require.TrueT(t, cv.HasNumberValidations())
 	cv.MultipleOf = nil
-	require.False(t, cv.HasNumberValidations())
+	require.FalseT(t, cv.HasNumberValidations())
 
 	cv.MaxItems = nil
-	require.True(t, cv.HasArrayValidations())
+	require.TrueT(t, cv.HasArrayValidations())
 	cv.MinItems = nil
-	require.True(t, cv.HasArrayValidations())
+	require.TrueT(t, cv.HasArrayValidations())
 	cv.UniqueItems = false
-	require.False(t, cv.HasArrayValidations())
+	require.FalseT(t, cv.HasArrayValidations())
 
 	val = mkVal()
 	expectedSV := val
@@ -92,24 +91,24 @@ func TestValidations(t *testing.T) {
 
 	require.Equal(t, val, sv.Validations())
 
-	require.True(t, sv.HasObjectValidations())
+	require.TrueT(t, sv.HasObjectValidations())
 	sv.MinProperties = nil
-	require.True(t, sv.HasObjectValidations())
+	require.TrueT(t, sv.HasObjectValidations())
 	sv.MaxProperties = nil
-	require.True(t, sv.HasObjectValidations())
+	require.TrueT(t, sv.HasObjectValidations())
 	sv.PatternProperties = nil
-	require.False(t, sv.HasObjectValidations())
+	require.FalseT(t, sv.HasObjectValidations())
 
 	val = mkVal()
 	cv.SetValidations(val)
 	cv.ClearStringValidations()
-	require.False(t, cv.HasStringValidations())
+	require.FalseT(t, cv.HasStringValidations())
 
 	cv.ClearNumberValidations()
-	require.False(t, cv.HasNumberValidations())
+	require.FalseT(t, cv.HasNumberValidations())
 
 	cv.ClearArrayValidations()
-	require.False(t, cv.HasArrayValidations())
+	require.FalseT(t, cv.HasArrayValidations())
 
 	sv.SetValidations(val)
 	sv.ClearObjectValidations(func(validation string, _ any) {
@@ -121,5 +120,5 @@ func TestValidations(t *testing.T) {
 			t.Fail()
 		}
 	})
-	require.Falsef(t, sv.HasObjectValidations(), "%#v", sv)
+	require.FalseTf(t, sv.HasObjectValidations(), "%#v", sv)
 }

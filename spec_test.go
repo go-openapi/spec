@@ -41,7 +41,7 @@ func TestSpec_Issue2743(t *testing.T) {
 			require.NoError(t,
 				spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}),
 			)
-			require.NotContainsf(t, asJSON(t, sp), "$ref", "all $ref's should have been expanded properly")
+			require.StringNotContainsTf(t, asJSON(t, sp), "$ref", "all $ref's should have been expanded properly")
 		})
 	})
 }
@@ -55,7 +55,7 @@ func TestSpec_Issue1429(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert well expanded
-	require.Truef(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture")
+	require.TrueTf(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture")
 
 	assertPaths1429(t, sp)
 
@@ -69,12 +69,12 @@ func TestSpec_Issue1429(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert well resolved
-	require.Truef(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture")
+	require.TrueTf(t, (sp.Paths != nil && sp.Paths.Paths != nil), "expected paths to be available in fixture")
 
 	assertPaths1429SkipSchema(t, sp)
 
 	for _, def := range sp.Definitions {
-		assert.Contains(t, def.Ref.String(), "responses.yaml#/definitions/")
+		assert.StringContainsT(t, def.Ref.String(), "responses.yaml#/definitions/")
 	}
 }
 
@@ -112,14 +112,14 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 				continue
 			case "nestedBody":
 				// this one is local
-				assert.Truef(t, strings.HasPrefix(param.Schema.Ref.String(), "#/definitions/"),
+				assert.TrueTf(t, strings.HasPrefix(param.Schema.Ref.String(), "#/definitions/"),
 					"expected rooted definitions $ref, got: %s", param.Schema.Ref.String())
 				continue
 			case "remoteRequest":
-				assert.Contains(t, param.Schema.Ref.String(), "remote/remote.yaml#/")
+				assert.StringContainsT(t, param.Schema.Ref.String(), "remote/remote.yaml#/")
 				continue
 			}
-			assert.Contains(t, param.Schema.Ref.String(), "responses.yaml#/")
+			assert.StringContainsT(t, param.Schema.Ref.String(), "responses.yaml#/")
 
 		}
 
@@ -130,13 +130,13 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 				assert.Nilf(t, response.Schema, "expected response schema to be nil")
 				continue
 			case 204:
-				assert.Contains(t, response.Schema.Ref.String(), "remote/remote.yaml#/")
+				assert.StringContainsT(t, response.Schema.Ref.String(), "remote/remote.yaml#/")
 				continue
 			case 404:
 				assert.Empty(t, response.Schema.Ref.String())
 				continue
 			}
-			assert.Containsf(t, response.Schema.Ref.String(), "responses.yaml#/", "expected remote ref at resp. %d", code)
+			assert.StringContainsTf(t, response.Schema.Ref.String(), "responses.yaml#/", "expected remote ref at resp. %d", code)
 		}
 	}
 }
@@ -149,7 +149,7 @@ func TestSpec_MoreLocalExpansion(t *testing.T) {
 	require.NoError(t, spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: false, PathLoader: testLoader}))
 
 	// asserts all $ref are expanded
-	assert.NotContains(t, asJSON(t, sp), `"$ref"`)
+	assert.StringNotContainsT(t, asJSON(t, sp), `"$ref"`)
 }
 
 func TestSpec_Issue69(t *testing.T) {

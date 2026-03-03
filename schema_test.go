@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
-var schema = Schema{
+var schema = Schema{ //nolint:gochecknoglobals // test fixture
 	VendorExtensible: VendorExtensible{Extensions: map[string]any{"x-framework": "go-swagger"}},
 	SchemaProps: SchemaProps{
 		Ref:              MustCreateRef("Cat"),
@@ -68,6 +68,7 @@ var schema = Schema{
 	},
 }
 
+//nolint:gochecknoglobals // test fixture
 var schemaJSON = `{
 	"x-framework": "go-swagger",
   "$ref": "Cat",
@@ -139,55 +140,53 @@ var schemaJSON = `{
 `
 
 func TestSchema(t *testing.T) {
-
-	expected := map[string]any{}
-	_ = json.Unmarshal([]byte(schemaJSON), &expected)
-	b, err := json.Marshal(schema)
-	require.NoError(t, err)
-
-	var actual map[string]any
-	require.NoError(t, json.Unmarshal(b, &actual))
-	assert.Equal(t, expected, actual)
+	assert.JSONMarshalAsT(t, schemaJSON, schema)
 
 	actual2 := Schema{}
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), &actual2))
 
 	assert.Equal(t, schema.Ref, actual2.Ref)
-	assert.Equal(t, schema.Description, actual2.Description)
+	assert.EqualT(t, schema.Description, actual2.Description)
 	assert.Equal(t, schema.Maximum, actual2.Maximum)
 	assert.Equal(t, schema.Minimum, actual2.Minimum)
-	assert.Equal(t, schema.ExclusiveMinimum, actual2.ExclusiveMinimum)
-	assert.Equal(t, schema.ExclusiveMaximum, actual2.ExclusiveMaximum)
+	assert.EqualT(t, schema.ExclusiveMinimum, actual2.ExclusiveMinimum)
+	assert.EqualT(t, schema.ExclusiveMaximum, actual2.ExclusiveMaximum)
 	assert.Equal(t, schema.MaxLength, actual2.MaxLength)
 	assert.Equal(t, schema.MinLength, actual2.MinLength)
-	assert.Equal(t, schema.Pattern, actual2.Pattern)
+	assert.EqualT(t, schema.Pattern, actual2.Pattern)
 	assert.Equal(t, schema.MaxItems, actual2.MaxItems)
 	assert.Equal(t, schema.MinItems, actual2.MinItems)
-	assert.True(t, actual2.UniqueItems)
+	assert.TrueT(t, actual2.UniqueItems)
 	assert.Equal(t, schema.MultipleOf, actual2.MultipleOf)
 	assert.Equal(t, schema.Enum, actual2.Enum)
 	assert.Equal(t, schema.Type, actual2.Type)
-	assert.Equal(t, schema.Format, actual2.Format)
-	assert.Equal(t, schema.Title, actual2.Title)
+	assert.EqualT(t, schema.Format, actual2.Format)
+	assert.EqualT(t, schema.Title, actual2.Title)
 	assert.Equal(t, schema.MaxProperties, actual2.MaxProperties)
 	assert.Equal(t, schema.MinProperties, actual2.MinProperties)
 	assert.Equal(t, schema.Required, actual2.Required)
 	assert.Equal(t, schema.Items, actual2.Items)
 	assert.Equal(t, schema.AllOf, actual2.AllOf)
 	assert.Equal(t, schema.Properties, actual2.Properties)
-	assert.Equal(t, schema.Discriminator, actual2.Discriminator)
-	assert.Equal(t, schema.ReadOnly, actual2.ReadOnly)
+	assert.EqualT(t, schema.Discriminator, actual2.Discriminator)
+	assert.EqualT(t, schema.ReadOnly, actual2.ReadOnly)
 	assert.Equal(t, schema.XML, actual2.XML)
 	assert.Equal(t, schema.ExternalDocs, actual2.ExternalDocs)
 	assert.Equal(t, schema.AdditionalProperties, actual2.AdditionalProperties)
 	assert.Equal(t, schema.Extensions, actual2.Extensions)
 
-	examples := actual2.Example.([]any)
-	expEx := schema.Example.([]any)
-	ex1 := examples[0].(map[string]any)
-	ex2 := examples[1].(map[string]any)
-	exp1 := expEx[0].(map[string]any)
-	exp2 := expEx[1].(map[string]any)
+	examples, ok := actual2.Example.([]any)
+	require.TrueT(t, ok, "expected []any for actual2.Example")
+	expEx, ok := schema.Example.([]any)
+	require.TrueT(t, ok, "expected []any for schema.Example")
+	ex1, ok := examples[0].(map[string]any)
+	require.TrueT(t, ok, "expected map[string]any for examples[0]")
+	ex2, ok := examples[1].(map[string]any)
+	require.TrueT(t, ok, "expected map[string]any for examples[1]")
+	exp1, ok := expEx[0].(map[string]any)
+	require.TrueT(t, ok, "expected map[string]any for expEx[0]")
+	exp2, ok := expEx[1].(map[string]any)
+	require.TrueT(t, ok, "expected map[string]any for expEx[1]")
 
 	assert.EqualValues(t, exp1["id"], ex1["id"])
 	assert.Equal(t, exp1["name"], ex1["name"])

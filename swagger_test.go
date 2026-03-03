@@ -39,7 +39,7 @@ func init() { //nolint:gochecknoinits // it's okay to load embedded fixtures in 
 	}
 }
 
-var spec = Swagger{
+var spec = Swagger{ //nolint:gochecknoglobals // test fixture
 	SwaggerProps: SwaggerProps{
 		ID:          "http://localhost:3849/api-docs",
 		Swagger:     "2.0",
@@ -175,9 +175,10 @@ var spec = Swagger{
 	}
 */
 
-func assertSpecs(t testing.TB, actual, expected Swagger) bool {
+func assertSpecs(t testing.TB, actual, expected Swagger) {
+	t.Helper()
 	expected.Swagger = "2.0"
-	return assert.Equal(t, expected, actual)
+	assert.Equal(t, expected, actual)
 }
 
 /*
@@ -225,25 +226,25 @@ func TestVendorExtensionStringSlice(t *testing.T) {
 	var actual Swagger
 	require.NoError(t, json.Unmarshal(specJSON, &actual))
 	schemes, ok := actual.Extensions.GetStringSlice("x-schemes")
-	require.True(t, ok)
+	require.TrueT(t, ok)
 	assert.Equal(t, []string{"unix", "amqp"}, schemes)
 
 	notSlice, ok := actual.Extensions.GetStringSlice("x-some-extension")
 	assert.Nil(t, notSlice)
-	assert.False(t, ok)
+	assert.FalseT(t, ok)
 
 	actual.AddExtension("x-another-ext", 100)
 	notString, ok := actual.Extensions.GetStringSlice("x-another-ext")
 	assert.Nil(t, notString)
-	assert.False(t, ok)
+	assert.FalseT(t, ok)
 
 	actual.AddExtension("x-another-slice-ext", []any{100, 100})
 	notStringSlice, ok := actual.Extensions.GetStringSlice("x-another-slice-ext")
 	assert.Nil(t, notStringSlice)
-	assert.False(t, ok)
+	assert.FalseT(t, ok)
 
 	_, ok = actual.Extensions.GetStringSlice("x-notfound-ext")
-	assert.False(t, ok)
+	assert.FalseT(t, ok)
 }
 
 func TestOptionalSwaggerProps_Serialize(t *testing.T) {
@@ -256,18 +257,18 @@ func TestOptionalSwaggerProps_Serialize(t *testing.T) {
 	var ms map[string]any
 	require.NoError(t, json.Unmarshal(bytes, &ms))
 
-	assert.NotContains(t, ms, "consumes")
-	assert.NotContains(t, ms, "produces")
-	assert.NotContains(t, ms, "schemes")
-	assert.NotContains(t, ms, "host")
-	assert.NotContains(t, ms, "basePath")
-	assert.NotContains(t, ms, "definitions")
-	assert.NotContains(t, ms, "parameters")
-	assert.NotContains(t, ms, "responses")
-	assert.NotContains(t, ms, "securityDefinitions")
-	assert.NotContains(t, ms, "security")
-	assert.NotContains(t, ms, "tags")
-	assert.NotContains(t, ms, "externalDocs")
+	assert.MapNotContainsT(t, ms, "consumes")
+	assert.MapNotContainsT(t, ms, "produces")
+	assert.MapNotContainsT(t, ms, "schemes")
+	assert.MapNotContainsT(t, ms, "host")
+	assert.MapNotContainsT(t, ms, "basePath")
+	assert.MapNotContainsT(t, ms, "definitions")
+	assert.MapNotContainsT(t, ms, "parameters")
+	assert.MapNotContainsT(t, ms, "responses")
+	assert.MapNotContainsT(t, ms, "securityDefinitions")
+	assert.MapNotContainsT(t, ms, "security")
+	assert.MapNotContainsT(t, ms, "tags")
+	assert.MapNotContainsT(t, ms, "externalDocs")
 }
 
 func TestSecurityRequirements(t *testing.T) {
@@ -276,11 +277,11 @@ func TestSecurityRequirements(t *testing.T) {
 
 	sec := minimalSpec.Paths.Paths["/"].Get.Security
 	require.Len(t, sec, 3)
-	assert.Contains(t, sec[0], "basic")
-	assert.Contains(t, sec[0], "apiKey")
+	assert.MapContainsT(t, sec[0], "basic")
+	assert.MapContainsT(t, sec[0], "apiKey")
 	assert.NotNil(t, sec[1])
 	assert.Empty(t, sec[1])
-	assert.Contains(t, sec[2], "queryKey")
+	assert.MapContainsT(t, sec[2], "queryKey")
 }
 
 func TestSwaggerGobEncoding(t *testing.T) {

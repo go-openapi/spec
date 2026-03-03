@@ -18,14 +18,13 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
 )
 
-var responses = Responses{
+var responses = Responses{ //nolint:gochecknoglobals // test fixture
 	VendorExtensible: VendorExtensible{
 		Extensions: map[string]any{
 			"x-go-name": "PutDogExists",
@@ -62,16 +61,12 @@ const responsesJSON = `{
 }`
 
 func TestIntegrationResponses(t *testing.T) {
-	var actual Responses
-	require.NoError(t, json.Unmarshal([]byte(responsesJSON), &actual))
-	assert.Equal(t, actual, responses)
-
-	assertParsesJSON(t, responsesJSON, responses)
+	assert.JSONUnmarshalAsT(t, responses, responsesJSON)
 }
 
 func TestJSONLookupResponses(t *testing.T) {
 	resp200, ok := responses.StatusCodeResponses[200]
-	require.True(t, ok)
+	require.TrueT(t, ok)
 
 	res, err := resp200.JSONLookup("$ref")
 	require.NoError(t, err)
@@ -79,7 +74,7 @@ func TestJSONLookupResponses(t *testing.T) {
 	require.IsType(t, &Ref{}, res)
 
 	ref, ok := res.(*Ref)
-	require.True(t, ok)
+	require.TrueT(t, ok)
 	assert.Equal(t, MustCreateRef("Dog"), *ref)
 
 	var def string
@@ -89,8 +84,8 @@ func TestJSONLookupResponses(t *testing.T) {
 	require.IsType(t, def, res)
 
 	def, ok = res.(string)
-	require.True(t, ok)
-	assert.Equal(t, "Dog exists", def)
+	require.TrueT(t, ok)
+	assert.EqualT(t, "Dog exists", def)
 
 	var x *any
 	res, err = responses.JSONLookup("x-go-name")
@@ -99,7 +94,7 @@ func TestJSONLookupResponses(t *testing.T) {
 	require.IsType(t, x, res)
 
 	x, ok = res.(*any)
-	require.True(t, ok)
+	require.TrueT(t, ok)
 	assert.EqualValues(t, "PutDogExists", *x)
 
 	res, err = responses.JSONLookup("unknown")
@@ -113,8 +108,7 @@ func TestResponsesBuild(t *testing.T) {
 		WithSchema(new(Schema).Typed("object", "")).
 		AddHeader("x-header", ResponseHeader().Typed("string", "")).
 		AddExample("application/json", `{"key":"value"}`)
-	jazon, _ := json.MarshalIndent(resp, "", " ")
-	assert.JSONEq(t, `{
+	assert.JSONMarshalAsT(t, `{
          "description": "some response",
          "schema": {
           "type": "object"
@@ -127,5 +121,5 @@ func TestResponsesBuild(t *testing.T) {
          "examples": {
           "application/json": "{\"key\":\"value\"}"
          }
-			 }`, string(jazon))
+			 }`, resp)
 }

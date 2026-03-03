@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
-var operation = Operation{
+var operation = Operation{ //nolint:gochecknoglobals // test fixture
 	VendorExtensible: VendorExtensible{
 		Extensions: map[string]any{
 			"x-framework": "go-swagger",
@@ -71,15 +71,15 @@ func TestSuccessResponse(t *testing.T) {
 	ope := &Operation{}
 	resp, n, f := ope.SuccessResponse()
 	assert.Nil(t, resp)
-	assert.Equal(t, 0, n)
-	assert.False(t, f)
+	assert.EqualT(t, 0, n)
+	assert.FalseT(t, f)
 
 	resp, n, f = operation.SuccessResponse()
 	require.NotNil(t, resp)
-	assert.Equal(t, "void response", resp.Description)
+	assert.EqualT(t, "void response", resp.Description)
 
-	assert.Equal(t, 0, n)
-	assert.False(t, f)
+	assert.EqualT(t, 0, n)
+	assert.FalseT(t, f)
 
 	require.NoError(t, json.Unmarshal([]byte(operationJSON), ope))
 
@@ -90,10 +90,10 @@ func TestSuccessResponse(t *testing.T) {
 	})
 	resp, n, f = ope.SuccessResponse()
 	require.NotNil(t, resp)
-	assert.Equal(t, "void response", resp.Description)
+	assert.EqualT(t, "void response", resp.Description)
 
-	assert.Equal(t, 0, n)
-	assert.False(t, f)
+	assert.EqualT(t, 0, n)
+	assert.FalseT(t, f)
 
 	ope = ope.RespondsWith(200, &Response{
 		ResponseProps: ResponseProps{
@@ -103,10 +103,10 @@ func TestSuccessResponse(t *testing.T) {
 
 	resp, n, f = ope.SuccessResponse()
 	require.NotNil(t, resp)
-	assert.Equal(t, "success", resp.Description)
+	assert.EqualT(t, "success", resp.Description)
 
-	assert.Equal(t, 200, n)
-	assert.True(t, f)
+	assert.EqualT(t, 200, n)
+	assert.TrueT(t, f)
 }
 
 func TestOperationBuilder(t *testing.T) {
@@ -134,10 +134,7 @@ func TestOperationBuilder(t *testing.T) {
 		WithSummary("my summary").
 		WithExternalDocs("some doc", "https://www.example.com")
 
-	jazon, err := json.MarshalIndent(ope, "", " ")
-	require.NoError(t, err)
-
-	assert.JSONEq(t, `{
+	assert.JSONMarshalAsT(t, `{
 		     "operationId": "operationID",
 				 "description": "test operation",
 				 "summary": "my summary",
@@ -187,23 +184,20 @@ func TestOperationBuilder(t *testing.T) {
            "description": "default"
           }
          }
-		 }`, string(jazon))
+		 }`, ope)
 
 	// check token lookup
 	token, err := ope.JSONLookup("responses")
 	require.NoError(t, err)
 
-	jazon, err = json.MarshalIndent(token, "", " ")
-	require.NoError(t, err)
-
-	assert.JSONEq(t, `{
+	assert.JSONMarshalAsT(t, `{
          "200": {
           "description": "success"
          },
          "default": {
           "description": "default"
          }
-			 }`, string(jazon))
+			 }`, token)
 
 	// check delete methods
 	ope = ope.RespondsWith(200, nil).
@@ -212,10 +206,8 @@ func TestOperationBuilder(t *testing.T) {
 		RemoveParam("fakeParam", "query").
 		Undeprecate().
 		WithExternalDocs("", "")
-	jazon, err = json.MarshalIndent(ope, "", " ")
-	require.NoError(t, err)
 
-	assert.JSONEq(t, `{
+	assert.JSONMarshalAsT(t, `{
          "security": [
           {
            "scheme-name": [
@@ -242,15 +234,11 @@ func TestOperationBuilder(t *testing.T) {
            "description": "default"
           }
          }
-			 }`, string(jazon))
+			 }`, ope)
 }
 
 func TestIntegrationOperation(t *testing.T) {
-	var actual Operation
-	require.NoError(t, json.Unmarshal([]byte(operationJSON), &actual))
-	assert.Equal(t, actual, operation)
-
-	assertParsesJSON(t, operationJSON, operation)
+	assert.JSONUnmarshalAsT(t, operation, operationJSON)
 }
 
 func TestSecurityProperty(t *testing.T) {
@@ -258,7 +246,7 @@ func TestSecurityProperty(t *testing.T) {
 	securityNotSet := OperationProps{}
 	jsonResult, err := json.Marshal(securityNotSet)
 	require.NoError(t, err)
-	assert.NotContains(t, string(jsonResult), "security", "security key should be omitted when unset")
+	assert.StringNotContainsT(t, string(jsonResult), "security", "security key should be omitted when unset")
 
 	// Ensure we preserve the security key when it contains an empty (zero length) slice
 	securityContainsEmptyArray := OperationProps{
@@ -344,10 +332,11 @@ func doTestOperationGobEncoding(t *testing.T, fixture string) {
 }
 
 func doTestAnyGobEncoding(t *testing.T, src, dst any) {
-	expectedJSON, _ := json.MarshalIndent(src, "", " ")
+	expectedJSON, err := json.MarshalIndent(src, "", " ")
+	require.NoError(t, err)
 
 	var b bytes.Buffer
-	err := gob.NewEncoder(&b).Encode(src)
+	err = gob.NewEncoder(&b).Encode(src)
 	require.NoError(t, err)
 
 	err = gob.NewDecoder(&b).Decode(dst)
@@ -355,5 +344,5 @@ func doTestAnyGobEncoding(t *testing.T, src, dst any) {
 
 	jazon, err := json.MarshalIndent(dst, "", " ")
 	require.NoError(t, err)
-	assert.JSONEq(t, string(expectedJSON), string(jazon))
+	assert.JSONEqT(t, string(expectedJSON), string(jazon))
 }

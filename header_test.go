@@ -4,7 +4,6 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/go-openapi/swag/conv"
@@ -17,11 +16,12 @@ const epsilon = 1e-9
 func float64Ptr(f float64) *float64 {
 	return &f
 }
+
 func int64Ptr(f int64) *int64 {
 	return &f
 }
 
-var header = Header{
+var header = Header{ //nolint:gochecknoglobals // test fixture
 	VendorExtensible: VendorExtensible{Extensions: map[string]any{
 		"x-framework": "swagger-go",
 	}},
@@ -74,11 +74,7 @@ const headerJSON = `{
 }`
 
 func TestIntegrationHeader(t *testing.T) {
-	var actual Header
-	require.NoError(t, json.Unmarshal([]byte(headerJSON), &actual))
-	assert.Equal(t, actual, header)
-
-	assertParsesJSON(t, headerJSON, header)
+	assert.JSONUnmarshalAsT(t, header, headerJSON)
 }
 
 func TestJSONLookupHeader(t *testing.T) {
@@ -90,8 +86,8 @@ func TestJSONLookupHeader(t *testing.T) {
 
 	var ok bool
 	def, ok = res.(string)
-	require.True(t, ok)
-	assert.Equal(t, "8", def)
+	require.TrueT(t, ok)
+	assert.EqualT(t, "8", def)
 
 	var x *any
 	res, err = header.JSONLookup("x-framework")
@@ -100,7 +96,7 @@ func TestJSONLookupHeader(t *testing.T) {
 	require.IsType(t, x, res)
 
 	x, ok = res.(*any)
-	require.True(t, ok)
+	require.TrueT(t, ok)
 	assert.EqualValues(t, "swagger-go", *x)
 
 	res, err = header.JSONLookup("unknown")
@@ -114,8 +110,8 @@ func TestJSONLookupHeader(t *testing.T) {
 	require.IsType(t, maximum, res)
 
 	maximum, ok = res.(*float64)
-	require.True(t, ok)
-	assert.InDelta(t, float64(100), *maximum, epsilon)
+	require.TrueT(t, ok)
+	assert.InDeltaT(t, float64(100), *maximum, epsilon)
 }
 
 func TestResponseHeaueder(t *testing.T) {
@@ -126,20 +122,20 @@ func TestResponseHeaueder(t *testing.T) {
 
 func TestWithHeader(t *testing.T) {
 	h := new(Header).WithDescription("header description").Typed("integer", "int32")
-	assert.Equal(t, "header description", h.Description)
-	assert.Equal(t, "integer", h.Type)
-	assert.Equal(t, "int32", h.Format)
+	assert.EqualT(t, "header description", h.Description)
+	assert.EqualT(t, "integer", h.Type)
+	assert.EqualT(t, "int32", h.Format)
 
 	i := new(Items).Typed("string", "date")
 	h = new(Header).CollectionOf(i, "pipe")
 
 	assert.Equal(t, *i, *h.Items)
-	assert.Equal(t, "pipe", h.CollectionFormat)
+	assert.EqualT(t, "pipe", h.CollectionFormat)
 
 	h = new(Header).WithDefault([]string{"a", "b", "c"}).WithMaxLength(10).WithMinLength(3)
 
-	assert.Equal(t, int64(10), *h.MaxLength)
-	assert.Equal(t, int64(3), *h.MinLength)
+	assert.EqualT(t, int64(10), *h.MaxLength)
+	assert.EqualT(t, int64(3), *h.MinLength)
 	assert.EqualValues(t, []string{"a", "b", "c"}, h.Default)
 
 	h = new(Header).WithPattern("^abc$")

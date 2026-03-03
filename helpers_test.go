@@ -6,6 +6,10 @@ package spec
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -16,6 +20,22 @@ import (
 )
 
 var rex = regexp.MustCompile(`"\$ref":\s*"(.*?)"`)
+
+// fixtureServer returns an httptest.Server serving the given subdirectory
+// from the embedded fixtureAssets FS. This avoids OS-level file serving
+// (and the Windows TransmitFile/sendfile code path that has a data race
+// in Go 1.26).
+func fixtureServer(t testing.TB, dir string) *httptest.Server {
+	t.Helper()
+
+	sub, err := fs.Sub(fixtureAssets, filepath.ToSlash(dir))
+	require.NoError(t, err)
+
+	server := httptest.NewServer(http.FileServerFS(sub))
+	t.Cleanup(server.Close)
+
+	return server
+}
 
 func jsonDoc(path string) (json.RawMessage, error) {
 	data, err := loading.LoadFromFileOrHTTP(path)
@@ -76,7 +96,7 @@ func assertRefInJSON(t testing.TB, jazon, prefix string) {
 
 	for _, matched := range m {
 		subMatch := matched[1]
-		assert.True(t, strings.HasPrefix(subMatch, prefix),
+		assert.TrueT(t, strings.HasPrefix(subMatch, prefix),
 			"expected $ref to match %q, got: %s", prefix, matched[0])
 	}
 }
@@ -94,12 +114,12 @@ func assertRefInJSONRegexp(t testing.TB, jazon, match string) {
 
 	for _, matched := range m {
 		subMatch := matched[1]
-		assert.True(t, refMatch.MatchString(subMatch),
+		assert.TrueT(t, refMatch.MatchString(subMatch),
 			"expected $ref to match %q, got: %s", match, matched[0])
 	}
 }
 
-// assertNoRef ensures that no $ref is remaining in json doc
+// assertNoRef ensures that no $ref is remaining in json doc.
 func assertNoRef(t testing.TB, jazon string) {
 	m := rex.FindAllStringSubmatch(jazon, -1)
 	require.Nil(t, m)

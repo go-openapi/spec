@@ -4,11 +4,9 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
-	"github.com/go-openapi/testify/v2/require"
 )
 
 const contactInfoJSON = `{
@@ -18,19 +16,13 @@ const contactInfoJSON = `{
 	"x-teams": "test team"
 }`
 
-var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{
+var contactInfo = ContactInfo{ContactInfoProps: ContactInfoProps{ //nolint:gochecknoglobals // test fixture
 	Name:  "wordnik api team",
 	URL:   "http://developer.wordnik.com",
 	Email: "some@mailayada.dkdkd",
 }, VendorExtensible: VendorExtensible{Extensions: map[string]any{"x-teams": "test team"}}}
 
 func TestIntegrationContactInfo(t *testing.T) {
-	b, err := json.MarshalIndent(contactInfo, "", "\t")
-	require.NoError(t, err)
-	assert.JSONEq(t, contactInfoJSON, string(b))
-
-	actual := ContactInfo{}
-	err = json.Unmarshal([]byte(contactInfoJSON), &actual)
-	require.NoError(t, err)
-	assert.Equal(t, contactInfo, actual)
+	assert.JSONMarshalAsT(t, contactInfoJSON, contactInfo)
+	assert.JSONUnmarshalAsT(t, contactInfo, contactInfoJSON)
 }

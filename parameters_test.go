@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
-var parameter = Parameter{
+var parameter = Parameter{ //nolint:gochecknoglobals // test fixture
 	VendorExtensible: VendorExtensible{Extensions: map[string]any{
 		"x-framework": "swagger-go",
 	}},
@@ -49,6 +49,7 @@ var parameter = Parameter{
 	},
 }
 
+//nolint:gochecknoglobals // test fixture
 var parameterJSON = `{
 	"items": {
 		"$ref": "Cat"
@@ -81,11 +82,7 @@ var parameterJSON = `{
 }`
 
 func TestIntegrationParameter(t *testing.T) {
-	var actual Parameter
-	require.NoError(t, json.Unmarshal([]byte(parameterJSON), &actual))
-	assert.Equal(t, actual, parameter)
-
-	assertParsesJSON(t, parameterJSON, parameter)
+	assert.JSONUnmarshalAsT(t, parameter, parameterJSON)
 }
 
 func TestParameterSerialization(t *testing.T) {
@@ -97,27 +94,28 @@ func TestParameterSerialization(t *testing.T) {
 		SimpleSchema: SimpleSchema{Type: "int", Format: "int32"},
 	}
 
-	assertSerializeJSON(t, QueryParam("").Typed("string", ""), `{"type":"string","in":"query"}`)
+	assert.JSONMarshalAsT(t, `{"type":"string","in":"query"}`, QueryParam("").Typed("string", ""))
 
-	assertSerializeJSON(t,
-		QueryParam("").CollectionOf(items, "multi"),
-		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"query"}`)
+	assert.JSONMarshalAsT(t,
+		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"query"}`,
+		QueryParam("").CollectionOf(items, "multi"))
 
-	assertSerializeJSON(t, PathParam("").Typed("string", ""), `{"type":"string","in":"path","required":true}`)
+	assert.JSONMarshalAsT(t, `{"type":"string","in":"path","required":true}`, PathParam("").Typed("string", ""))
 
-	assertSerializeJSON(t,
-		PathParam("").CollectionOf(items, "multi"),
-		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"path","required":true}`)
+	assert.JSONMarshalAsT(t,
+		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"path","required":true}`,
+		PathParam("").CollectionOf(items, "multi"))
 
-	assertSerializeJSON(t,
-		PathParam("").CollectionOf(intItems, "multi"),
-		`{"type":"array","items":{"type":"int","format":"int32"},"collectionFormat":"multi","in":"path","required":true}`)
+	assert.JSONMarshalAsT(t,
+		`{"type":"array","items":{"type":"int","format":"int32"},"collectionFormat":"multi","in":"path","required":true}`,
+		PathParam("").CollectionOf(intItems, "multi"))
 
-	assertSerializeJSON(t, HeaderParam("").Typed("string", ""), `{"type":"string","in":"header","required":true}`)
+	assert.JSONMarshalAsT(t, `{"type":"string","in":"header","required":true}`, HeaderParam("").Typed("string", ""))
 
-	assertSerializeJSON(t,
-		HeaderParam("").CollectionOf(items, "multi"),
-		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"header","required":true}`)
+	assert.JSONMarshalAsT(t,
+		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"header","required":true}`,
+		HeaderParam("").CollectionOf(items, "multi"))
+
 	schema := &Schema{SchemaProps: SchemaProps{
 		Properties: map[string]Schema{
 			"name": {SchemaProps: SchemaProps{
@@ -130,19 +128,18 @@ func TestParameterSerialization(t *testing.T) {
 		SchemaProps: SchemaProps{Ref: MustCreateRef("Cat")},
 	}
 
-	assertSerializeJSON(t,
-		BodyParam("", schema),
-		`{"in":"body","schema":{"properties":{"name":{"type":"string"}}}}`)
+	assert.JSONMarshalAsT(t,
+		`{"in":"body","schema":{"properties":{"name":{"type":"string"}}}}`,
+		BodyParam("", schema))
 
-	assertSerializeJSON(t,
-		BodyParam("", refSchema),
-		`{"in":"body","schema":{"$ref":"Cat"}}`)
+	assert.JSONMarshalAsT(t,
+		`{"in":"body","schema":{"$ref":"Cat"}}`,
+		BodyParam("", refSchema))
 
 	// array body param
-	assertSerializeJSON(t,
-		BodyParam("", ArrayProperty(RefProperty("Cat"))),
-		`{"in":"body","schema":{"type":"array","items":{"$ref":"Cat"}}}`)
-
+	assert.JSONMarshalAsT(t,
+		`{"in":"body","schema":{"type":"array","items":{"$ref":"Cat"}}}`,
+		BodyParam("", ArrayProperty(RefProperty("Cat"))))
 }
 
 func TestParameterGobEncoding(t *testing.T) {

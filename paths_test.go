@@ -4,14 +4,12 @@
 package spec
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
-	"github.com/go-openapi/testify/v2/require"
 )
 
-var paths = Paths{
+var paths = Paths{ //nolint:gochecknoglobals // test fixture
 	VendorExtensible: VendorExtensible{Extensions: map[string]any{"x-framework": "go-swagger"}},
 	Paths: map[string]PathItem{
 		"/": {
@@ -23,10 +21,5 @@ var paths = Paths{
 const pathsJSON = `{"x-framework":"go-swagger","/":{"$ref":"cats"}}`
 
 func TestIntegrationPaths(t *testing.T) {
-	var actual Paths
-	require.NoError(t, json.Unmarshal([]byte(pathsJSON), &actual))
-	assert.Equal(t, actual, paths)
-
-	assertParsesJSON(t, pathsJSON, paths)
-
+	assert.JSONUnmarshalAsT(t, paths, pathsJSON)
 }
