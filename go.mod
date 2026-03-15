@@ -18,4 +18,4 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 )
 
-go 1.24.0
+go 1.25.0
