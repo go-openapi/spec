@@ -40,7 +40,7 @@ You may also join our discord server where you may discuss issues or requests.
 [![Discord Server][discord-badge]][discord-url]
 
 [discord-badge]: https://img.shields.io/discord/1446918742398341256?logo=discord&label=discord&color=blue
-[discord-url]: https://discord.gg/twZ9BwT3
+[discord-url]: https://discord.gg/FfnFYaC3k5
 
 ### Reporting issues
 
