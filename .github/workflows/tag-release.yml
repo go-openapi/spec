@@ -13,7 +13,7 @@ jobs:
     name: Create release
     permissions:
       contents: write
-    uses: go-openapi/ci-workflows/.github/workflows/release.yml@e8e6599fe480362cb0d5cbdac5b245cc833742f5 # v0.2.15
+    uses: go-openapi/ci-workflows/.github/workflows/release.yml@6ed4490472a56b1d952231565aac80f13c2d143c # v0.2.16
     with:
       tag: ${{ github.ref_name }}
     secrets: inherit
