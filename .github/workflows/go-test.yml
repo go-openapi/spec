@@ -13,5 +13,5 @@ on:
 
 jobs:
   test:
-    uses: go-openapi/ci-workflows/.github/workflows/go-test.yml@e8e6599fe480362cb0d5cbdac5b245cc833742f5 # v0.2.15
+    uses: go-openapi/ci-workflows/.github/workflows/go-test.yml@6ed4490472a56b1d952231565aac80f13c2d143c # v0.2.16
     secrets: inherit
