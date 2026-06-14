@@ -75,6 +75,7 @@ const headerJSON = `{
 
 func TestIntegrationHeader(t *testing.T) {
 	assert.JSONUnmarshalAsT(t, header, headerJSON)
+	assert.JSONMarshalAsT(t, headerJSON, header)
 }
 
 func TestJSONLookupHeader(t *testing.T) {
