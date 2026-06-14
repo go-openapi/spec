@@ -38,7 +38,7 @@ func TestDebug(t *testing.T) {
 	Debug = false
 	_ = tmpFile.Close()
 
-	flushed, _ := os.Open(tmpName) //nolint:gosec // test file, path is from os.CreateTemp
+	flushed, _ := os.Open(tmpName)
 	buf := make([]byte, 500)
 	_, _ = flushed.Read(buf)
 	specLogger.SetOutput(os.Stdout)
