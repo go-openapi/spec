@@ -14,5 +14,5 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    uses: go-openapi/ci-workflows/.github/workflows/contributors.yml@f00f5763ddb0c59105de5f565da8cac323fce2bf # v0.3.5
+    uses: go-openapi/ci-workflows/.github/workflows/contributors.yml@af4c93f45481ea7d24ac2a9858272cc03daf424e # v0.4.0
     secrets: inherit
