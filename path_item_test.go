@@ -38,6 +38,9 @@ var pathItem = PathItem{ //nolint:gochecknoglobals // test fixture
 		Patch: &Operation{
 			OperationProps: OperationProps{Description: "patch operation description"},
 		},
+		Query: &Operation{
+			OperationProps: OperationProps{Description: "query operation description"},
+		},
 		Parameters: []Parameter{
 			{
 				ParamProps: ParamProps{In: "path"},
@@ -56,6 +59,7 @@ const pathItemJSON = `{
 	"options": { "description": "options operation description" },
 	"head": { "description": "head operation description" },
 	"patch": { "description": "patch operation description" },
+	"query": { "description": "query operation description" },
 	"parameters": [{"in":"path"}]
 }`
 

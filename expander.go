@@ -404,6 +404,7 @@ func expandPathItem(pathItem *PathItem, resolver *schemaLoader, basePath string)
 		pathItem.Post,
 		pathItem.Patch,
 		pathItem.Delete,
+		pathItem.Query,
 	}
 	for _, op := range ops {
 		if err := expandOperation(op, resolver, basePath); resolver.shouldStopOnError(err) {
