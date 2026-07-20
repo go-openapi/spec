@@ -57,6 +57,43 @@ func TestExpandSchemaWithOptions(t *testing.T) {
 	})
 }
 
+func TestExpandParameterResponseWithOptions(t *testing.T) {
+	// Parameter and response $ref pointing into an external document are expanded through the
+	// injected option-aware loader — the path go-openapi/validate needs for confined validation.
+	const external = `{
+		"parameters":{"Foo":{"name":"foo","in":"query","type":"string"}},
+		"responses":{"Bar":{"description":"ok"}}
+	}`
+
+	var loaderCalls int
+	loader := func(pth string, _ ...loading.Option) (json.RawMessage, error) {
+		if strings.Contains(pth, "external.json") {
+			loaderCalls++
+			return json.RawMessage(external), nil
+		}
+		return nil, fmt.Errorf("%w: %s", errUnexpectedLoad, pth)
+	}
+	opts := &ExpandOptions{RelativeBase: "spec.json", PathLoaderWithOptions: loader}
+
+	t.Run("parameter", func(t *testing.T) {
+		param := new(Parameter)
+		param.Ref = MustCreateRef("external.json#/parameters/Foo")
+		require.NoError(t, ExpandParameterWithOptions(param, nil, nil, opts))
+		assert.EqualT(t, "foo", param.Name)
+		assert.EqualT(t, "", param.Ref.String())
+	})
+
+	t.Run("response", func(t *testing.T) {
+		resp := new(Response)
+		resp.Ref = MustCreateRef("external.json#/responses/Bar")
+		require.NoError(t, ExpandResponseWithOptions(resp, nil, nil, opts))
+		assert.EqualT(t, "ok", resp.Description)
+		assert.EqualT(t, "", resp.Ref.String())
+	})
+
+	assert.TrueT(t, loaderCalls >= 2, "expected the injected loader to resolve both external $ref")
+}
+
 func TestPathLoaderSelection(t *testing.T) {
 	t.Run("option-aware loader is used when set", func(t *testing.T) {
 		var called string

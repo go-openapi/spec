@@ -546,25 +546,28 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 //
 // Setting the cache is optional and this parameter may safely be left to nil.
 func ExpandResponseWithRoot(response *Response, root any, cache ResolutionCache) error {
-	cache = cacheOrDefault(cache)
-	opts := &ExpandOptions{
-		RelativeBase: baseForRoot(root, cache),
-	}
-	resolver := defaultSchemaLoader(root, opts, cache, nil)
-
-	return expandParameterOrResponse(response, resolver, opts.RelativeBase)
+	return ExpandResponseWithOptions(response, root, cache, nil)
 }
 
 // ExpandResponse expands a response based on a basepath
 //
 // All refs inside response will be resolved relative to basePath.
 func ExpandResponse(response *Response, basePath string) error {
-	opts := optionsOrDefault(&ExpandOptions{
-		RelativeBase: basePath,
-	})
-	resolver := defaultSchemaLoader(nil, opts, nil, nil)
+	return ExpandResponseWithOptions(response, nil, nil, &ExpandOptions{RelativeBase: basePath})
+}
 
-	return expandParameterOrResponse(response, resolver, opts.RelativeBase)
+// ExpandResponseWithOptions expands a response, honoring the provided expand options.
+//
+// It is the option-aware form of [ExpandResponse] and [ExpandResponseWithRoot]. When root is
+// non-nil, refs resolve against the in-memory root document; otherwise they resolve relative to
+// opts.RelativeBase.
+//
+// Set opts.PathLoaderWithOptions (or opts.PathLoader) to inject a confined document loader when
+// the response's $ref may derive from an untrusted source — see the package "Security" section.
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
+func ExpandResponseWithOptions(response *Response, root any, cache ResolutionCache, opts *ExpandOptions) error {
+	return expandRefableWithOptions(response, root, cache, opts)
 }
 
 // ExpandParameterWithRoot expands a parameter based on a root document, not a fetchable document.
@@ -572,26 +575,43 @@ func ExpandResponse(response *Response, basePath string) error {
 // Notice that it is impossible to reference a json schema in a different document other than root
 // (use ExpandParameter to resolve external references).
 func ExpandParameterWithRoot(parameter *Parameter, root any, cache ResolutionCache) error {
-	cache = cacheOrDefault(cache)
-
-	opts := &ExpandOptions{
-		RelativeBase: baseForRoot(root, cache),
-	}
-	resolver := defaultSchemaLoader(root, opts, cache, nil)
-
-	return expandParameterOrResponse(parameter, resolver, opts.RelativeBase)
+	return ExpandParameterWithOptions(parameter, root, cache, nil)
 }
 
 // ExpandParameter expands a parameter based on a basepath.
 // This is the exported version of expandParameter
 // all refs inside parameter will be resolved relative to basePath.
 func ExpandParameter(parameter *Parameter, basePath string) error {
-	opts := optionsOrDefault(&ExpandOptions{
-		RelativeBase: basePath,
-	})
-	resolver := defaultSchemaLoader(nil, opts, nil, nil)
+	return ExpandParameterWithOptions(parameter, nil, nil, &ExpandOptions{RelativeBase: basePath})
+}
 
-	return expandParameterOrResponse(parameter, resolver, opts.RelativeBase)
+// ExpandParameterWithOptions expands a parameter, honoring the provided expand options.
+//
+// It is the option-aware form of [ExpandParameter] and [ExpandParameterWithRoot]. When root is
+// non-nil, refs resolve against the in-memory root document; otherwise they resolve relative to
+// opts.RelativeBase.
+//
+// Set opts.PathLoaderWithOptions (or opts.PathLoader) to inject a confined document loader when
+// the parameter's $ref may derive from an untrusted source — see the package "Security" section.
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
+func ExpandParameterWithOptions(parameter *Parameter, root any, cache ResolutionCache, opts *ExpandOptions) error {
+	return expandRefableWithOptions(parameter, root, cache, opts)
+}
+
+// expandRefableWithOptions is the shared implementation for the option-aware parameter/response
+// expanders. When root is non-nil, refs resolve against the in-memory root (base derived from
+// root); otherwise they resolve relative to opts.RelativeBase. opts carries the loader and other
+// expand options.
+func expandRefableWithOptions(input any, root any, cache ResolutionCache, opts *ExpandOptions) error {
+	cache = cacheOrDefault(cache)
+	effective := optionsOrDefault(opts) // clones and normalizes RelativeBase; preserves the loader
+	if root != nil {
+		effective.RelativeBase = baseForRoot(root, cache)
+	}
+	resolver := defaultSchemaLoader(root, effective, cache, nil)
+
+	return expandParameterOrResponse(input, resolver, effective.RelativeBase)
 }
 
 func getRefAndSchema(input any) (*Ref, *Schema, error) {
