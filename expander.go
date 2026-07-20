@@ -184,20 +184,41 @@ func baseForRoot(root any, cache ResolutionCache) string {
 // (use ExpandSchemaWithBasePath to resolve external references).
 //
 // Setting the cache is optional and this parameter may safely be left to nil.
+//
+// ExpandSchema uses the package default document loader, which is not sandboxed. To expand a
+// schema whose $ref may derive from untrusted input, use [ExpandSchemaWithOptions] with a confined
+// loader — see the package "Security" section.
 func ExpandSchema(schema *Schema, root any, cache ResolutionCache) error {
+	return ExpandSchemaWithOptions(schema, root, cache, nil)
+}
+
+// ExpandSchemaWithOptions expands the refs in the schema object with reference to the root object,
+// honoring the provided expand options. It is the option-aware form of [ExpandSchema].
+//
+// In particular, set opts.PathLoaderWithOptions (or opts.PathLoader) to inject a confined document
+// loader when expanding a schema whose $ref may derive from an untrusted source (see the package
+// "Security" section). opts.ContinueOnError, opts.AbsoluteCircularRef and opts.MaxExpansionNodes
+// are honored as well.
+//
+// The base path is always derived from root (as with [ExpandSchema]), so opts.RelativeBase and
+// opts.SkipSchemas are ignored. Passing nil opts is equivalent to [ExpandSchema].
+//
+// Setting the cache is optional and this parameter may safely be left to nil.
+func ExpandSchemaWithOptions(schema *Schema, root any, cache ResolutionCache, opts *ExpandOptions) error {
 	cache = cacheOrDefault(cache)
 	if root == nil {
 		root = schema
 	}
 
-	opts := &ExpandOptions{
-		// when a root is specified, cache the root as an in-memory document for $ref retrieval
-		RelativeBase:    baseForRoot(root, cache),
-		SkipSchemas:     false,
-		ContinueOnError: false,
+	effective := ExpandOptions{}
+	if opts != nil {
+		effective = *opts // preserve caller options (loader, ContinueOnError, budget, ...)
 	}
+	// when a root is specified, cache the root as an in-memory document for $ref retrieval
+	effective.RelativeBase = baseForRoot(root, cache)
+	effective.SkipSchemas = false
 
-	return ExpandSchemaWithBasePath(schema, cache, opts)
+	return ExpandSchemaWithBasePath(schema, cache, &effective)
 }
 
 // ExpandSchemaWithBasePath expands the refs in the schema object, base path configured through expand options.
