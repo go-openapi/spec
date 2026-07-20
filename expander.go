@@ -6,6 +6,8 @@ package spec
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/go-openapi/swag/loading"
 )
 
 const smallPrealloc = 10
@@ -28,13 +30,28 @@ const DefaultMaxExpansionNodes = 500_000
 // If left empty, the root document is assumed to be located in the current working directory:
 // all relative $ref's will be resolved from there.
 //
-// PathLoader injects a document loading method. By default, this resolves to the function provided by the SpecLoader package variable.
+// PathLoader injects a document loading method. By default, this resolves to the function provided by the PathLoader package variable.
+//
+// PathLoaderWithOptions is an alternative document loader that accepts [loading.Option] values, matching the
+// signature used by the go-openapi/swag/loading and go-openapi/loads loaders. When set, it takes precedence over
+// PathLoader. This lets a caller inject an options-aware (e.g. path-confined) loader without an adapter closure.
 type ExpandOptions struct {
 	RelativeBase        string                                // the path to the root document to expand. This is a file, not a directory
 	SkipSchemas         bool                                  // do not expand schemas, just paths, parameters and responses
 	ContinueOnError     bool                                  // continue expanding even after and error is found
 	PathLoader          func(string) (json.RawMessage, error) `json:"-"` // the document loading method that takes a path as input and yields a json document
 	AbsoluteCircularRef bool                                  // circular $ref remaining after expansion remain absolute URLs
+
+	// PathLoaderWithOptions injects a document loading method that accepts loading options.
+	//
+	// It has the same role as PathLoader but matches the option-aware loader signature exposed by
+	// github.com/go-openapi/swag/loading (and github.com/go-openapi/loads), so such a loader can be
+	// injected directly, without wrapping it in an adapter closure.
+	//
+	// When set, PathLoaderWithOptions takes precedence over PathLoader. The provided loader is expected
+	// to carry its own loading options (for example a path confinement built with loading.WithRoot);
+	// the expander itself invokes it without adding options.
+	PathLoaderWithOptions func(string, ...loading.Option) (json.RawMessage, error) `json:"-"`
 
 	// MaxExpansionNodes caps the number of schema nodes expanded during a single expansion call,
 	// as a safeguard against $ref amplification attacks (see ErrExpandTooManyNodes).

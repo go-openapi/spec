@@ -54,12 +54,20 @@ type resolverContext struct {
 func newResolverContext(options *ExpandOptions) *resolverContext {
 	expandOptions := optionsOrDefault(options)
 
-	// path loader may be overridden by options
+	// path loader may be overridden by options. An option-aware loader takes precedence over a
+	// plain one, which in turn takes precedence over the package-level default.
 	var loader func(string) (json.RawMessage, error)
-	if expandOptions.PathLoader == nil {
-		loader = PathLoader
-	} else {
+	switch {
+	case expandOptions.PathLoaderWithOptions != nil:
+		withOptions := expandOptions.PathLoaderWithOptions
+		loader = func(pth string) (json.RawMessage, error) {
+			// the injected loader carries its own loading options: none are added here.
+			return withOptions(pth)
+		}
+	case expandOptions.PathLoader != nil:
 		loader = expandOptions.PathLoader
+	default:
+		loader = PathLoader
 	}
 
 	return &resolverContext{
