@@ -35,6 +35,9 @@ const DefaultMaxExpansionNodes = 500_000
 // PathLoaderWithOptions is an alternative document loader that accepts [loading.Option] values, matching the
 // signature used by the go-openapi/swag/loading and go-openapi/loads loaders. When set, it takes precedence over
 // PathLoader. This lets a caller inject an options-aware (e.g. path-confined) loader without an adapter closure.
+//
+// Security: the default loader is not sandboxed. When expanding an untrusted specification, inject a confined
+// loader (for example one built with loading.WithRoot) — see the package "Security" section.
 type ExpandOptions struct {
 	RelativeBase        string                                // the path to the root document to expand. This is a file, not a directory
 	SkipSchemas         bool                                  // do not expand schemas, just paths, parameters and responses
@@ -95,6 +98,10 @@ func optionsOrDefault(opts *ExpandOptions) *ExpandOptions {
 }
 
 // ExpandSpec expands the references in a swagger spec.
+//
+// Security: with default options the document loader is not sandboxed, so a "$ref" in an
+// untrusted spec can read local files or reach internal addresses. See the package "Security"
+// section before expanding untrusted input.
 func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	options = optionsOrDefault(options)
 	resolver := defaultSchemaLoader(spec, options, nil, nil)
@@ -196,6 +203,10 @@ func ExpandSchema(schema *Schema, root any, cache ResolutionCache) error {
 // ExpandSchemaWithBasePath expands the refs in the schema object, base path configured through expand options.
 //
 // Setting the cache is optional and this parameter may safely be left to nil.
+//
+// Security: with default options the document loader is not sandboxed, so a "$ref" in an
+// untrusted schema can read local files or reach internal addresses. See the package "Security"
+// section before expanding untrusted input.
 func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *ExpandOptions) error {
 	if schema == nil {
 		return nil
