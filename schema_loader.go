@@ -5,6 +5,7 @@ package spec
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -43,6 +44,11 @@ type resolverContext struct {
 	basePath  string
 	loadDoc   func(string) (json.RawMessage, error)
 	rootID    string
+
+	// nodes counts the schema nodes expanded so far, capped by maxNodes to guard against
+	// $ref amplification. maxNodes == 0 means unbounded. Shared, single-threaded: no locking needed.
+	nodes    int
+	maxNodes int
 }
 
 func newResolverContext(options *ExpandOptions) *resolverContext {
@@ -60,7 +66,18 @@ func newResolverContext(options *ExpandOptions) *resolverContext {
 		circulars: make(map[string]bool),
 		basePath:  expandOptions.RelativeBase, // keep the root base path in context
 		loadDoc:   loader,
+		maxNodes:  expandOptions.maxExpansionNodes(),
 	}
+}
+
+// countNode accounts for one expanded schema node and reports whether the expansion budget
+// has been exceeded. A maxNodes of 0 disables the budget (unbounded expansion).
+func (c *resolverContext) countNode() error {
+	c.nodes++
+	if c.maxNodes > 0 && c.nodes > c.maxNodes {
+		return ErrExpandTooManyNodes
+	}
+	return nil
 }
 
 type schemaLoader struct {
@@ -246,13 +263,21 @@ func (r *schemaLoader) deref(input any, parentRefs []string, basePath string) er
 }
 
 func (r *schemaLoader) shouldStopOnError(err error) bool {
-	if err != nil && !r.options.ContinueOnError {
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, ErrExpandTooManyNodes) {
+		// a blown expansion budget is a hard, document-level failure: it is a safeguard against
+		// resource exhaustion and is never suppressed by ContinueOnError.
 		return true
 	}
 
-	if err != nil {
-		log.Println(err)
+	if !r.options.ContinueOnError {
+		return true
 	}
+
+	log.Println(err)
 
 	return false
 }

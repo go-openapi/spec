@@ -10,6 +10,17 @@ import (
 
 const smallPrealloc = 10
 
+// DefaultMaxExpansionNodes is the default upper bound on the number of schema nodes
+// expanded during a single ExpandSpec / ExpandSchema* call.
+//
+// It guards against maliciously crafted specifications whose $ref graph expands to an
+// exponential number of nodes from a few kilobytes of input. For reference, expanding the
+// full Kubernetes API specification (the largest real-world spec we test against) visits
+// roughly 47,000 nodes, so this default leaves ample headroom for legitimate documents.
+//
+// See ExpandOptions.MaxExpansionNodes to tune or disable this budget.
+const DefaultMaxExpansionNodes = 500_000
+
 // ExpandOptions provides options for the spec expander.
 //
 // RelativeBase is the path to the root document. This can be a remote URL or a path to a local file.
@@ -24,6 +35,34 @@ type ExpandOptions struct {
 	ContinueOnError     bool                                  // continue expanding even after and error is found
 	PathLoader          func(string) (json.RawMessage, error) `json:"-"` // the document loading method that takes a path as input and yields a json document
 	AbsoluteCircularRef bool                                  // circular $ref remaining after expansion remain absolute URLs
+
+	// MaxExpansionNodes caps the number of schema nodes expanded during a single expansion call,
+	// as a safeguard against $ref amplification attacks (see ErrExpandTooManyNodes).
+	//
+	// The value is interpreted as follows:
+	//
+	//   0  (the zero value): use DefaultMaxExpansionNodes. Every caller is protected by default.
+	//   <0: no limit (unbounded expansion). Use only with fully trusted specifications.
+	//   >0: cap the expansion at this number of nodes.
+	//
+	// When the budget is exceeded, expansion stops and ErrExpandTooManyNodes is returned.
+	// Because this is a resource-exhaustion safeguard, the error is always returned, even when
+	// ContinueOnError is set.
+	MaxExpansionNodes int
+}
+
+// maxExpansionNodes resolves the tri-state MaxExpansionNodes option into an effective budget.
+//
+// A returned value of 0 means "unbounded".
+func (o *ExpandOptions) maxExpansionNodes() int {
+	switch {
+	case o.MaxExpansionNodes == 0:
+		return DefaultMaxExpansionNodes
+	case o.MaxExpansionNodes < 0:
+		return 0 // unbounded
+	default:
+		return o.MaxExpansionNodes
+	}
 }
 
 func optionsOrDefault(opts *ExpandOptions) *ExpandOptions {
@@ -192,6 +231,10 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader, bas
 
 //nolint:gocognit,gocyclo,cyclop // complex but well-tested $ref expansion logic; refactoring deferred to dedicated PR
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
+	if err := resolver.context.countNode(); err != nil {
+		return &target, err
+	}
+
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
 		newRef := normalizeRef(&target.Ref, basePath)
 		target.Ref = *newRef
