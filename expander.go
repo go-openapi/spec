@@ -6,9 +6,22 @@ package spec
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/go-openapi/swag/loading"
 )
 
 const smallPrealloc = 10
+
+// DefaultMaxExpansionNodes is the default upper bound on the number of schema nodes
+// expanded during a single ExpandSpec / ExpandSchema* call.
+//
+// It guards against maliciously crafted specifications whose $ref graph expands to an
+// exponential number of nodes from a few kilobytes of input. For reference, expanding the
+// full Kubernetes API specification (the largest real-world spec we test against) visits
+// roughly 47,000 nodes, so this default leaves ample headroom for legitimate documents.
+//
+// See ExpandOptions.MaxExpansionNodes to tune or disable this budget.
+const DefaultMaxExpansionNodes = 500_000
 
 // ExpandOptions provides options for the spec expander.
 //
@@ -17,13 +30,59 @@ const smallPrealloc = 10
 // If left empty, the root document is assumed to be located in the current working directory:
 // all relative $ref's will be resolved from there.
 //
-// PathLoader injects a document loading method. By default, this resolves to the function provided by the SpecLoader package variable.
+// PathLoader injects a document loading method. By default, this resolves to the function provided by the PathLoader package variable.
+//
+// PathLoaderWithOptions is an alternative document loader that accepts [loading.Option] values, matching the
+// signature used by the go-openapi/swag/loading and go-openapi/loads loaders. When set, it takes precedence over
+// PathLoader. This lets a caller inject an options-aware (e.g. path-confined) loader without an adapter closure.
+//
+// Security: the default loader is not sandboxed. When expanding an untrusted specification, inject a confined
+// loader (for example one built with loading.WithRoot) — see the package "Security" section.
 type ExpandOptions struct {
 	RelativeBase        string                                // the path to the root document to expand. This is a file, not a directory
 	SkipSchemas         bool                                  // do not expand schemas, just paths, parameters and responses
 	ContinueOnError     bool                                  // continue expanding even after and error is found
 	PathLoader          func(string) (json.RawMessage, error) `json:"-"` // the document loading method that takes a path as input and yields a json document
 	AbsoluteCircularRef bool                                  // circular $ref remaining after expansion remain absolute URLs
+
+	// PathLoaderWithOptions injects a document loading method that accepts loading options.
+	//
+	// It has the same role as PathLoader but matches the option-aware loader signature exposed by
+	// github.com/go-openapi/swag/loading (and github.com/go-openapi/loads), so such a loader can be
+	// injected directly, without wrapping it in an adapter closure.
+	//
+	// When set, PathLoaderWithOptions takes precedence over PathLoader. The provided loader is expected
+	// to carry its own loading options (for example a path confinement built with loading.WithRoot);
+	// the expander itself invokes it without adding options.
+	PathLoaderWithOptions func(string, ...loading.Option) (json.RawMessage, error) `json:"-"`
+
+	// MaxExpansionNodes caps the number of schema nodes expanded during a single expansion call,
+	// as a safeguard against $ref amplification attacks (see ErrExpandTooManyNodes).
+	//
+	// The value is interpreted as follows:
+	//
+	//   0  (the zero value): use DefaultMaxExpansionNodes. Every caller is protected by default.
+	//   <0: no limit (unbounded expansion). Use only with fully trusted specifications.
+	//   >0: cap the expansion at this number of nodes.
+	//
+	// When the budget is exceeded, expansion stops and ErrExpandTooManyNodes is returned.
+	// Because this is a resource-exhaustion safeguard, the error is always returned, even when
+	// ContinueOnError is set.
+	MaxExpansionNodes int
+}
+
+// maxExpansionNodes resolves the tri-state MaxExpansionNodes option into an effective budget.
+//
+// A returned value of 0 means "unbounded".
+func (o *ExpandOptions) maxExpansionNodes() int {
+	switch {
+	case o.MaxExpansionNodes == 0:
+		return DefaultMaxExpansionNodes
+	case o.MaxExpansionNodes < 0:
+		return 0 // unbounded
+	default:
+		return o.MaxExpansionNodes
+	}
 }
 
 func optionsOrDefault(opts *ExpandOptions) *ExpandOptions {
@@ -39,6 +98,10 @@ func optionsOrDefault(opts *ExpandOptions) *ExpandOptions {
 }
 
 // ExpandSpec expands the references in a swagger spec.
+//
+// Security: with default options the document loader is not sandboxed, so a "$ref" in an
+// untrusted spec can read local files or reach internal addresses. See the package "Security"
+// section before expanding untrusted input.
 func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	options = optionsOrDefault(options)
 	resolver := defaultSchemaLoader(spec, options, nil, nil)
@@ -140,6 +203,10 @@ func ExpandSchema(schema *Schema, root any, cache ResolutionCache) error {
 // ExpandSchemaWithBasePath expands the refs in the schema object, base path configured through expand options.
 //
 // Setting the cache is optional and this parameter may safely be left to nil.
+//
+// Security: with default options the document loader is not sandboxed, so a "$ref" in an
+// untrusted schema can read local files or reach internal addresses. See the package "Security"
+// section before expanding untrusted input.
 func ExpandSchemaWithBasePath(schema *Schema, cache ResolutionCache, opts *ExpandOptions) error {
 	if schema == nil {
 		return nil
@@ -192,6 +259,10 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader, bas
 
 //nolint:gocognit,gocyclo,cyclop // complex but well-tested $ref expansion logic; refactoring deferred to dedicated PR
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
+	if err := resolver.context.countNode(); err != nil {
+		return &target, err
+	}
+
 	if target.Ref.String() == "" && target.Ref.IsRoot() {
 		newRef := normalizeRef(&target.Ref, basePath)
 		target.Ref = *newRef
