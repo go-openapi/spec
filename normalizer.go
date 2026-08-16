@@ -56,6 +56,14 @@ func normalizeURI(refPath, base string) string {
 	// copying fragment from ref to base
 	baseURL.Fragment = refURL.Fragment
 
+	if baseURL.Scheme != "" && baseURL.Path != "" && !path.IsAbs(baseURL.Path) {
+		// a base that carries no path of its own (e.g. "smb://host") leaves the join relative.
+		// Anchor it, because a relative path under a scheme does not survive rendering: it is
+		// either promoted to a host component, which is not even guaranteed to be a legal one
+		// ("a://some file.json" no longer parses), or read back as absolute anyway.
+		baseURL.Path = path.Join("/", baseURL.Path)
+	}
+
 	return baseURL.String()
 }
 

@@ -161,6 +161,39 @@ func TestNormalizer_NormalizeURI(t *testing.T) {
 				expOutput: "file:///base/path.json",
 			},
 			{
+				// a base with a scheme but no path leaves the join relative: it has to be anchored,
+				// or "a://some file.json" renders the path as a host and no longer parses
+				refPath:   "some file.json#/definitions/X",
+				base:      "a:",
+				expOutput: "a:///some%20file.json#/definitions/X",
+			},
+			{
+				// same, with dot segments to clean away
+				refPath:   "..",
+				base:      "a:",
+				expOutput: "a:///",
+			},
+			{
+				// a base with an authority but no path
+				refPath:   "dir/file.json#/definitions/X",
+				base:      "smb://host",
+				expOutput: "smb://host/dir/file.json#/definitions/X",
+			},
+			{
+				// anchoring happens after the windows tolerance has slashed the path
+				refPath:   `sub\file.json#/definitions/X`,
+				base:      "a:",
+				expOutput: "a:///sub/file.json#/definitions/X",
+				windows:   true,
+			},
+			{
+				// on other platforms a backslash is an ordinary path character, and gets escaped
+				refPath:    `sub\file.json#/definitions/X`,
+				base:       "a:",
+				expOutput:  "a:///sub%5Cfile.json#/definitions/X",
+				nonWindows: true,
+			},
+			{
 				// file basePath, absolute refPath, no fragment
 				refPath:   `C:\another\base\path.json`,
 				base:      `file:///c:/base/path.json`,
