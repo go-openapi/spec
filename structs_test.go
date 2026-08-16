@@ -4,9 +4,11 @@
 package spec
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 func TestSerialization_SerializeJSON(t *testing.T) {
@@ -24,7 +26,20 @@ func TestSerialization_SerializeJSON(t *testing.T) {
 			{SchemaProps: SchemaProps{Type: []string{"string"}}},
 		},
 	})
+	// an empty tuple is still a tuple: "null" would not be a schema
+	assert.JSONMarshalAsT(t, `[]`, SchemaOrArray{Schemas: []Schema{}})
 	assert.JSONMarshalAsT(t, `null`, SchemaOrArray{})
+}
+
+func TestSerialization_RoundTripEmptyItems(t *testing.T) {
+	const document = `{"definitions":{"A":{"items":[]}}}`
+
+	var doc Swagger
+	require.NoError(t, json.Unmarshal([]byte(document), &doc))
+
+	out, err := json.Marshal(doc)
+	require.NoError(t, err)
+	assert.JSONEqT(t, `{"paths":null,"definitions":{"A":{"items":[]}}}`, string(out))
 }
 
 func TestSerialization_DeserializeJSON(t *testing.T) {
