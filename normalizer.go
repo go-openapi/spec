@@ -106,7 +106,13 @@ func denormalizeRef(ref *Ref, originalRelativeBase, id string) Ref {
 	return r
 }
 
-func rebase(ref *Ref, v *url.URL, notEqual bool) (Ref, bool) {
+// rebase expresses a $ref relative to v, which is either the URI of the base document or
+// the "id" that anchors the root schema.
+//
+// The two differ in what v stands for. An "id" anchors a namespace, so a $ref below it is
+// expressed relative to the id itself. A base is a document, so a $ref is expressed relative
+// to the folder that holds it, and only a $ref to that very document collapses to an empty $ref.
+func rebase(ref *Ref, v *url.URL, isID bool) (Ref, bool) {
 	var newBase url.URL
 
 	u := ref.GetURL()
@@ -126,24 +132,76 @@ func rebase(ref *Ref, v *url.URL, notEqual bool) (Ref, bool) {
 
 	newBase.Fragment = u.Fragment
 
-	if after, ok := strings.CutPrefix(u.Path, docPath); ok {
-		newBase.Path = after
-	} else {
-		newBase.Path = strings.TrimPrefix(u.Path, v.Path)
-	}
+	switch {
+	case isID:
+		if after, ok := cutPathPrefix(u.Path, docPath); ok {
+			newBase.Path = after
+		} else {
+			newBase.Path = strings.TrimPrefix(u.Path, v.Path)
+		}
 
-	if notEqual && newBase.Path == "" && newBase.Fragment == "" {
-		// do not want rebasing to end up in an empty $ref
-		return *ref, false
+		if newBase.Path == "" && newBase.Fragment == "" {
+			// do not want rebasing to end up in an empty $ref
+			return *ref, false
+		}
+
+	case u.Path == docPath:
+		// the $ref points to the base document itself
+		newBase.Path = ""
+
+	default:
+		newBase.Path = strings.TrimPrefix(u.Path, v.Path)
+
+		if newBase.Path == "" {
+			// the $ref points to the folder that holds the base, not to a document:
+			// a $ref with no path of its own would denote the base document instead
+			return *ref, false
+		}
 	}
 
 	if path.IsAbs(newBase.Path) {
-		// whenever we end up with an absolute path, specify the scheme and host
+		// whenever we end up with an absolute path, we render a whole URI
 		newBase.Scheme = v.Scheme
 		newBase.Host = v.Host
+		newBase.User = u.User
+		newBase.RawQuery = u.RawQuery
+		newBase.ForceQuery = u.ForceQuery
+	} else if u.RawQuery != v.RawQuery || u.ForceQuery != v.ForceQuery || !sameUserinfo(u.User, v.User) {
+		// a relative $ref carries neither credentials nor query of its own: normalizing one
+		// applies those of the base. Leave the $ref absolute rather than have it resolve
+		// against a different query or different credentials.
+		return *ref, false
 	}
 
 	return MustCreateRef(newBase.String()), true
+}
+
+// sameUserinfo compares the userinfo components of two URIs.
+//
+// An absent userinfo differs from an empty one: "file:///x" and "file://@/x" do not render alike.
+func sameUserinfo(a, b *url.Userinfo) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return a.String() == b.String()
+}
+
+// cutPathPrefix is strings.CutPrefix, cutting on path separators only.
+//
+// "/base/spec.json" is a prefix of "/base/spec.json/x" but not of "/base/spec.json.orig":
+// cutting the latter would leave ".orig" to be rebased against the wrong folder.
+func cutPathPrefix(pth, prefix string) (string, bool) {
+	after, ok := strings.CutPrefix(pth, prefix)
+	if !ok {
+		return "", false
+	}
+
+	if after == "" || strings.HasPrefix(after, "/") || strings.HasSuffix(prefix, "/") {
+		return after, true
+	}
+
+	return "", false
 }
 
 // normalizeRef canonicalize a Ref, using a canonical relativeBase as its absolute anchor.

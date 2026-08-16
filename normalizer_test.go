@@ -599,6 +599,61 @@ func TestNormalizer_Denormalize(t *testing.T) {
 			Expected:     "file://host2/file.json#/definitions/X",
 		},
 		{
+			// a sibling whose name merely starts with the base's name is not below it
+			OriginalBase: "file:///a/b/c/file.json",
+			Ref:          "file:///a/b/c/file.json.orig#/definitions/X",
+			Expected:     "file.json.orig#/definitions/X",
+		},
+		{
+			// the folder holding the base is not the base: an empty $ref would denote the document
+			OriginalBase: "file:///a/b/c/file.json",
+			Ref:          "file:///a/b/c/",
+			Expected:     "file:///a/b/c/",
+		},
+		{
+			// same, with a fragment to carry
+			OriginalBase: "file:///a/b/c/file.json",
+			Ref:          "file:///a/b/c/#/definitions/X",
+			Expected:     "file:///a/b/c/#/definitions/X",
+		},
+		{
+			// a $ref above the root of the base
+			OriginalBase: "file:///file.json",
+			Ref:          "file:///",
+			Expected:     "file:///",
+		},
+		{
+			// an absolute $ref keeps its query
+			OriginalBase: "https://example.com/base/spec.json",
+			Ref:          "https://example.com/other/doc.json?raw=true#/definitions/X",
+			Expected:     "https://example.com/other/doc.json?raw=true#/definitions/X",
+		},
+		{
+			// a relative $ref carries no query of its own, so it would take the one of the base:
+			// this one stays absolute rather than resolve against no query at all
+			OriginalBase: "https://example.com/base/spec.json",
+			Ref:          "https://example.com/base/doc.json?raw=true#/definitions/X",
+			Expected:     "https://example.com/base/doc.json?raw=true#/definitions/X",
+		},
+		{
+			// when both carry the same query, normalizing the shorthand restores it
+			OriginalBase: "https://example.com/base/spec.json?raw=true",
+			Ref:          "https://example.com/base/doc.json?raw=true#/definitions/X",
+			Expected:     "doc.json#/definitions/X",
+		},
+		{ //nolint:gosec // test data, not real credentials
+			// an absolute $ref keeps its credentials
+			OriginalBase: "https://user:password@example.com/base/spec.json",
+			Ref:          "https://user:password@example.com/other/doc.json#/definitions/X",
+			Expected:     "https://user:password@example.com/other/doc.json#/definitions/X",
+		},
+		{ //nolint:gosec // test data, not real credentials
+			// credentials the base does not have would be lost by a relative $ref
+			OriginalBase: "https://example.com/base/spec.json",
+			Ref:          "https://user:password@example.com/base/doc.json#/definitions/X",
+			Expected:     "https://user:password@example.com/base/doc.json#/definitions/X",
+		},
+		{
 			OriginalBase: "file:///a/b/c/file.json",
 			ID:           "https://myschema/",
 			Ref:          "file:///a/b/c/file.json#/definitions/X",
