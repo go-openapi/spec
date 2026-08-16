@@ -20,16 +20,16 @@ import (
 )
 
 const (
-	crossFileRefFixture = "fixtures/expansion/crossFileRef.json"
+	crossFileRefFixture = "testdata/expansion/crossFileRef.json"
 	withoutSchemaID     = "removed"
 	withSchemaID        = "schema"
-	pathItemsFixture    = "fixtures/expansion/pathItems.json"
-	extraRefFixture     = "fixtures/expansion/extraRef.json"
+	pathItemsFixture    = "testdata/expansion/pathItems.json"
+	extraRefFixture     = "testdata/expansion/extraRef.json"
 )
 
 //nolint:gochecknoglobals // it's okay to have embedded test fixtures as globals
 var (
-	//go:embed all:fixtures
+	//go:embed all:testdata
 	fixtureAssets embed.FS
 
 	// PetStore20 json doc for swagger 2.0 pet store.
@@ -40,32 +40,32 @@ var (
 	expectedExtraRef    []byte
 	expectedPathItem    []byte
 
-	specs = filepath.Join("fixtures", "specs")
+	specs = filepath.Join("testdata", "specs")
 )
 
 func init() { //nolint:gochecknoinits // it's okay to load embedded fixtures in init().
 	// load embedded fixtures
 
 	var err error
-	PetStore20, err = fixtureAssets.ReadFile("fixtures/expansion/petstore2.0.json")
+	PetStore20, err = fixtureAssets.ReadFile("testdata/expansion/petstore2.0.json")
 	if err != nil {
 		panic(fmt.Sprintf("could not find fixture: %v", err))
 	}
 	PetStoreJSONMessage = json.RawMessage(PetStore20)
 
-	expectedExtraRef, err = fixtureAssets.ReadFile("fixtures/expansion/expectedExtraRef.json")
+	expectedExtraRef, err = fixtureAssets.ReadFile("testdata/expansion/expectedExtraRef.json")
 	if err != nil {
 		panic(fmt.Sprintf("could not find fixture: %v", err))
 	}
 
-	expectedPathItem, err = fixtureAssets.ReadFile("fixtures/expansion/expectedPathItem.json")
+	expectedPathItem, err = fixtureAssets.ReadFile("testdata/expansion/expectedPathItem.json")
 	if err != nil {
 		panic(fmt.Sprintf("could not find fixture: %v", err))
 	}
 }
 
 func TestExpand_Issue148(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "schema-148.json")
+	fp := filepath.Join("testdata", "bugs", "schema-148.json")
 	b, err := jsonDoc(fp)
 	require.NoError(t, err)
 
@@ -109,7 +109,7 @@ func TestExpand_KnownRef(t *testing.T) {
 }
 
 func TestExpand_ResponseSchema(t *testing.T) {
-	fp := filepath.Join("fixtures", "local_expansion", "spec.json")
+	fp := filepath.Join("testdata", "local_expansion", "spec.json")
 	b, err := jsonDoc(fp)
 	require.NoError(t, err)
 
@@ -152,7 +152,7 @@ func TestExpand_EmptySpec(t *testing.T) {
 
 func TestExpand_Spec(t *testing.T) {
 	// expansion of a rich spec
-	specPath := filepath.Join("fixtures", "expansion", "all-the-things.json")
+	specPath := filepath.Join("testdata", "expansion", "all-the-things.json")
 	specDoc, err := jsonDoc(specPath)
 	require.NoError(t, err)
 
@@ -199,7 +199,7 @@ func TestExpand_Spec(t *testing.T) {
 }
 
 func TestExpand_InternalResponse(t *testing.T) {
-	basePath := normalizeBase(filepath.Join("fixtures", "expansion", "all-the-things.json"))
+	basePath := normalizeBase(filepath.Join("testdata", "expansion", "all-the-things.json"))
 	specDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
 
@@ -261,7 +261,7 @@ func TestExpand_InternalResponse(t *testing.T) {
 }
 
 func TestExpand_Response(t *testing.T) {
-	basePath := filepath.Join("fixtures", "expansion", "all-the-things.json")
+	basePath := filepath.Join("testdata", "expansion", "all-the-things.json")
 
 	specDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
@@ -291,7 +291,7 @@ func TestExpand_Response(t *testing.T) {
 }
 
 func TestExpand_ResponseAndParamWithRoot(t *testing.T) {
-	specDoc, err := jsonDoc("fixtures/bugs/1614/gitea.json")
+	specDoc, err := jsonDoc("testdata/bugs/1614/gitea.json")
 	require.NoError(t, err)
 
 	var spec Swagger
@@ -320,7 +320,7 @@ func TestExpand_ResponseAndParamWithRoot(t *testing.T) {
 }
 
 func TestExpand_InternalParameter(t *testing.T) {
-	basePath := normalizeBase(filepath.Join("fixtures", "expansion", "params.json"))
+	basePath := normalizeBase(filepath.Join("testdata", "expansion", "params.json"))
 
 	paramDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
@@ -346,7 +346,7 @@ func TestExpand_InternalParameter(t *testing.T) {
 }
 
 func TestExpand_Parameter(t *testing.T) {
-	basePath := filepath.Join("fixtures", "expansion", "params.json")
+	basePath := filepath.Join("testdata", "expansion", "params.json")
 
 	paramDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
@@ -398,7 +398,7 @@ func TestExpand_SwaggerSchema(t *testing.T) {
 }
 
 func TestExpand_ContinueOnError(t *testing.T) {
-	specPath := filepath.Join("fixtures", "expansion", "missingRef.json")
+	specPath := filepath.Join("testdata", "expansion", "missingRef.json")
 
 	defer log.SetOutput(os.Stdout)
 	log.SetOutput(io.Discard)
@@ -422,7 +422,7 @@ func TestExpand_ContinueOnError(t *testing.T) {
 	assert.Equal(t, testCase.Expected, testCase.Input, "Should continue expanding spec when a definition can't be found.")
 
 	// missing $ref in items
-	doc, err := jsonDoc("fixtures/expansion/missingItemRef.json")
+	doc, err := jsonDoc("testdata/expansion/missingItemRef.json")
 	require.NoError(t, err)
 
 	spec := new(Swagger)
@@ -434,7 +434,7 @@ func TestExpand_ContinueOnError(t *testing.T) {
 }
 
 func TestExpand_InternalSchemas2(t *testing.T) {
-	basePath := normalizeBase(filepath.Join("fixtures", "expansion", "schemas2.json"))
+	basePath := normalizeBase(filepath.Join("testdata", "expansion", "schemas2.json"))
 
 	carsDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
@@ -597,7 +597,7 @@ func TestExpand_InternalSchemas2(t *testing.T) {
 }
 
 func TestExpand_InternalSchemas1(t *testing.T) {
-	basePath := normalizeBase(filepath.Join("fixtures", "expansion", "schemas1.json"))
+	basePath := normalizeBase(filepath.Join("testdata", "expansion", "schemas1.json"))
 
 	carsDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
@@ -749,14 +749,14 @@ func TestExpand_InternalSchemas1(t *testing.T) {
 }
 
 func TestExpand_RelativeBaseURI(t *testing.T) {
-	server := fixtureServer(t, "fixtures/remote")
+	server := fixtureServer(t, "testdata/remote")
 
 	spec := new(Swagger)
 
 	require.NoError(t, ExpandSpec(spec, nil))
 
 	// this a spec on local fs...
-	specDoc, err := jsonDoc("fixtures/remote/all-the-things.json")
+	specDoc, err := jsonDoc("testdata/remote/all-the-things.json")
 	require.NoError(t, err)
 
 	spec = new(Swagger)

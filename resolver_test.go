@@ -42,7 +42,7 @@ func TestResolveRef(t *testing.T) {
 }
 
 func TestResolveResponse(t *testing.T) {
-	specDoc, err := jsonDoc(filepath.Join("fixtures", "expansion", "all-the-things.json"))
+	specDoc, err := jsonDoc(filepath.Join("testdata", "expansion", "all-the-things.json"))
 	require.NoError(t, err)
 
 	spec := new(Swagger)
@@ -82,7 +82,7 @@ func TestResolveResponseWithBase(t *testing.T) {
 }
 
 func TestResolveParam(t *testing.T) {
-	specDoc, err := jsonDoc(filepath.Join("fixtures", "expansion", "all-the-things.json"))
+	specDoc, err := jsonDoc(filepath.Join("testdata", "expansion", "all-the-things.json"))
 	require.NoError(t, err)
 
 	var spec Swagger
@@ -194,7 +194,7 @@ func TestResolveRemoteRef_FromInvalidFragment(t *testing.T) {
 // 	defer server.Close()
 //
 // 	rootDoc := new(Swagger)
-// 	b, err := os.ReadFile("fixtures/specs/refed.json")
+// 	b, err := os.ReadFile("testdata/specs/refed.json")
 // 	require.NoError(t, err) && assert.NoError(t, json.Unmarshal(b, rootDoc))
 //
 //	var tgt Schema

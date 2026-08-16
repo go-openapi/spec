@@ -17,7 +17,7 @@ import (
 
 func TestSpec_Issue2743(t *testing.T) {
 	t.Run("should expand but produce unresolvable $ref", func(t *testing.T) {
-		path := filepath.Join("fixtures", "bugs", "2743", "working", "spec.yaml")
+		path := filepath.Join("testdata", "bugs", "2743", "working", "spec.yaml")
 		sp := loadOrFail(t, path)
 		require.NoError(t,
 			spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}),
@@ -31,7 +31,7 @@ func TestSpec_Issue2743(t *testing.T) {
 	})
 
 	t.Run("should expand and produce resolvable $ref", func(t *testing.T) {
-		path := filepath.Join("fixtures", "bugs", "2743", "not-working", "spec.yaml")
+		path := filepath.Join("testdata", "bugs", "2743", "not-working", "spec.yaml")
 		sp := loadOrFail(t, path)
 		require.NoError(t,
 			spec.ExpandSpec(sp, &spec.ExpandOptions{RelativeBase: path, SkipSchemas: true, PathLoader: testLoader}),
@@ -47,7 +47,7 @@ func TestSpec_Issue2743(t *testing.T) {
 }
 
 func TestSpec_Issue1429(t *testing.T) {
-	path := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
+	path := filepath.Join("testdata", "bugs", "1429", "swagger.yaml")
 
 	// load and full expand
 	sp := loadOrFail(t, path)
@@ -142,7 +142,7 @@ func assertPaths1429SkipSchema(t testing.TB, sp *spec.Swagger) {
 }
 
 func TestSpec_MoreLocalExpansion(t *testing.T) {
-	path := filepath.Join("fixtures", "local_expansion", "spec2.yaml")
+	path := filepath.Join("testdata", "local_expansion", "spec2.yaml")
 
 	// load and full expand
 	sp := loadOrFail(t, path)
@@ -155,7 +155,7 @@ func TestSpec_MoreLocalExpansion(t *testing.T) {
 func TestSpec_Issue69(t *testing.T) {
 	// this checks expansion for the dapperbox spec (circular ref issues)
 
-	path := filepath.Join("fixtures", "bugs", "69", "dapperbox.json")
+	path := filepath.Join("testdata", "bugs", "69", "dapperbox.json")
 
 	// expand with relative path
 	// load and expand
@@ -175,7 +175,7 @@ func TestSpec_Issue69(t *testing.T) {
 }
 
 func TestSpec_Issue1621(t *testing.T) {
-	path := filepath.Join("fixtures", "bugs", "1621", "fixture-1621.yaml")
+	path := filepath.Join("testdata", "bugs", "1621", "fixture-1621.yaml")
 
 	// expand with relative path
 	// load and expand
@@ -191,7 +191,7 @@ func TestSpec_Issue1621(t *testing.T) {
 }
 
 func TestSpec_Issue1614(t *testing.T) {
-	path := filepath.Join("fixtures", "bugs", "1614", "gitea.json")
+	path := filepath.Join("testdata", "bugs", "1614", "gitea.json")
 
 	// expand with relative path
 	// load and expand
@@ -229,7 +229,7 @@ func TestSpec_Issue1614(t *testing.T) {
 
 func TestSpec_Issue2113(t *testing.T) {
 	// this checks expansion with nested specs
-	path := filepath.Join("fixtures", "bugs", "2113", "base.yaml")
+	path := filepath.Join("testdata", "bugs", "2113", "base.yaml")
 
 	// load and expand
 	sp := loadOrFail(t, path)
@@ -264,7 +264,7 @@ func TestSpec_Issue2113_External(t *testing.T) {
 	// Provides more ground for testing with schemas nested in $refs
 
 	// this checks expansion with nested specs
-	path := filepath.Join("fixtures", "skipschema", "external_definitions_valid.yml")
+	path := filepath.Join("testdata", "skipschema", "external_definitions_valid.yml")
 
 	// load and expand, skipping schema expansion
 	sp := loadOrFail(t, path)
@@ -300,7 +300,7 @@ func TestSpec_Issue2113_SkipSchema(t *testing.T) {
 	// Provides more ground for testing with schemas nested in $refs
 
 	// this checks expansion with nested specs
-	path := filepath.Join("fixtures", "flatten", "flatten.yml")
+	path := filepath.Join("testdata", "flatten", "flatten.yml")
 
 	// load and expand, skipping schema expansion
 	sp := loadOrFail(t, path)
@@ -329,7 +329,7 @@ func TestSpec_PointersLoop(t *testing.T) {
 	// however, it should be expanded without errors
 
 	// this checks expansion with nested specs
-	path := filepath.Join("fixtures", "more_circulars", "pointers", "fixture-pointers-loop.yaml")
+	path := filepath.Join("testdata", "more_circulars", "pointers", "fixture-pointers-loop.yaml")
 
 	// load and expand, skipping schema expansion
 	sp := loadOrFail(t, path)
@@ -361,7 +361,7 @@ func TestSpec_PointersLoop(t *testing.T) {
 
 func TestSpec_Issue102(t *testing.T) {
 	// go-openapi/validate/issues#102
-	path := filepath.Join("fixtures", "bugs", "102", "fixture-102.json")
+	path := filepath.Join("testdata", "bugs", "102", "fixture-102.json")
 	sp := loadOrFail(t, path)
 
 	require.NoError(t, spec.ExpandSpec(sp, nil))

@@ -23,17 +23,17 @@ func init() { //nolint:gochecknoinits // it's okay to load embedded fixtures in 
 	// load embedded fixtures
 
 	var err error
-	specJSON, err = fixtureAssets.ReadFile("fixtures/specs/spec.json")
+	specJSON, err = fixtureAssets.ReadFile("testdata/specs/spec.json")
 	if err != nil {
 		panic(fmt.Sprintf("could not find fixture: %v", err))
 	}
 
-	minimalJSONSpec, err = fixtureAssets.ReadFile("fixtures/specs/minimal_spec.json")
+	minimalJSONSpec, err = fixtureAssets.ReadFile("testdata/specs/minimal_spec.json")
 	if err != nil {
 		panic(fmt.Sprintf("could not find fixture: %v", err))
 	}
 
-	miniJSONSpec, err = fixtureAssets.ReadFile("fixtures/specs/mini_spec.json")
+	miniJSONSpec, err = fixtureAssets.ReadFile("testdata/specs/mini_spec.json")
 	if err != nil {
 		panic(fmt.Sprintf("could not find fixture: %v", err))
 	}
