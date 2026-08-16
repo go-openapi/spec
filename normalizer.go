@@ -90,20 +90,36 @@ func denormalizeRef(ref *Ref, originalRelativeBase, id string) Ref {
 	}
 
 	if id != "" {
-		idBaseURL, err := parseURL(id)
-		if err == nil { // if the schema id is not usable as a URI, ignore it
-			if ref, ok := rebase(ref, idBaseURL, true); ok { // rebase, but keep references to root unchanged (do not want $ref: "")
+		if _, err := parseURL(id); err == nil { // if the schema id is not usable as a URI, ignore it
+			// rebase, but keep references to root unchanged (do not want $ref: "")
+			if ref, ok := rebase(ref, canonicalURL(id), true); ok {
 				// $ref relative to the ID of the schema in the root document
 				return ref
 			}
 		}
 	}
 
-	originalRelativeBaseURL, _ := parseURL(originalRelativeBase)
-
-	r, _ := rebase(ref, originalRelativeBaseURL, false)
+	r, _ := rebase(ref, canonicalURL(originalRelativeBase), false)
 
 	return r
+}
+
+// canonicalURL parses a URI the way a Ref does, so that rebase compares authorities that are
+// spelled alike.
+//
+// Turning a URI into a Ref lower-cases the host and drops a default port, whereas the normalizer
+// keeps the spelling it was handed: comparing the two spellings directly makes a $ref look like
+// it belongs to another host, and leaves it absolute when it should have been rebased.
+func canonicalURL(in string) *url.URL {
+	if ref, err := NewRef(in); err == nil {
+		return ref.GetURL()
+	}
+
+	if u, err := parseURL(in); err == nil {
+		return u
+	}
+
+	return &url.URL{}
 }
 
 // rebase expresses a $ref relative to v, which is either the URI of the base document or

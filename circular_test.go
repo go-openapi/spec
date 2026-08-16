@@ -5,6 +5,7 @@ package spec
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -144,6 +145,48 @@ func TestExpandCircular_MoreCircular(t *testing.T) {
 	require.NotEmpty(t, jazon)
 	assertRefInJSON(t, jazon, "item4.json#/item")
 	assertRefResolve(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
+}
+
+// TestExpandCircular_BaseSpelling ensures that how the caller spells the base URL does not change
+// where a circular $ref ends up pointing.
+//
+// A default port and an upper-case host are equivalent spellings of one authority, and
+// jsonreference normalizes both away when a URI becomes a Ref, whereas the normalizer keeps the
+// spelling it was handed. Where a cut cycle is written back, the two are compared against each
+// other: spelling the base "https://example.com:443/spec.json" used to leave the $ref absolute,
+// silently giving the AbsoluteCircularRef behaviour to a caller who did not ask for it.
+//
+// Which of the definitions on the cycle receives the $ref depends on the order of the walk and is
+// not asserted here. That every remaining $ref stays inside the document is.
+//
+// The fixture is self-contained, so the loader below stands as a tripwire: nothing is fetched.
+func TestExpandCircular_BaseSpelling(t *testing.T) {
+	doc, err := jsonDoc("testdata/expansion/shared-node-cycles.json")
+	require.NoError(t, err)
+
+	for _, base := range []string{
+		"https://example.com/spec.json",
+		"https://example.com:443/spec.json",
+		"https://EXAMPLE.com/spec.json",
+		"https://Example.COM:443/spec.json",
+	} {
+		t.Run(base, func(t *testing.T) {
+			var sp Swagger
+			require.NoError(t, json.Unmarshal(doc, &sp))
+
+			require.NoError(t, ExpandSpec(&sp, &ExpandOptions{
+				RelativeBase: base,
+				PathLoader: func(pth string) (json.RawMessage, error) {
+					err := fmt.Errorf("the fixture is self-contained, but a load of %q was attempted", pth) //nolint:err113 // test tripwire
+					t.Error(err)
+
+					return nil, err
+				},
+			}))
+
+			assertRefInJSON(t, asJSON(t, sp), "#/definitions")
+		})
+	}
 }
 
 func TestExpandCircular_Issue957(t *testing.T) {

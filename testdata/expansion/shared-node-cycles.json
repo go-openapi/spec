@@ -1,0 +1,33 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "two cycles sharing a node",
+    "description": "person is on both cycles: person -> employee -> person and person -> team -> person. Expansion cannot unfold either without cutting one of them with a $ref, which is the case where the $ref written back has to be rebased on the document. Every $ref here is local, so expanding this document reads nothing from anywhere.",
+    "version": "1.0.0"
+  },
+  "paths": {},
+  "definitions": {
+    "person": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "manager": { "$ref": "#/definitions/employee" },
+        "team": { "$ref": "#/definitions/team" }
+      }
+    },
+    "employee": {
+      "type": "object",
+      "properties": {
+        "payroll": { "type": "string" },
+        "reportsTo": { "$ref": "#/definitions/person" }
+      }
+    },
+    "team": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "lead": { "$ref": "#/definitions/person" }
+      }
+    }
+  }
+}
