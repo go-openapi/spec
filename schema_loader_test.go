@@ -13,7 +13,7 @@ import (
 
 func TestLoader_Issue145(t *testing.T) {
 	t.Run("with ExpandSpec", func(t *testing.T) {
-		basePath := filepath.Join("fixtures", "bugs", "145", "Program Files (x86)", "AppName", "todos.json")
+		basePath := filepath.Join("testdata", "bugs", "145", "Program Files (x86)", "AppName", "todos.json")
 		todosDoc, err := jsonDoc(basePath)
 		require.NoError(t, err)
 
@@ -24,7 +24,7 @@ func TestLoader_Issue145(t *testing.T) {
 	})
 
 	t.Run("with ExpandSchema", func(t *testing.T) {
-		basePath := filepath.Join("fixtures", "bugs", "145", "Program Files (x86)", "AppName", "ref.json")
+		basePath := filepath.Join("testdata", "bugs", "145", "Program Files (x86)", "AppName", "ref.json")
 		schemaDoc, err := jsonDoc(basePath)
 		require.NoError(t, err)
 

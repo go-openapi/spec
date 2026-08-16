@@ -16,7 +16,7 @@ import (
 )
 
 func TestExpandCircular_Issue3(t *testing.T) {
-	jazon, root := expandThisOrDieTrying(t, "fixtures/expansion/overflow.json")
+	jazon, root := expandThisOrDieTrying(t, "testdata/expansion/overflow.json")
 	require.NotEmpty(t, jazon)
 
 	// circular $ref point to the expanded root document
@@ -30,7 +30,7 @@ func TestExpandCircular_Issue3(t *testing.T) {
 }
 
 func TestExpandCircular_RefExpansion(t *testing.T) {
-	basePath := filepath.Join("fixtures", "expansion", "circularRefs.json")
+	basePath := filepath.Join("testdata", "expansion", "circularRefs.json")
 
 	carsDoc, err := jsonDoc(basePath)
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestExpandCircular_RefExpansion(t *testing.T) {
 func TestExpandCircular_Spec2Expansion(t *testing.T) {
 	// TODO: assert repeatable results (see commented section below)
 
-	fixturePath := filepath.Join("fixtures", "expansion", "circular-minimal.json")
+	fixturePath := filepath.Join("testdata", "expansion", "circular-minimal.json")
 	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
@@ -75,7 +75,7 @@ func TestExpandCircular_Spec2Expansion(t *testing.T) {
 	assert.StringNotContainsTf(t, jazon, "circular-minimal.json#/",
 		"expected %s to be expanded with stripped circular $ref", fixturePath)
 
-	fixturePath = filepath.Join("fixtures", "expansion", "circularSpec2.json")
+	fixturePath = filepath.Join("testdata", "expansion", "circularSpec2.json")
 	jazon, root = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
@@ -121,25 +121,25 @@ func TestExpandCircular_MoreCircular(t *testing.T) {
 	// - with circular in a schema in  #/responses
 	// - with circular in a schema in  #/parameters
 
-	fixturePath := filepath.Join("fixtures", "more_circulars", "spec.json")
+	fixturePath := filepath.Join("testdata", "more_circulars", "spec.json")
 	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 	assertRefInJSON(t, jazon, "item.json#/item")
 	assertRefResolve(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
 
-	fixturePath = filepath.Join("fixtures", "more_circulars", "spec2.json")
+	fixturePath = filepath.Join("testdata", "more_circulars", "spec2.json")
 	jazon, root = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 	assertRefInJSON(t, jazon, "item2.json#/item")
 	assertRefResolve(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
 
-	fixturePath = filepath.Join("fixtures", "more_circulars", "spec3.json")
+	fixturePath = filepath.Join("testdata", "more_circulars", "spec3.json")
 	jazon, root = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 	assertRefInJSON(t, jazon, "item.json#/item")
 	assertRefResolve(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
 
-	fixturePath = filepath.Join("fixtures", "more_circulars", "spec4.json")
+	fixturePath = filepath.Join("testdata", "more_circulars", "spec4.json")
 	jazon, root = expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 	assertRefInJSON(t, jazon, "item4.json#/item")
@@ -147,7 +147,7 @@ func TestExpandCircular_MoreCircular(t *testing.T) {
 }
 
 func TestExpandCircular_Issue957(t *testing.T) {
-	fixturePath := filepath.Join("fixtures", "bugs", "957", "fixture-957.json")
+	fixturePath := filepath.Join("testdata", "bugs", "957", "fixture-957.json")
 	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
@@ -164,7 +164,7 @@ func TestExpandCircular_Issue957(t *testing.T) {
 func TestExpandCircular_Bitbucket(t *testing.T) {
 	// Additional testcase for circular $ref (from bitbucket api)
 
-	fixturePath := filepath.Join("fixtures", "more_circulars", "bitbucket.json")
+	fixturePath := filepath.Join("testdata", "more_circulars", "bitbucket.json")
 	jazon, root := expandThisOrDieTrying(t, fixturePath)
 	require.NotEmpty(t, jazon)
 
@@ -177,7 +177,7 @@ func TestExpandCircular_Bitbucket(t *testing.T) {
 
 func TestExpandCircular_ResponseWithRoot(t *testing.T) {
 	rootDoc := new(Swagger)
-	b, err := os.ReadFile(filepath.Join("fixtures", "more_circulars", "resp.json"))
+	b, err := os.ReadFile(filepath.Join("testdata", "more_circulars", "resp.json"))
 	require.NoError(t, err)
 
 	require.NoError(t, json.Unmarshal(b, rootDoc))
@@ -202,7 +202,7 @@ func TestExpandCircular_ResponseWithRoot(t *testing.T) {
 }
 
 func TestExpandCircular_Issue415(t *testing.T) {
-	jazon, root := expandThisOrDieTrying(t, filepath.Join("fixtures", "expansion", "clickmeter.json"))
+	jazon, root := expandThisOrDieTrying(t, filepath.Join("testdata", "expansion", "clickmeter.json"))
 	require.NotEmpty(t, jazon)
 
 	assertRefInJSON(t, jazon, "#/definitions/")
@@ -211,7 +211,7 @@ func TestExpandCircular_Issue415(t *testing.T) {
 }
 
 func TestExpandCircular_SpecExpansion(t *testing.T) {
-	jazon, root := expandThisOrDieTrying(t, filepath.Join("fixtures", "expansion", "circularSpec.json"))
+	jazon, root := expandThisOrDieTrying(t, filepath.Join("testdata", "expansion", "circularSpec.json"))
 	require.NotEmpty(t, jazon)
 
 	assertRefInJSON(t, jazon, "#/definitions/Book")
@@ -221,7 +221,7 @@ func TestExpandCircular_SpecExpansion(t *testing.T) {
 
 func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	go func() {
-		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("fixtures/more_circulars/remote"))) //#nosec
+		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("testdata/more_circulars/remote"))) //#nosec
 		if err != nil {
 			panic(err.Error())
 		}
@@ -241,7 +241,7 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 	assertRefInJSONRegexp(t, jazon, "^http://localhost:1234/tree$") // $ref now point to the root doc
 
 	// a spec using the previous circular schema
-	fixtureSpecPath := filepath.Join("fixtures", "more_circulars", "with-id.json")
+	fixtureSpecPath := filepath.Join("testdata", "more_circulars", "with-id.json")
 	jazon, doc := expandThisOrDieTrying(t, fixtureSpecPath)
 
 	assertRefInJSON(t, jazon, fixturePath) // all remaining $ref's point to the circular ID (http://...)
@@ -254,7 +254,7 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 func TestCircular_RemoteExpandAzure(t *testing.T) {
 	// local copy of Azure publicIpAddress.json from azure-rest-api-specs
 	// (Microsoft.Network/stable/2020-04-01)
-	server := fixtureServer(t, "fixtures/azure")
+	server := fixtureServer(t, "testdata/azure")
 
 	basePath := server.URL + "/publicIpAddress.json"
 	jazon, sch := expandThisOrDieTrying(t, basePath)
