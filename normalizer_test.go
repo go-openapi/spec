@@ -161,6 +161,39 @@ func TestNormalizer_NormalizeURI(t *testing.T) {
 				expOutput: "file:///base/path.json",
 			},
 			{
+				// a base with a scheme but no path leaves the join relative: it has to be anchored,
+				// or "a://some file.json" renders the path as a host and no longer parses
+				refPath:   "some file.json#/definitions/X",
+				base:      "a:",
+				expOutput: "a:///some%20file.json#/definitions/X",
+			},
+			{
+				// same, with dot segments to clean away
+				refPath:   "..",
+				base:      "a:",
+				expOutput: "a:///",
+			},
+			{
+				// a base with an authority but no path
+				refPath:   "dir/file.json#/definitions/X",
+				base:      "smb://host",
+				expOutput: "smb://host/dir/file.json#/definitions/X",
+			},
+			{
+				// anchoring happens after the windows tolerance has slashed the path
+				refPath:   `sub\file.json#/definitions/X`,
+				base:      "a:",
+				expOutput: "a:///sub/file.json#/definitions/X",
+				windows:   true,
+			},
+			{
+				// on other platforms a backslash is an ordinary path character, and gets escaped
+				refPath:    `sub\file.json#/definitions/X`,
+				base:       "a:",
+				expOutput:  "a:///sub%5Cfile.json#/definitions/X",
+				nonWindows: true,
+			},
+			{
 				// file basePath, absolute refPath, no fragment
 				refPath:   `C:\another\base\path.json`,
 				base:      `file:///c:/base/path.json`,
@@ -564,6 +597,61 @@ func TestNormalizer_Denormalize(t *testing.T) {
 			OriginalBase: "file://host1/file.json",
 			Ref:          "file://host2/file.json#/definitions/X",
 			Expected:     "file://host2/file.json#/definitions/X",
+		},
+		{
+			// a sibling whose name merely starts with the base's name is not below it
+			OriginalBase: "file:///a/b/c/file.json",
+			Ref:          "file:///a/b/c/file.json.orig#/definitions/X",
+			Expected:     "file.json.orig#/definitions/X",
+		},
+		{
+			// the folder holding the base is not the base: an empty $ref would denote the document
+			OriginalBase: "file:///a/b/c/file.json",
+			Ref:          "file:///a/b/c/",
+			Expected:     "file:///a/b/c/",
+		},
+		{
+			// same, with a fragment to carry
+			OriginalBase: "file:///a/b/c/file.json",
+			Ref:          "file:///a/b/c/#/definitions/X",
+			Expected:     "file:///a/b/c/#/definitions/X",
+		},
+		{
+			// a $ref above the root of the base
+			OriginalBase: "file:///file.json",
+			Ref:          "file:///",
+			Expected:     "file:///",
+		},
+		{
+			// an absolute $ref keeps its query
+			OriginalBase: "https://example.com/base/spec.json",
+			Ref:          "https://example.com/other/doc.json?raw=true#/definitions/X",
+			Expected:     "https://example.com/other/doc.json?raw=true#/definitions/X",
+		},
+		{
+			// a relative $ref carries no query of its own, so it would take the one of the base:
+			// this one stays absolute rather than resolve against no query at all
+			OriginalBase: "https://example.com/base/spec.json",
+			Ref:          "https://example.com/base/doc.json?raw=true#/definitions/X",
+			Expected:     "https://example.com/base/doc.json?raw=true#/definitions/X",
+		},
+		{
+			// when both carry the same query, normalizing the shorthand restores it
+			OriginalBase: "https://example.com/base/spec.json?raw=true",
+			Ref:          "https://example.com/base/doc.json?raw=true#/definitions/X",
+			Expected:     "doc.json#/definitions/X",
+		},
+		{ //nolint:gosec // test data, not real credentials
+			// an absolute $ref keeps its credentials
+			OriginalBase: "https://user:password@example.com/base/spec.json",
+			Ref:          "https://user:password@example.com/other/doc.json#/definitions/X",
+			Expected:     "https://user:password@example.com/other/doc.json#/definitions/X",
+		},
+		{ //nolint:gosec // test data, not real credentials
+			// credentials the base does not have would be lost by a relative $ref
+			OriginalBase: "https://example.com/base/spec.json",
+			Ref:          "https://user:password@example.com/base/doc.json#/definitions/X",
+			Expected:     "https://user:password@example.com/base/doc.json#/definitions/X",
 		},
 		{
 			OriginalBase: "file:///a/b/c/file.json",

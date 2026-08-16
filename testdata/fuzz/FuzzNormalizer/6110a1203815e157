@@ -1,0 +1,3 @@
+go test fuzz v1
+string("#/diۯ^Q\xaa\xcf\xcf\xcf\xcf/definitions/Pet")
+string("https://:A:443")
