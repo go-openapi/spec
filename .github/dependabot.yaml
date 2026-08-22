@@ -29,8 +29,9 @@ updates:
     # 4. other dependencies require a manual merge
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "friday"
+      interval: "cron"
+      cronjob: "35 7 * * 1,4"    # => update twice a week
+      timezone: CEST
     open-pull-requests-limit: 4
     groups:
       development-dependencies:
