@@ -1,0 +1,12 @@
+{
+  "definitions": {
+    "a": {"type": "object", "properties": {
+      "toB": {"$ref": "#/definitions/b"},
+      "toC": {"$ref": "#/definitions/c"}}},
+    "b": {"type": "object", "properties": {
+      "backToA": {"$ref": "#/definitions/a"}}},
+    "c": {"type": "object", "properties": {
+      "backToA": {"$ref": "#/definitions/a"},
+      "alsoB":   {"$ref": "#/definitions/b"}}}
+  }
+}

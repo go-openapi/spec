@@ -1082,3 +1082,57 @@ func TestExpand_Issue145(t *testing.T) {
 		})
 	})
 }
+
+func TestExpand_UnmappedSubtreeRef(t *testing.T) {
+	// A $ref under a keyword the Swagger 2.0 model does not map (propertyNames, if)
+	// lands in Schema.ExtraProps as raw JSON. Inlining the subtree from other.json used
+	// to carry those $ref into the root verbatim, where "#/definitions/leaf" names
+	// nothing. They are rebased on the document they came from instead.
+	fixturePath := filepath.Join("testdata", "expansion", "unmapped", "root.json")
+	jazon, doc := expandThisOrDieTrying(t, fixturePath)
+	require.NotEmpty(t, jazon)
+
+	holder := doc.Definitions["holder"]
+
+	t.Run("the mapped $ref is expanded", func(t *testing.T) {
+		mapped := holder.Properties["mapped"]
+		assert.EqualT(t, "", mapped.Ref.String())
+		assert.TrueT(t, mapped.Type.Contains("string"))
+	})
+
+	t.Run("the unmapped $ref are rebased, not expanded", func(t *testing.T) {
+		assert.EqualT(t, "other.json#/definitions/leaf", rawRef(t, holder.ExtraProps["propertyNames"]))
+
+		cond, ok := holder.ExtraProps["if"].(map[string]any)
+		require.TrueT(t, ok)
+		anyOf, ok := cond["anyOf"].([]any)
+		require.TrueT(t, ok)
+		require.EqualT(t, 1, len(anyOf))
+		assert.EqualT(t, "other.json#/definitions/leaf", rawRef(t, anyOf[0]))
+	})
+
+	t.Run("every surviving $ref resolves against the expanded document", func(t *testing.T) {
+		opts := &ExpandOptions{RelativeBase: fixturePath}
+		assertRefResolve(t, jazon, "", doc, opts)
+	})
+
+	t.Run("and against a document read back from the expanded bytes", func(t *testing.T) {
+		reloaded := new(Swagger)
+		require.NoError(t, json.Unmarshal([]byte(jazon), reloaded))
+
+		opts := &ExpandOptions{RelativeBase: fixturePath}
+		assertRefResolve(t, jazon, "", reloaded, opts)
+	})
+}
+
+// rawRef returns the $ref held by a raw JSON node.
+func rawRef(t testing.TB, node any) string {
+	t.Helper()
+
+	asMap, ok := node.(map[string]any)
+	require.TrueT(t, ok)
+	ref, ok := asMap["$ref"].(string)
+	require.TrueT(t, ok)
+
+	return ref
+}

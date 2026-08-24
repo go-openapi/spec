@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,6 +36,52 @@ func fixtureServer(t testing.TB, dir string) *httptest.Server {
 	t.Cleanup(server.Close)
 
 	return server
+}
+
+// rewritingFixtureServer serves a subdirectory of the embedded fixtureAssets FS,
+// replacing every occurrence of placeholder with the address the server listens on.
+//
+// Fixtures that carry an absolute schema id cannot be served from a random port
+// unless the id follows the port. The handler is wired before Start, so the URL
+// it captures is the one the listener already holds.
+func rewritingFixtureServer(t testing.TB, dir, placeholder string) *httptest.Server {
+	t.Helper()
+
+	sub, err := fs.Sub(fixtureAssets, filepath.ToSlash(dir))
+	require.NoError(t, err)
+
+	server := httptest.NewUnstartedServer(nil)
+	url := "http://" + server.Listener.Addr().String()
+	server.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := fs.ReadFile(sub, strings.TrimPrefix(r.URL.Path, "/"))
+		if err != nil {
+			http.NotFound(w, r)
+
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(strings.ReplaceAll(string(data), placeholder, url))) //nolint:gosec // serves a fixture from the embedded FS
+	})
+	server.Start()
+	t.Cleanup(server.Close)
+
+	return server
+}
+
+// rewriteFixture copies a fixture into the test's temporary directory, replacing
+// every occurrence of placeholder with replacement, and returns the copy's path.
+func rewriteFixture(t testing.TB, path, placeholder, replacement string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	target := filepath.Join(t.TempDir(), filepath.Base(path))
+	//nolint:gosec // writes a fixture into the test's own temporary directory
+	require.NoError(t, os.WriteFile(target, []byte(strings.ReplaceAll(string(data), placeholder, replacement)), 0o600))
+
+	return target
 }
 
 func jsonDoc(path string) (json.RawMessage, error) {

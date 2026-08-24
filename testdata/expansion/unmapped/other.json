@@ -1,0 +1,25 @@
+{
+  "definitions": {
+    "deep": {
+      "type": "object",
+      "properties": {
+        "mapped": {
+          "$ref": "#/definitions/leaf"
+        }
+      },
+      "propertyNames": {
+        "$ref": "#/definitions/leaf"
+      },
+      "if": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/leaf"
+          }
+        ]
+      }
+    },
+    "leaf": {
+      "type": "string"
+    }
+  }
+}
