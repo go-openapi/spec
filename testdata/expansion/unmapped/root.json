@@ -1,0 +1,26 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "a $ref under a keyword this model does not map",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/things": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "a thing",
+            "schema": {
+              "$ref": "#/definitions/holder"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "holder": {
+      "$ref": "other.json#/definitions/deep"
+    }
+  }
+}

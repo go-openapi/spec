@@ -312,6 +312,8 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		return &target, nil
 	}
 
+	rebaseExtraRefs(target.ExtraProps, resolver, basePath)
+
 	for k := range target.Definitions {
 		tt, err := expandSchema(target.Definitions[k], parentRefs, resolver, basePath)
 		if resolver.shouldStopOnError(err) {
@@ -422,6 +424,67 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 	}
 	return &target, nil
+}
+
+// rebaseExtraRefs rewrites the $ref held by keywords this model does not map, so that
+// they still point at their target once the schema is inlined into another document.
+//
+// expandSchema walks the fields of [Schema] and stops there. A keyword the Swagger 2.0
+// model predates - propertyNames, contains, if/then/else, $defs - lands in ExtraProps as
+// raw JSON, and a $ref inside it is copied into the root verbatim: "#/definitions/leaf"
+// then names a definition of the root document instead of the one it came from.
+//
+// Rebasing makes the pointer correct. It does not expand it, and it does not make the
+// expanded document self-contained: a $ref that came from another document keeps pointing
+// there.
+func rebaseExtraRefs(extra map[string]any, resolver *schemaLoader, basePath string) {
+	for key := range extra {
+		rebaseRawRefs(extra[key], resolver, basePath)
+	}
+}
+
+// rebaseRawRefs walks raw JSON and rebases every "$ref" string value it finds.
+func rebaseRawRefs(node any, resolver *schemaLoader, basePath string) {
+	switch value := node.(type) {
+	case map[string]any:
+		for key := range value {
+			if key == jsonRef {
+				if ref, ok := value[key].(string); ok {
+					if rebased, ok := rebaseRawRef(ref, resolver, basePath); ok {
+						value[key] = rebased
+					}
+
+					continue
+				}
+			}
+
+			rebaseRawRefs(value[key], resolver, basePath)
+		}
+	case []any:
+		for i := range value {
+			rebaseRawRefs(value[i], resolver, basePath)
+		}
+	}
+}
+
+// rebaseRawRef resolves a $ref against basePath, then spells it relative to the document
+// being expanded, like the SkipSchemas branch of [expandSchema] does for a mapped $ref.
+//
+// It reports false when the $ref is empty or does not parse: an unmapped keyword may hold
+// any JSON, and a string under a "$ref" key is not necessarily a reference.
+func rebaseRawRef(ref string, resolver *schemaLoader, basePath string) (string, bool) {
+	if ref == "" {
+		return "", false
+	}
+
+	rebased, err := NewRef(normalizeURI(ref, basePath))
+	if err != nil {
+		return "", false
+	}
+
+	denormalized := denormalizeRef(&rebased, resolver.context.basePath, resolver.context.rootID)
+
+	return denormalized.String(), true
 }
 
 func expandSchemaRef(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
