@@ -4,8 +4,12 @@
 package spec
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
+	"iter"
+	"maps"
+	"slices"
 
 	"github.com/go-openapi/swag/loading"
 )
@@ -109,7 +113,8 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	specBasePath := options.RelativeBase
 
 	if !options.SkipSchemas {
-		for key, definition := range spec.Definitions {
+		for key := range sortedKeys(spec.Definitions) {
+			definition := spec.Definitions[key]
 			parentRefs := make([]string, 0, smallPrealloc)
 			parentRefs = append(parentRefs, "#/definitions/"+key)
 
@@ -123,7 +128,7 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 		}
 	}
 
-	for key := range spec.Parameters {
+	for key := range sortedKeys(spec.Parameters) {
 		parameter := spec.Parameters[key]
 		if err := expandParameterOrResponse(&parameter, resolver, specBasePath); resolver.shouldStopOnError(err) {
 			return err
@@ -131,7 +136,7 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 		spec.Parameters[key] = parameter
 	}
 
-	for key := range spec.Responses {
+	for key := range sortedKeys(spec.Responses) {
 		response := spec.Responses[key]
 		if err := expandParameterOrResponse(&response, resolver, specBasePath); resolver.shouldStopOnError(err) {
 			return err
@@ -140,7 +145,7 @@ func ExpandSpec(spec *Swagger, options *ExpandOptions) error {
 	}
 
 	if spec.Paths != nil {
-		for key := range spec.Paths.Paths {
+		for key := range sortedKeys(spec.Paths.Paths) {
 			pth := spec.Paths.Paths[key]
 			if err := expandPathItem(&pth, resolver, specBasePath); resolver.shouldStopOnError(err) {
 				return err
@@ -278,6 +283,38 @@ func expandItems(target Schema, parentRefs []string, resolver *schemaLoader, bas
 	return &target, nil
 }
 
+// sortedKeys walks the keys of a map in a fixed order.
+//
+// Expansion inlines the first branch that reaches a cycle and leaves a $ref on the others, so
+// the order the walk visits siblings in decides which node ends up holding the $ref. Ranging a
+// map straight gives that decision to Go's map iteration, and the same document then expands
+// differently from one run to the next - see go-openapi/spec#93.
+//
+// A map of fewer than two keys has only one order, so it is yielded without sorting: schemata
+// with a single property or definition are most of what a walk of a large document visits, and
+// the slice this would otherwise allocate is paid at every node.
+func sortedKeys[K cmp.Ordered, V any](m map[K]V) iter.Seq[K] {
+	const alreadyOrdered = 2 // a map of fewer keys than this has only one order
+
+	return func(yield func(K) bool) {
+		if len(m) < alreadyOrdered {
+			for key := range m {
+				yield(key)
+
+				return
+			}
+
+			return
+		}
+
+		for _, key := range slices.Sorted(maps.Keys(m)) {
+			if !yield(key) {
+				return
+			}
+		}
+	}
+}
+
 //nolint:gocognit,gocyclo,cyclop // complex but well-tested $ref expansion logic; refactoring deferred to dedicated PR
 func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, basePath string) (*Schema, error) {
 	if err := resolver.context.countNode(); err != nil {
@@ -314,7 +351,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 
 	rebaseExtraRefs(target.ExtraProps, resolver, basePath)
 
-	for k := range target.Definitions {
+	for k := range sortedKeys(target.Definitions) {
 		tt, err := expandSchema(target.Definitions[k], parentRefs, resolver, basePath)
 		if resolver.shouldStopOnError(err) {
 			return &target, err
@@ -372,7 +409,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 	}
 
-	for k := range target.Properties {
+	for k := range sortedKeys(target.Properties) {
 		t, err := expandSchema(target.Properties[k], parentRefs, resolver, basePath)
 		if resolver.shouldStopOnError(err) {
 			return &target, err
@@ -392,7 +429,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 	}
 
-	for k := range target.PatternProperties {
+	for k := range sortedKeys(target.PatternProperties) {
 		t, err := expandSchema(target.PatternProperties[k], parentRefs, resolver, basePath)
 		if resolver.shouldStopOnError(err) {
 			return &target, err
@@ -402,7 +439,7 @@ func expandSchema(target Schema, parentRefs []string, resolver *schemaLoader, ba
 		}
 	}
 
-	for k := range target.Dependencies {
+	for k := range sortedKeys(target.Dependencies) {
 		if target.Dependencies[k].Schema != nil {
 			t, err := expandSchema(*target.Dependencies[k].Schema, parentRefs, resolver, basePath)
 			if resolver.shouldStopOnError(err) {
@@ -591,7 +628,7 @@ func expandOperation(op *Operation, resolver *schemaLoader, basePath string) err
 		return err
 	}
 
-	for code := range responses.StatusCodeResponses {
+	for code := range sortedKeys(responses.StatusCodeResponses) {
 		response := responses.StatusCodeResponses[code]
 		if err := expandParameterOrResponse(&response, resolver, basePath); resolver.shouldStopOnError(err) {
 			return err

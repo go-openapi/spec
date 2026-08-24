@@ -1,0 +1,20 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "several entry points into one group of remote cycles",
+    "version": "1.0.0",
+    "description": "reproduces the trigger of #93: which entry the walk visits first decides where the cycle is cut"
+  },
+  "paths": {},
+  "definitions": {
+    "entryA": {
+      "$ref": "remote.json#/definitions/a"
+    },
+    "entryC": {
+      "$ref": "remote.json#/definitions/c"
+    },
+    "entryB": {
+      "$ref": "remote.json#/definitions/b"
+    }
+  }
+}
