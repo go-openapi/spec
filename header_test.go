@@ -161,3 +161,27 @@ func TestHeaderWithValidation(t *testing.T) {
 	h := new(Header).WithValidations(CommonValidations{MaxLength: conv.Pointer(int64(15))})
 	assert.Equal(t, conv.Pointer(int64(15)), h.MaxLength)
 }
+
+func TestHeaderNumericAndArrayBuilder(t *testing.T) {
+	h := new(Header).
+		WithMultipleOf(5).
+		WithMaximum(100, true).
+		WithMinimum(5, true).
+		WithMaxItems(100).
+		WithMinItems(5).
+		UniqueValues()
+
+	assert.Equal(t, float64Ptr(5), h.MultipleOf)
+	assert.Equal(t, float64Ptr(100), h.Maximum)
+	assert.TrueT(t, h.ExclusiveMaximum)
+	assert.Equal(t, float64Ptr(5), h.Minimum)
+	assert.TrueT(t, h.ExclusiveMinimum)
+	assert.Equal(t, int64Ptr(100), h.MaxItems)
+	assert.Equal(t, int64Ptr(5), h.MinItems)
+	assert.TrueT(t, h.UniqueItems)
+
+	h = h.AllowDuplicates().WithMaximum(100, false).WithMinimum(5, false)
+	assert.FalseT(t, h.UniqueItems)
+	assert.FalseT(t, h.ExclusiveMaximum)
+	assert.FalseT(t, h.ExclusiveMinimum)
+}

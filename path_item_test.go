@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 var pathItem = PathItem{ //nolint:gochecknoglobals // test fixture
@@ -61,4 +62,39 @@ const pathItemJSON = `{
 
 func TestIntegrationPathItem(t *testing.T) {
 	assert.JSONUnmarshalAsT(t, pathItem, pathItemJSON)
+}
+
+func TestJSONLookupPathItem(t *testing.T) {
+	t.Run("lookup should find an extension", func(t *testing.T) {
+		res, err := pathItem.JSONLookup("x-framework")
+		require.NoError(t, err)
+
+		ext, ok := res.(*any)
+		require.TrueT(t, ok)
+		assert.Equal(t, "go-swagger", *ext)
+	})
+
+	t.Run(`lookup should find "$ref"`, func(t *testing.T) {
+		res, err := pathItem.JSONLookup("$ref")
+		require.NoError(t, err)
+
+		ref, ok := res.(*Ref)
+		require.TrueT(t, ok)
+		assert.Equal(t, MustCreateRef("Dog"), *ref)
+	})
+
+	t.Run(`lookup should find "get"`, func(t *testing.T) {
+		res, err := pathItem.JSONLookup("get")
+		require.NoError(t, err)
+
+		op, ok := res.(*Operation)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "get operation description", op.Description)
+	})
+
+	t.Run(`lookup should fail on "unknown"`, func(t *testing.T) {
+		res, err := pathItem.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
 }

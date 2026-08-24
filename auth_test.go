@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 func TestSerialization_AuthSerialization(t *testing.T) {
@@ -104,4 +105,33 @@ func TestSerialization_AuthDeserialization(t *testing.T) {
 	assert.JSONUnmarshalAsT(t, auth4,
 		`{"authorizationUrl":"http://foo.com/authorization","flow":"accessCode","scopes":{"email":"read your email"},`+
 			`"tokenUrl":"http://foo.com/token","type":"oauth2"}`)
+}
+
+func TestJSONLookupSecurityScheme(t *testing.T) {
+	scheme := APIKeyAuth("api-key", "header")
+	scheme.AddExtension("x-framework", "go-swagger")
+
+	t.Run("lookup should find an extension", func(t *testing.T) {
+		res, err := scheme.JSONLookup("x-framework")
+		require.NoError(t, err)
+
+		ext, ok := res.(*any)
+		require.TrueT(t, ok)
+		assert.Equal(t, "go-swagger", *ext)
+	})
+
+	t.Run(`lookup should find "in"`, func(t *testing.T) {
+		res, err := scheme.JSONLookup("in")
+		require.NoError(t, err)
+
+		in, ok := res.(string)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "header", in)
+	})
+
+	t.Run(`lookup should fail on "unknown"`, func(t *testing.T) {
+		res, err := scheme.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
 }

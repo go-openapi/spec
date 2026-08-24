@@ -88,3 +88,80 @@ func TestRef_IsValidURI(t *testing.T) {
 			"a directory should not be a valid file URI")
 	})
 }
+
+func TestRefInherits(t *testing.T) {
+	t.Run("a child ref should inherit its parent's base", func(t *testing.T) {
+		parent := MustCreateRef("http://www.example.com/foo/bar/schema.json")
+		child := MustCreateRef("other.json#/definitions/Cat")
+
+		inherited, err := parent.Inherits(child)
+		require.NoError(t, err)
+		require.NotNil(t, inherited)
+		assert.EqualT(t, "http://www.example.com/foo/bar/other.json#/definitions/Cat", inherited.String())
+	})
+
+	t.Run("an absolute child ref should override its parent", func(t *testing.T) {
+		parent := MustCreateRef("http://www.example.com/foo/bar/schema.json")
+		child := MustCreateRef("http://www.other.com/other.json")
+
+		inherited, err := parent.Inherits(child)
+		require.NoError(t, err)
+		assert.EqualT(t, "http://www.other.com/other.json", inherited.String())
+	})
+
+	t.Run("a child with no URL should not resolve", func(t *testing.T) {
+		parent := MustCreateRef("http://www.example.com/foo/bar/schema.json")
+		var child Ref // the zero Ref carries no URL
+
+		inherited, err := parent.Inherits(child)
+		require.Error(t, err)
+		assert.Nil(t, inherited)
+	})
+}
+
+func TestNewRefError(t *testing.T) {
+	r, err := NewRef("http://[")
+	require.Error(t, err)
+	assert.Equal(t, Ref{}, r)
+}
+
+func TestRefRemoteURI(t *testing.T) {
+	t.Run("an empty ref has no remote URI", func(t *testing.T) {
+		var r Ref
+		assert.EqualT(t, "", r.RemoteURI())
+	})
+
+	t.Run("the fragment is stripped from the remote URI", func(t *testing.T) {
+		r := MustCreateRef("http://www.example.com/schema.json#/definitions/Cat")
+		assert.EqualT(t, "http://www.example.com/schema.json", r.RemoteURI())
+	})
+}
+
+func TestRefFromMap(t *testing.T) {
+	t.Run("a nil map leaves the ref untouched", func(t *testing.T) {
+		var r Ref
+		require.NoError(t, r.fromMap(nil))
+		assert.EqualT(t, "", r.String())
+	})
+
+	t.Run("a non-string $ref is ignored", func(t *testing.T) {
+		var r Ref
+		require.NoError(t, r.fromMap(map[string]any{"$ref": 12}))
+		assert.EqualT(t, "", r.String())
+	})
+
+	t.Run("an invalid $ref is reported", func(t *testing.T) {
+		var r Ref
+		require.Error(t, r.fromMap(map[string]any{"$ref": "http://["}))
+	})
+}
+
+func TestRefUnmarshalJSONError(t *testing.T) {
+	var r Ref
+	require.Error(t, json.Unmarshal([]byte(`not json`), &r))
+}
+
+func TestRefGobDecodeError(t *testing.T) {
+	var r Ref
+	require.Error(t, r.GobDecode([]byte("not gob")))
+}

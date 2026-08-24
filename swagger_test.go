@@ -298,3 +298,182 @@ func doTestSwaggerGobEncoding(t *testing.T, fixture []byte) {
 
 	doTestAnyGobEncoding(t, &src, &dst)
 }
+
+func TestJSONLookupSchemaOrBool(t *testing.T) {
+	s := SchemaOrBool{Allows: true, Schema: Int32Property()}
+
+	t.Run(`lookup should find "allows"`, func(t *testing.T) {
+		res, err := s.JSONLookup("allows")
+		require.NoError(t, err)
+
+		allows, ok := res.(bool)
+		require.TrueT(t, ok)
+		assert.TrueT(t, allows)
+	})
+
+	t.Run(`lookup should delegate to the schema`, func(t *testing.T) {
+		res, err := s.JSONLookup("format")
+		require.NoError(t, err)
+
+		format, ok := res.(string)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "int32", format)
+	})
+
+	t.Run(`lookup should fail on "unknown"`, func(t *testing.T) {
+		res, err := s.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
+}
+
+func TestJSONLookupSchemaOrStringArray(t *testing.T) {
+	s := SchemaOrStringArray{Schema: StrFmtProperty("uuid")}
+
+	res, err := s.JSONLookup("format")
+	require.NoError(t, err)
+
+	format, ok := res.(string)
+	require.TrueT(t, ok)
+	assert.EqualT(t, "uuid", format)
+
+	res, err = s.JSONLookup("unknown")
+	require.Error(t, err)
+	require.Nil(t, res)
+}
+
+func TestJSONLookupSchemaOrArray(t *testing.T) {
+	t.Run("a numeric token should index the schemas", func(t *testing.T) {
+		s := SchemaOrArray{Schemas: []Schema{*StringProperty(), *Int64Property()}}
+
+		res, err := s.JSONLookup("1")
+		require.NoError(t, err)
+
+		sch, ok := res.(Schema)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "int64", sch.Format)
+
+		res, err = s.JSONLookup("42")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
+
+	t.Run("a named token should address the single schema", func(t *testing.T) {
+		s := SchemaOrArray{Schema: Int32Property()}
+
+		res, err := s.JSONLookup("format")
+		require.NoError(t, err)
+
+		format, ok := res.(string)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "int32", format)
+
+		res, err = s.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
+}
+
+func TestSchemaOrArrayLenAndContainsType(t *testing.T) {
+	t.Run("a single schema counts as one", func(t *testing.T) {
+		s := SchemaOrArray{Schema: StringProperty()}
+		assert.EqualT(t, 1, s.Len())
+		assert.TrueT(t, s.ContainsType("string"))
+		assert.FalseT(t, s.ContainsType("integer"))
+	})
+
+	t.Run("a schema list counts its members", func(t *testing.T) {
+		s := SchemaOrArray{Schemas: []Schema{*StringProperty(), *Int64Property()}}
+		assert.EqualT(t, 2, s.Len())
+		// ContainsType only looks at the single schema
+		assert.FalseT(t, s.ContainsType("string"))
+	})
+
+	t.Run("an untyped single schema contains no type", func(t *testing.T) {
+		s := SchemaOrArray{Schema: new(Schema)}
+		assert.FalseT(t, s.ContainsType("string"))
+	})
+
+	t.Run("the zero value is empty", func(t *testing.T) {
+		var s SchemaOrArray
+		assert.EqualT(t, 0, s.Len())
+		assert.FalseT(t, s.ContainsType("string"))
+	})
+}
+
+func TestStringOrArrayContains(t *testing.T) {
+	s := StringOrArray{"string", "null"}
+	assert.TrueT(t, s.Contains("null"))
+	assert.FalseT(t, s.Contains("integer"))
+}
+
+func TestJSONLookupSwagger(t *testing.T) {
+	var sp Swagger
+	require.NoError(t, json.Unmarshal(specJSON, &sp))
+
+	t.Run("lookup should find an extension", func(t *testing.T) {
+		res, err := sp.JSONLookup("x-schemes")
+		require.NoError(t, err)
+
+		ext, ok := res.(*any)
+		require.TrueT(t, ok)
+		assert.Equal(t, []any{"unix", "amqp"}, *ext)
+	})
+
+	t.Run(`lookup should find "swagger"`, func(t *testing.T) {
+		res, err := sp.JSONLookup("swagger")
+		require.NoError(t, err)
+
+		version, ok := res.(string)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "2.0", version)
+	})
+
+	t.Run(`lookup should fail on "unknown"`, func(t *testing.T) {
+		res, err := sp.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
+}
+
+func TestSchemaOrStringArrayMarshalJSON(t *testing.T) {
+	t.Run("a property list should marshal as an array", func(t *testing.T) {
+		s := SchemaOrStringArray{Property: []string{"a", "b"}}
+		assert.JSONMarshalAsT(t, `["a","b"]`, s)
+	})
+
+	t.Run("the zero value should marshal as null", func(t *testing.T) {
+		var s SchemaOrStringArray
+		assert.JSONMarshalAsT(t, `null`, s)
+	})
+}
+
+func TestStringOrArrayUnmarshalJSON(t *testing.T) {
+	t.Run("should unmarshal an array", func(t *testing.T) {
+		var s StringOrArray
+		require.NoError(t, json.Unmarshal([]byte(`["string","null"]`), &s))
+		assert.Equal(t, StringOrArray{"string", "null"}, s)
+	})
+
+	t.Run("should unmarshal a single string", func(t *testing.T) {
+		var s StringOrArray
+		require.NoError(t, json.Unmarshal([]byte(`"string"`), &s))
+		assert.Equal(t, StringOrArray{"string"}, s)
+	})
+
+	t.Run("should leave null untouched", func(t *testing.T) {
+		var s StringOrArray
+		require.NoError(t, json.Unmarshal([]byte(`null`), &s))
+		assert.Nil(t, s)
+	})
+
+	t.Run("should reject anything else", func(t *testing.T) {
+		var s StringOrArray
+		require.ErrorIs(t, json.Unmarshal([]byte(`12`), &s), ErrSpec)
+	})
+
+	t.Run("should report a malformed array", func(t *testing.T) {
+		var s StringOrArray
+		require.Error(t, json.Unmarshal([]byte(`[12]`), &s))
+	})
+}

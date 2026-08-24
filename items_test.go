@@ -182,3 +182,45 @@ func TestItemsWithValidation(t *testing.T) {
 	i := new(Items).WithValidations(CommonValidations{MaxLength: conv.Pointer(int64(15))})
 	assert.Equal(t, conv.Pointer(int64(15)), i.MaxLength)
 }
+
+func TestItemsStringAndNumericBuilder(t *testing.T) {
+	t.Run("AsNullable flags the item", func(t *testing.T) {
+		assert.TrueT(t, NewItems().AsNullable().Nullable)
+	})
+
+	t.Run("CollectionOf makes an array of items", func(t *testing.T) {
+		inner := NewItems().Typed("string", "date")
+		i := NewItems().CollectionOf(inner, "pipe")
+
+		assert.EqualT(t, "array", i.Type)
+		assert.EqualT(t, "pipe", i.CollectionFormat)
+		assert.Equal(t, inner, i.Items)
+	})
+
+	t.Run("string and numeric validations", func(t *testing.T) {
+		i := NewItems().
+			WithMaxLength(100).
+			WithMinLength(5).
+			WithPattern(`\w+`).
+			WithMultipleOf(5).
+			WithMaximum(100, true).
+			WithMinimum(5, true)
+
+		assert.Equal(t, conv.Pointer(int64(100)), i.MaxLength)
+		assert.Equal(t, conv.Pointer(int64(5)), i.MinLength)
+		assert.EqualT(t, `\w+`, i.Pattern)
+		assert.Equal(t, conv.Pointer(float64(5)), i.MultipleOf)
+		assert.Equal(t, conv.Pointer(float64(100)), i.Maximum)
+		assert.TrueT(t, i.ExclusiveMaximum)
+		assert.Equal(t, conv.Pointer(float64(5)), i.Minimum)
+		assert.TrueT(t, i.ExclusiveMinimum)
+
+		i = i.WithMaximum(100, false).WithMinimum(5, false)
+		assert.FalseT(t, i.ExclusiveMaximum)
+		assert.FalseT(t, i.ExclusiveMinimum)
+	})
+
+	t.Run("AllowDuplicates clears uniqueItems", func(t *testing.T) {
+		assert.FalseT(t, NewItems().UniqueValues().AllowDuplicates().UniqueItems)
+	})
+}
