@@ -152,3 +152,159 @@ func TestParametersWithValidation(t *testing.T) {
 	p := new(Parameter).WithValidations(CommonValidations{MaxLength: conv.Pointer(int64(15))})
 	assert.Equal(t, conv.Pointer(int64(15)), p.MaxLength)
 }
+
+func TestParameterConstructors(t *testing.T) {
+	t.Run("FormDataParam sits in formData", func(t *testing.T) {
+		p := FormDataParam("file-name")
+		assert.EqualT(t, "file-name", p.Name)
+		assert.EqualT(t, "formData", p.In)
+	})
+
+	t.Run("FileParam is a typed formData param", func(t *testing.T) {
+		p := FileParam("upload")
+		assert.EqualT(t, "upload", p.Name)
+		assert.EqualT(t, "formData", p.In)
+		assert.EqualT(t, "file", p.Type)
+	})
+
+	t.Run("SimpleArrayParam defaults to csv", func(t *testing.T) {
+		p := SimpleArrayParam("tags", "string", "date")
+		assert.EqualT(t, "tags", p.Name)
+		assert.EqualT(t, "array", p.Type)
+		assert.EqualT(t, "csv", p.CollectionFormat)
+		require.NotNil(t, p.Items)
+		assert.EqualT(t, "string", p.Items.Type)
+		assert.EqualT(t, "date", p.Items.Format)
+	})
+
+	t.Run("ParamRef holds only a $ref", func(t *testing.T) {
+		p := ParamRef("Dog")
+		assert.Equal(t, MustCreateRef("Dog"), p.Ref)
+		assert.JSONMarshalAsT(t, `{"$ref":"Dog"}`, p)
+	})
+}
+
+func TestParameterBuilder(t *testing.T) {
+	t.Run("naming and location", func(t *testing.T) {
+		p := QueryParam("q").
+			Named("query-name").
+			WithLocation("header").
+			WithDescription("the description of this parameter")
+
+		assert.EqualT(t, "query-name", p.Name)
+		assert.EqualT(t, "header", p.In)
+		assert.EqualT(t, "the description of this parameter", p.Description)
+	})
+
+	t.Run("empty values", func(t *testing.T) {
+		p := QueryParam("q").AllowsEmptyValues()
+		assert.TrueT(t, p.AllowEmptyValue)
+
+		p = p.NoEmptyValues()
+		assert.FalseT(t, p.AllowEmptyValue)
+	})
+
+	t.Run("a default makes the parameter optional", func(t *testing.T) {
+		p := PathParam("id").WithDefault("a default")
+		assert.Equal(t, "a default", p.Default)
+		assert.FalseT(t, p.Required)
+
+		// AsRequired is a no-op once a default is set
+		p = p.AsRequired()
+		assert.FalseT(t, p.Required)
+	})
+
+	t.Run("required and optional", func(t *testing.T) {
+		p := QueryParam("q").AsRequired()
+		assert.TrueT(t, p.Required)
+
+		p = p.AsOptional()
+		assert.FalseT(t, p.Required)
+	})
+
+	t.Run("validations", func(t *testing.T) {
+		p := QueryParam("q").
+			WithMaxLength(100).
+			WithMinLength(5).
+			WithPattern(`\w+`).
+			WithMultipleOf(5).
+			WithMaximum(100, true).
+			WithMinimum(5, true).
+			WithEnum("hello", "world").
+			WithMaxItems(100).
+			WithMinItems(5).
+			UniqueValues()
+
+		assert.Equal(t, int64Ptr(100), p.MaxLength)
+		assert.Equal(t, int64Ptr(5), p.MinLength)
+		assert.EqualT(t, `\w+`, p.Pattern)
+		assert.Equal(t, float64Ptr(5), p.MultipleOf)
+		assert.Equal(t, float64Ptr(100), p.Maximum)
+		assert.TrueT(t, p.ExclusiveMaximum)
+		assert.Equal(t, float64Ptr(5), p.Minimum)
+		assert.TrueT(t, p.ExclusiveMinimum)
+		assert.Equal(t, []any{"hello", "world"}, p.Enum)
+		assert.Equal(t, int64Ptr(100), p.MaxItems)
+		assert.Equal(t, int64Ptr(5), p.MinItems)
+		assert.TrueT(t, p.UniqueItems)
+
+		p = p.AllowDuplicates().WithMaximum(100, false).WithMinimum(5, false)
+		assert.FalseT(t, p.UniqueItems)
+		assert.FalseT(t, p.ExclusiveMaximum)
+		assert.FalseT(t, p.ExclusiveMinimum)
+	})
+}
+
+func TestJSONLookupParameter(t *testing.T) {
+	t.Run(`lookup should find an extension`, func(t *testing.T) {
+		res, err := parameter.JSONLookup("x-framework")
+		require.NoError(t, err)
+		require.NotNil(t, res)
+
+		ext, ok := res.(*any)
+		require.TrueT(t, ok)
+		assert.Equal(t, "swagger-go", *ext)
+	})
+
+	t.Run(`lookup should find "$ref"`, func(t *testing.T) {
+		res, err := parameter.JSONLookup("$ref")
+		require.NoError(t, err)
+
+		ref, ok := res.(*Ref)
+		require.TrueT(t, ok)
+		assert.Equal(t, MustCreateRef("Dog"), *ref)
+	})
+
+	t.Run(`lookup should find "maximum" in CommonValidations`, func(t *testing.T) {
+		res, err := parameter.JSONLookup("maximum")
+		require.NoError(t, err)
+
+		maximum, ok := res.(*float64)
+		require.TrueT(t, ok)
+		assert.InDeltaT(t, float64(100), *maximum, epsilon)
+	})
+
+	t.Run(`lookup should find "collectionFormat" in SimpleSchema`, func(t *testing.T) {
+		res, err := parameter.JSONLookup("collectionFormat")
+		require.NoError(t, err)
+
+		f, ok := res.(string)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "csv", f)
+	})
+
+	t.Run(`lookup should find "in" in ParamProps`, func(t *testing.T) {
+		res, err := parameter.JSONLookup("in")
+		require.NoError(t, err)
+
+		in, ok := res.(string)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "header", in)
+	})
+
+	t.Run(`lookup should fail on "unknown"`, func(t *testing.T) {
+		res, err := parameter.JSONLookup("unknown")
+		require.Error(t, err)
+		require.Nil(t, res)
+	})
+}

@@ -107,3 +107,29 @@ func TestResponseBuild(t *testing.T) {
          }
 			 }`, resp)
 }
+
+func TestResponseRef(t *testing.T) {
+	r := ResponseRef("Dog")
+	assert.Equal(t, MustCreateRef("Dog"), r.Ref)
+	assert.JSONMarshalAsT(t, `{"$ref":"Dog"}`, r)
+}
+
+func TestResponseRemoveHeader(t *testing.T) {
+	r := NewResponse().
+		AddHeader("X-Rate-Limit", ResponseHeader().Typed("integer", "int32")).
+		AddHeader("X-Trace-Id", ResponseHeader().Typed("string", ""))
+	require.Len(t, r.Headers, 2)
+
+	r = r.RemoveHeader("X-Trace-Id")
+	require.Len(t, r.Headers, 1)
+	_, ok := r.Headers["X-Trace-Id"]
+	assert.FalseT(t, ok)
+
+	// removing an absent header is a no-op
+	r = r.RemoveHeader("X-Absent")
+	assert.Len(t, r.Headers, 1)
+
+	// AddHeader with a nil header removes it too
+	r = r.AddHeader("X-Rate-Limit", nil)
+	assert.Empty(t, r.Headers)
+}

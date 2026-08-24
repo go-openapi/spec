@@ -210,3 +210,214 @@ func TestSchemaWithValidation(t *testing.T) {
 
 	assert.Equal(t, val, s.Validations())
 }
+
+func TestSchemaPropertyConstructors(t *testing.T) {
+	t.Run("aliases yield the same schema as their canonical constructor", func(t *testing.T) {
+		assert.Equal(t, BooleanProperty(), BoolProperty())
+		assert.Equal(t, StringProperty(), CharProperty())
+	})
+
+	t.Run("sized integer properties carry their format", func(t *testing.T) {
+		assert.EqualT(t, "int8", Int8Property().Format)
+		assert.EqualT(t, "int16", Int16Property().Format)
+		assert.Equal(t, StringOrArray{"integer"}, Int8Property().Type)
+		assert.Equal(t, StringOrArray{"integer"}, Int16Property().Type)
+	})
+
+	t.Run("StrFmtProperty names the string format", func(t *testing.T) {
+		s := StrFmtProperty("uuid")
+		assert.Equal(t, StringOrArray{"string"}, s.Type)
+		assert.EqualT(t, "uuid", s.Format)
+	})
+
+	t.Run("ArrayProperty without items is an untyped array", func(t *testing.T) {
+		s := ArrayProperty(nil)
+		assert.Equal(t, StringOrArray{"array"}, s.Type)
+		assert.Nil(t, s.Items)
+	})
+
+	t.Run("ComposedSchema collects its members in allOf", func(t *testing.T) {
+		s := ComposedSchema(*StringProperty(), *Int64Property())
+		assert.Len(t, s.AllOf, 2)
+		assert.Equal(t, *StringProperty(), s.AllOf[0])
+		assert.Equal(t, *Int64Property(), s.AllOf[1])
+	})
+}
+
+func TestSchemaURLUnmarshal(t *testing.T) {
+	t.Run("should unmarshal a $schema member", func(t *testing.T) {
+		var u SchemaURL
+		require.NoError(t, json.Unmarshal([]byte(`{"$schema":"http://json-schema.org/draft-04/schema#"}`), &u))
+		// the empty fragment is dropped when the URL is reassembled
+		assert.EqualT(t, SchemaURL("http://json-schema.org/draft-04/schema"), u)
+	})
+
+	t.Run("should leave the URL empty when $schema is absent", func(t *testing.T) {
+		var u SchemaURL
+		require.NoError(t, json.Unmarshal([]byte(`{"other":"value"}`), &u))
+		assert.EqualT(t, SchemaURL(""), u)
+	})
+
+	t.Run("should ignore a non-string $schema", func(t *testing.T) {
+		var u SchemaURL
+		require.NoError(t, json.Unmarshal([]byte(`{"$schema":12}`), &u))
+		assert.EqualT(t, SchemaURL(""), u)
+	})
+
+	t.Run("should error on invalid JSON", func(t *testing.T) {
+		var u SchemaURL
+		require.Error(t, json.Unmarshal([]byte(`not json`), &u))
+	})
+
+	t.Run("should error on an unparseable URL", func(t *testing.T) {
+		var u SchemaURL
+		require.Error(t, json.Unmarshal([]byte(`{"$schema":"http://["}`), &u))
+	})
+}
+
+func TestSchemaBuilder(t *testing.T) {
+	t.Run("identity and documentation", func(t *testing.T) {
+		s := new(Schema).
+			WithID("the id").
+			WithTitle("the title").
+			WithDescription("the description").
+			WithExample("an example").
+			WithDiscriminator("kind")
+
+		assert.EqualT(t, "the id", s.ID)
+		assert.EqualT(t, "the title", s.Title)
+		assert.EqualT(t, "the description", s.Description)
+		assert.Equal(t, "an example", s.Example)
+		assert.EqualT(t, "kind", s.Discriminator)
+	})
+
+	t.Run("external docs are removed when both params are empty", func(t *testing.T) {
+		s := new(Schema).WithExternalDocs("the docs", "http://readthedocs.org/swagger")
+		require.NotNil(t, s.ExternalDocs)
+		assert.EqualT(t, "the docs", s.ExternalDocs.Description)
+		assert.EqualT(t, "http://readthedocs.org/swagger", s.ExternalDocs.URL)
+
+		s = s.WithExternalDocs("", "")
+		assert.Nil(t, s.ExternalDocs)
+	})
+
+	t.Run("properties", func(t *testing.T) {
+		s := new(Schema).WithProperties(map[string]Schema{"name": *StringProperty()})
+		require.Len(t, s.Properties, 1)
+
+		s = s.SetProperty("age", *Int32Property())
+		require.Len(t, s.Properties, 2)
+		assert.Equal(t, *Int32Property(), s.Properties["age"])
+
+		// SetProperty allocates the map when the schema has none
+		other := new(Schema).SetProperty("id", *Int64Property())
+		require.Len(t, other.Properties, 1)
+
+		s = s.WithMaxProperties(10).WithMinProperties(1)
+		assert.Equal(t, int64Ptr(10), s.MaxProperties)
+		assert.Equal(t, int64Ptr(1), s.MinProperties)
+	})
+
+	t.Run("required", func(t *testing.T) {
+		s := new(Schema).WithRequired("id", "name")
+		assert.Equal(t, []string{"id", "name"}, s.Required)
+
+		s = s.AddRequired("age")
+		assert.Equal(t, []string{"id", "name", "age"}, s.Required)
+	})
+
+	t.Run("allOf", func(t *testing.T) {
+		s := new(Schema).WithAllOf(*StringProperty())
+		require.Len(t, s.AllOf, 1)
+
+		s = s.AddToAllOf(*Int64Property(), *BooleanProperty())
+		assert.Len(t, s.AllOf, 3)
+	})
+
+	t.Run("types and items", func(t *testing.T) {
+		s := new(Schema).Typed("integer", "int32").AddType("null", "")
+		assert.Equal(t, StringOrArray{"integer", "null"}, s.Type)
+		assert.EqualT(t, "int32", s.Format)
+
+		s = s.AddType("string", "date")
+		assert.EqualT(t, "date", s.Format)
+
+		s = new(Schema).AsNullable()
+		assert.TrueT(t, s.Nullable)
+
+		s = new(Schema).CollectionOf(*StringProperty())
+		assert.Equal(t, StringOrArray{"array"}, s.Type)
+		require.NotNil(t, s.Items)
+		assert.Equal(t, StringProperty(), s.Items.Schema)
+	})
+
+	t.Run("validations", func(t *testing.T) {
+		s := new(Schema).
+			WithDefault("a default").
+			WithMaxLength(100).
+			WithMinLength(5).
+			WithPattern(`\w+`).
+			WithMultipleOf(5).
+			WithMaximum(100, true).
+			WithMinimum(5, true).
+			WithEnum("hello", "world").
+			WithMaxItems(100).
+			WithMinItems(5).
+			UniqueValues()
+
+		assert.Equal(t, "a default", s.Default)
+		assert.Equal(t, int64Ptr(100), s.MaxLength)
+		assert.Equal(t, int64Ptr(5), s.MinLength)
+		assert.EqualT(t, `\w+`, s.Pattern)
+		assert.Equal(t, float64Ptr(5), s.MultipleOf)
+		assert.Equal(t, float64Ptr(100), s.Maximum)
+		assert.TrueT(t, s.ExclusiveMaximum)
+		assert.Equal(t, float64Ptr(5), s.Minimum)
+		assert.TrueT(t, s.ExclusiveMinimum)
+		assert.Equal(t, []any{"hello", "world"}, s.Enum)
+		assert.Equal(t, int64Ptr(100), s.MaxItems)
+		assert.Equal(t, int64Ptr(5), s.MinItems)
+		assert.TrueT(t, s.UniqueItems)
+
+		s = s.AllowDuplicates().WithMaximum(100, false).WithMinimum(5, false)
+		assert.FalseT(t, s.UniqueItems)
+		assert.FalseT(t, s.ExclusiveMaximum)
+		assert.FalseT(t, s.ExclusiveMinimum)
+	})
+
+	t.Run("readOnly", func(t *testing.T) {
+		s := new(Schema).AsReadOnly()
+		assert.TrueT(t, s.ReadOnly)
+
+		s = s.AsWritable()
+		assert.FalseT(t, s.ReadOnly)
+	})
+
+	t.Run("XML settings allocate the XMLObject on first use", func(t *testing.T) {
+		s := new(Schema).
+			WithXMLName("the name").
+			WithXMLNamespace("the namespace").
+			WithXMLPrefix("the prefix").
+			AsXMLAttribute().
+			AsWrappedXML()
+
+		require.NotNil(t, s.XML)
+		assert.EqualT(t, "the name", s.XML.Name)
+		assert.EqualT(t, "the namespace", s.XML.Namespace)
+		assert.EqualT(t, "the prefix", s.XML.Prefix)
+		assert.TrueT(t, s.XML.Attribute)
+		assert.TrueT(t, s.XML.Wrapped)
+
+		s = s.AsXMLElement().AsUnwrappedXML()
+		assert.FalseT(t, s.XML.Attribute)
+		assert.FalseT(t, s.XML.Wrapped)
+
+		// each setter allocates on its own when XML is still nil
+		assert.NotNil(t, new(Schema).WithXMLNamespace("ns").XML)
+		assert.NotNil(t, new(Schema).WithXMLPrefix("p").XML)
+		assert.NotNil(t, new(Schema).AsXMLAttribute().XML)
+		assert.NotNil(t, new(Schema).AsXMLElement().XML)
+		assert.NotNil(t, new(Schema).AsWrappedXML().XML)
+		assert.NotNil(t, new(Schema).AsUnwrappedXML().XML)
+	})
+}

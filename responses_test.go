@@ -123,3 +123,38 @@ func TestResponsesBuild(t *testing.T) {
          }
 			 }`, resp)
 }
+
+func TestJSONLookupResponsesDefaultAndStatusCode(t *testing.T) {
+	r := Responses{
+		ResponsesProps: ResponsesProps{
+			Default: &Response{ResponseProps: ResponseProps{Description: "the default"}},
+			StatusCodeResponses: map[int]Response{
+				200: {ResponseProps: ResponseProps{Description: "success"}},
+			},
+		},
+	}
+
+	t.Run(`lookup should find "default"`, func(t *testing.T) {
+		res, err := r.JSONLookup("default")
+		require.NoError(t, err)
+
+		def, ok := res.(*Response)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "the default", def.Description)
+	})
+
+	t.Run("lookup should find a status code response", func(t *testing.T) {
+		res, err := r.JSONLookup("200")
+		require.NoError(t, err)
+
+		scr, ok := res.(Response)
+		require.TrueT(t, ok)
+		assert.EqualT(t, "success", scr.Description)
+	})
+
+	t.Run("lookup should fail on an absent status code", func(t *testing.T) {
+		res, err := r.JSONLookup("404")
+		require.ErrorIs(t, err, ErrSpec)
+		require.Nil(t, res)
+	})
+}

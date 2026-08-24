@@ -60,3 +60,22 @@ func TestXmlObject_Deserialize(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(completed), &actual))
 	assert.EqualT(t, expected, actual)
 }
+
+func TestXMLObjectBuilder(t *testing.T) {
+	x := new(XMLObject).
+		WithName("the name").
+		WithNamespace("the namespace").
+		WithPrefix("the prefix").
+		AsAttribute().
+		AsWrapped()
+
+	assert.EqualT(t, "the name", x.Name)
+	assert.EqualT(t, "the namespace", x.Namespace)
+	assert.EqualT(t, "the prefix", x.Prefix)
+	assert.TrueT(t, x.Attribute)
+	assert.TrueT(t, x.Wrapped)
+
+	x = x.AsElement().AsUnwrapped()
+	assert.FalseT(t, x.Attribute)
+	assert.FalseT(t, x.Wrapped)
+}
