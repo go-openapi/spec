@@ -6,11 +6,10 @@ package spec
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
-	"time"
 
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
@@ -263,16 +262,13 @@ func TestExpandCircular_SpecExpansion(t *testing.T) {
 }
 
 func TestExpandCircular_RemoteCircularID(t *testing.T) {
-	go func() {
-		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir("testdata/more_circulars/remote"))) //#nosec
-		if err != nil {
-			panic(err.Error())
-		}
-	}()
-	time.Sleep(100 * time.Millisecond)
+	// tree and with-id.json both spell the schema id as http://localhost:1234:
+	// rewrite it to wherever the test server listens, so the package runs under -count>1.
+	const fixtureOrigin = "http://localhost:1234"
+	server := rewritingFixtureServer(t, "testdata/more_circulars/remote", fixtureOrigin)
 
 	// from json-schema test suite testcase for remote with circular ID
-	fixturePath := "http://localhost:1234/tree"
+	fixturePath := server.URL + "/tree"
 	jazon, root := expandThisSchemaOrDieTrying(t, fixturePath)
 	assertRefResolve(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
 	assertRefExpand(t, jazon, "", root, &ExpandOptions{RelativeBase: fixturePath})
@@ -281,10 +277,12 @@ func TestExpandCircular_RemoteCircularID(t *testing.T) {
 
 	jazon = asJSON(t, root)
 
-	assertRefInJSONRegexp(t, jazon, "^http://localhost:1234/tree$") // $ref now point to the root doc
+	assertRefInJSONRegexp(t, jazon, "^"+regexp.QuoteMeta(fixturePath)+"$") // $ref now point to the root doc
 
 	// a spec using the previous circular schema
-	fixtureSpecPath := filepath.Join("testdata", "more_circulars", "with-id.json")
+	fixtureSpecPath := rewriteFixture(t,
+		filepath.Join("testdata", "more_circulars", "with-id.json"), fixtureOrigin, server.URL,
+	)
 	jazon, doc := expandThisOrDieTrying(t, fixtureSpecPath)
 
 	assertRefInJSON(t, jazon, fixturePath) // all remaining $ref's point to the circular ID (http://...)
