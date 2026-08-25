@@ -173,13 +173,6 @@ func TestNormalizer_CanonicalBase(t *testing.T) {
 			base:     "https://example.com/base/spec.json#/definitions/x",
 			expected: "https://example.com/base/spec.json",
 		},
-		{
-			name: "escaped path rendering",
-			rule: `"%2F" decodes to "/", and the escaped form has no leading slash to render, ` +
-				`so it used to come out as the authority of "file://%2F"`,
-			base:     "%2F",
-			expected: "file:///",
-		},
 	}
 
 	for _, test := range tests {
@@ -197,6 +190,34 @@ func TestNormalizer_CanonicalBase(t *testing.T) {
 				"normalizing %q again changed it", canonical)
 		})
 	}
+}
+
+// TestNormalizer_EscapedPathRendering covers the rendering defect that produced an unparseable
+// base: normalizeBase("%2F") returned "file://%2F".
+//
+// url.Parse reads "%2F" as the path "/" spelled "%2F", and url.URL.String renders RawPath
+// whenever it still decodes to Path - here a spelling with no leading slash, so what is left
+// reads as an authority. forgetSpelling drops RawPath once Path has been rewritten.
+//
+// The expectation is written against normalizeBase("/") rather than a literal, because a
+// relative base is anchored to the working directory: "file:///" on unix, "file:///c:" or
+// whichever drive the tests run from on windows.
+func TestNormalizer_EscapedPathRendering(t *testing.T) {
+	t.Parallel()
+
+	const escapedSlash = "%2F"
+
+	canonical := normalizeBase(escapedSlash)
+	assert.EqualT(t, normalizeBase("/"), canonical, "the escaped spelling of the root must normalize like the plain one")
+	assert.NotEqualT(t, "file://"+escapedSlash, canonical, "the escaped path was rendered as an authority")
+
+	_, err := parseURL(canonical)
+	require.NoErrorf(t, err, "normalizing %q yielded %q, which does not parse", escapedSlash, canonical)
+
+	ref := MustCreateRef(canonical)
+	assert.EqualTf(t, canonical, ref.String(),
+		"%q is not a fixpoint of jsonreference's canonicalization", canonical)
+	assert.EqualTf(t, canonical, normalizeBase(canonical), "normalizing %q again changed it", canonical)
 }
 
 // TestNormalizer_EscapedSlashIsDecoded records a rule that is not ours to change here.
