@@ -18,6 +18,10 @@ import (
 // Beyond that, the properties asserted here are the invariants the expander relies on:
 // normalizing yields a canonical URI, normalizing twice changes nothing, and
 // denormalizing a canonical $ref yields a shorthand that normalizes back to it.
+//
+// The last property used to skip a URI that jsonreference spells otherwise than the normalizer
+// did. Both now canonicalize the same way - see TestNormalizer_Canonicalization - so it holds
+// for every input.
 func FuzzNormalizer(f *testing.F) {
 	for _, seed := range normalizerSeeds() {
 		f.Add(seed.refPath, seed.base)
@@ -34,27 +38,12 @@ func FuzzNormalizer(f *testing.F) {
 		require.EqualTf(t, normalized, normalizeURI(normalized, canonicalBase),
 			"normalizeURI is not idempotent on $ref %q against base %q", refPath, canonicalBase)
 
-		if respelled(normalized) {
-			return
-		}
-
 		ref := MustCreateRef(normalized)
 		denormalized := denormalizeRef(&ref, canonicalBase, "")
 		require.EqualTf(t, normalized, normalizeURI(denormalized.String(), canonicalBase),
 			"denormalizing %q against base %q yielded %q, which does not normalize back",
 			normalized, canonicalBase, denormalized.String())
 	})
-}
-
-// respelled reports whether jsonreference renders a URI otherwise than the normalizer does.
-//
-// Turning a URI into a Ref lower-cases the host, drops a default port and re-escapes path and
-// fragment in their canonical form, whereas the normalizer keeps the spelling it was handed.
-// Where the two disagree, denormalizing cannot be asked to round-trip.
-func respelled(in string) bool {
-	ref := MustCreateRef(in)
-
-	return ref.String() != in
 }
 
 // requireCanonicalURI asserts the postcondition shared by normalizeBase and normalizeURI:
