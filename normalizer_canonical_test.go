@@ -60,17 +60,22 @@ func TestNormalizer_Canonicalization(t *testing.T) {
 			refPath:  "https://user:pw@EXAMPLE.com:443/other.json",
 			expected: "https://user:pw@example.com/other.json",
 		},
+		// Since go1.26, url.Parse rejects a colon outside a bracketed IPv6 host on an http or https URL
+		// (GODEBUG urlstrictcolons=1, the default from a go.mod declaring go 1.26 or later). Both $refs below
+		// used to parse - the first as the host ":a" on port 443, the second as "0:443" on port 443 - and both
+		// now fail. normalizeURI logs a warning, repairs the $ref to the empty URI and resolves it against the
+		// base, so the base itself comes back.
 		{
-			name:     "degenerate authority, port kept",
-			rule:     "url.Parse reads the host as \":a\" on port 443, and dropping the port would leave a URI that no longer parses",
+			name:     "degenerate authority, stray colon",
+			rule:     "a colon in the host is rejected, and an unresolvable $ref falls back to the base",
 			refPath:  "https://:a:443/other.json",
-			expected: "https://:a:443/other.json",
+			expected: base,
 		},
 		{
 			name:     "degenerate authority, port twice",
-			rule:     "the host \"0:443\" spells a default port of its own, so removal repeats",
+			rule:     "same for a host spelling a port of its own",
 			refPath:  "https://0:443:443/other.json",
-			expected: "https://0/other.json",
+			expected: base,
 		},
 		{
 			name:     "duplicate slashes, relative",
