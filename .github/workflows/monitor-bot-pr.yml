@@ -14,5 +14,5 @@ jobs:
       contents: write
       pull-requests: write
       statuses: read
-    uses: go-openapi/ci-workflows/.github/workflows/monitor-bot-pr.yml@38ed6bf083115440d79b475442d6cf99ee450180 # v0.6.1
+    uses: go-openapi/ci-workflows/.github/workflows/monitor-bot-pr.yml@cba06a2e6390abfedda6bf1067f44741cbe93650 # v0.6.2
     secrets: inherit
