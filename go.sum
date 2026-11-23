@@ -1,5 +1,5 @@
-github.com/go-openapi/jsonpointer v1.0.2 h1:NbW7xT2b+l7x+JefiPGDsZWsrLk1ogrz4AHK1TTzMt8=
-github.com/go-openapi/jsonpointer v1.0.2/go.mod h1:N0rI4MbNKD7xAFTiHtB+5Nhrg2j/wwYg7m7Fmb4/jk8=
+github.com/go-openapi/jsonpointer v1.0.3 h1:iEtrz/inxw+0za5lr10whyxplQdwJruNoQAFA6Sogso=
+github.com/go-openapi/jsonpointer v1.0.3/go.mod h1:rf2X/7HDNST8NkSpeV5gTOJeCZXwcIHyVbr5CPiWSDU=
 github.com/go-openapi/jsonreference v1.0.3 h1:5rDbq+JsjCv6/nUDDJt83nLZoADI4w03uvHXer+4aYQ=
 github.com/go-openapi/jsonreference v1.0.3/go.mod h1:OJSlMXHysgH272D9z2tiy2MGe5A9vQLHaCPb6KbYdE4=
 github.com/go-openapi/swag/conv v0.29.2 h1:8c9shoB8l0QRSR6ymq1llHdBWDqpIgJfjTGHx3Vuhm0=
